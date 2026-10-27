@@ -2,12 +2,15 @@
   "name": "catgorithm-bus",
   "version": "1.0.0",
   "private": true,
+  "homepage": "https://blackarmourr.github.io/CATGORITHM",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",
@@ -18,8 +21,8 @@
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^7.0.2",
     "react-hot-toast": "^2.5.1",
+    "react-router-dom": "^7.0.2",
     "zustand": "^5.0.2"
   },
   "devDependencies": {
@@ -32,6 +35,7 @@
     "eslint": "^9.15.0",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.14",
+    "gh-pages": "^6.3.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15",
     "typescript": "~5.7.2",
