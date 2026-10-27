@@ -1,0 +1,124 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #111827;
+    background-color: #F5F7FA;
+  }
+
+  /* Tabular numerals for prices */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94A3B8;
+  }
+
+  /* Focus styles */
+  :focus-visible {
+    outline: 2px solid #5B7CFA;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-accent text-white font-semibold rounded-xl transition-all duration-200 hover:bg-blue-600 focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-primary-text font-semibold rounded-xl border border-border transition-all duration-200 hover:border-accent hover:text-accent focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-secondary-text font-medium rounded-lg transition-all duration-200 hover:bg-gray-100 hover:text-primary-text focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl border border-border shadow-sm;
+  }
+
+  .card-dark {
+    @apply bg-secondary-dark rounded-2xl border border-gray-800;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl border border-border bg-white text-primary-text placeholder-secondary-text focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors duration-200;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-primary-text mb-1.5;
+  }
+
+  .price-number {
+    @apply font-bold tabular-nums;
+  }
+
+  .section-heading {
+    @apply text-3xl md:text-4xl font-bold text-primary-text tracking-tight;
+  }
+
+  .section-subheading {
+    @apply text-lg text-secondary-text font-normal leading-relaxed;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold;
+  }
+
+  .badge-success {
+    @apply badge bg-green-50 text-success;
+  }
+
+  .badge-accent {
+    @apply badge bg-blue-50 text-accent;
+  }
+
+  .badge-warning {
+    @apply badge bg-amber-50 text-amber-700;
+  }
+
+  .badge-error {
+    @apply badge bg-red-50 text-red-700;
+  }
+
+  .divider {
+    @apply border-t border-border my-6;
+  }
+}
