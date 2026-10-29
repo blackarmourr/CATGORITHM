@@ -99,14 +99,14 @@ Valid for 30 days. Contact: +91 97463 36175`
 
       {/* ── Main Mobile-Optimized Body ── */}
       <main className="max-w-2xl mx-auto px-3.5 sm:px-4 pt-3.5 space-y-3.5">
-        {/* 1. Campaign Selection & Dates (Winter Spotlight 2026–27 / Standard) */}
-        <section aria-label="Campaign Selection" className="bg-white rounded-2xl border border-gray-200 p-4 shadow-xs">
-          <CampaignSelector />
-        </section>
-
-        {/* 2. Live Price & Seasonal Pitch Card (Winter Spotlight Champagne Gold / Standard Navy) */}
+        {/* 1. Live Price Pitch Card (Hero First) */}
         <section aria-label="Live Campaign Pricing">
           <PricingSummary />
+        </section>
+
+        {/* 2. Campaign Selection & Dates (Clean Dropdown Below Live Price) */}
+        <section aria-label="Campaign Selection">
+          <CampaignSelector />
         </section>
 
         {/* 3. Interactive Selection Controls (Clean, Thumb-Friendly) */}

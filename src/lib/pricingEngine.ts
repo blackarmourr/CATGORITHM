@@ -45,23 +45,41 @@ export const TWO_MONTH_PACKAGE_PRICES: Record<number, number> = {
 };
 
 // ------------------------------------------------------------
-// DURATION DISCOUNT TABLE & MONTHLY RATES (for campaigns 3–12 months)
-// Applied to (oneMonthPackagePrice × numberOfMonths)
-// Fine-tuned for exact target milestones:
-// - 3 months @ 10 buses: ₹48,000 (₹1,600 / bus / month)
-// - 12 months @ 10 buses: ₹1,50,000 (₹1,250 / bus / month)
 // ------------------------------------------------------------
+// DURATION DISCOUNT TABLE & MONTHLY RATES (for campaigns 3–12 months)
+// Progression rule:
+// Starting from 2 months @ ₹1,750 per bus per month,
+// reduces by ₹25 per bus per month for each additional month:
+// Month 2:  ₹1,750 / bus / month (₹35,000 for 10 buses @ 30s)
+// Month 3:  ₹1,725 / bus / month (₹51,750 for 10 buses @ 30s)
+// Month 4:  ₹1,700 / bus / month (₹68,000 for 10 buses @ 30s)
+// Month 5:  ₹1,675 / bus / month (₹83,750 for 10 buses @ 30s)
+// Month 6:  ₹1,650 / bus / month (₹99,000 for 10 buses @ 30s)
+// Month 7:  ₹1,625 / bus / month (₹113,750 for 10 buses @ 30s)
+// Month 8:  ₹1,600 / bus / month (₹128,000 for 10 buses @ 30s)
+// Month 9:  ₹1,575 / bus / month (₹141,750 for 10 buses @ 30s)
+// Month 10: ₹1,550 / bus / month (₹155,000 for 10 buses @ 30s)
+// Month 11: ₹1,525 / bus / month (₹167,750 for 10 buses @ 30s)
+// Month 12: ₹1,500 / bus / month (₹180,000 for 10 buses @ 30s)
+// Rate locks at ₹1,500 minimum (never reduces below ₹1,500).
+// ------------------------------------------------------------
+export function getMonthlyRatePerBus10(months: number): number {
+  if (months <= 1) return 1850;
+  if (months === 2) return 1750;
+  return Math.max(1500, 1750 - (months - 2) * 25);
+}
+
 export const MONTHLY_DURATION_DISCOUNT_RATES: Record<number, number> = {
-  3:  7500 / 55500,   // ~13.5135% -> exactly ₹48,000 for 10 buses @ 30s
-  4:  12000 / 74000,  // ~16.2162% -> exactly ₹62,000 for 10 buses @ 30s
-  5:  17500 / 92500,  // ~18.9189% -> exactly ₹75,000 for 10 buses @ 30s
-  6:  24000 / 111000, // ~21.6216% -> exactly ₹87,000 for 10 buses @ 30s
-  7:  31500 / 129500, // ~24.3243% -> exactly ₹98,000 for 10 buses @ 30s
-  8:  40000 / 148000, // ~27.0270% -> exactly ₹108,000 for 10 buses @ 30s
-  9:  47500 / 166500, // ~28.5285% -> exactly ₹119,000 for 10 buses @ 30s
-  10: 55000 / 185000, // ~29.7297% -> exactly ₹130,000 for 10 buses @ 30s
-  11: 63500 / 203500, // ~31.2039% -> exactly ₹140,000 for 10 buses @ 30s
-  12: 72000 / 222000, // ~32.4324% -> exactly ₹150,000 for 10 buses @ 30s (₹1,250 / bus / month)
+  3:  (1850 - 1725) / 1850, // 125 / 1850 -> ₹1,725 / bus / mo (₹51,750 for 10 buses @ 30s)
+  4:  (1850 - 1700) / 1850, // 150 / 1850 -> ₹1,700 / bus / mo (₹68,000 for 10 buses @ 30s)
+  5:  (1850 - 1675) / 1850, // 175 / 1850 -> ₹1,675 / bus / mo (₹83,750 for 10 buses @ 30s)
+  6:  (1850 - 1650) / 1850, // 200 / 1850 -> ₹1,650 / bus / mo (₹99,000 for 10 buses @ 30s)
+  7:  (1850 - 1625) / 1850, // 225 / 1850 -> ₹1,625 / bus / mo (₹113,750 for 10 buses @ 30s)
+  8:  (1850 - 1600) / 1850, // 250 / 1850 -> ₹1,600 / bus / mo (₹128,000 for 10 buses @ 30s)
+  9:  (1850 - 1575) / 1850, // 275 / 1850 -> ₹1,575 / bus / mo (₹141,750 for 10 buses @ 30s)
+  10: (1850 - 1550) / 1850, // 300 / 1850 -> ₹1,550 / bus / mo (₹155,000 for 10 buses @ 30s)
+  11: (1850 - 1525) / 1850, // 325 / 1850 -> ₹1,525 / bus / mo (₹167,750 for 10 buses @ 30s)
+  12: (1850 - 1500) / 1850, // 350 / 1850 -> ₹1,500 / bus / mo (₹180,000 for 10 buses @ 30s, exactly ₹1,500 floor)
 };
 
 export interface DurationDiscountRule {
@@ -95,21 +113,22 @@ export function getDurationMultiplier(videoDurationSeconds: number): number {
 // ============================================================
 export function getDurationDiscountRate(months: number): number {
   if (months < 3) return 0;
+  if (months >= 12) return MONTHLY_DURATION_DISCOUNT_RATES[12];
   return MONTHLY_DURATION_DISCOUNT_RATES[months] ?? MONTHLY_DURATION_DISCOUNT_RATES[12];
 }
 
 // ============================================================
 // HELPER: Clean commercial rounding
-// Eliminates odd tens/singles (like 48,840 -> 48,000) while
-// preserving clean approved steps (250, 500, 1000).
+// Eliminates odd tens/singles while preserving clean approved
+// 250, 500, 1000 steps.
 // ============================================================
 export function roundCommercialPrice(amount: number): number {
   if (amount <= 0) return 0;
   const rounded = Math.round(amount);
 
   // Exact clean milestones stay intact
+  if (rounded % 250 === 0) return rounded;
   if (rounded % 500 === 0) return rounded;
-  if (rounded % 250 === 0 && rounded < 50000) return rounded;
 
   // Otherwise, round to clean sales increments
   if (rounded < 2500) {

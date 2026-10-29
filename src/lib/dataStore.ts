@@ -344,6 +344,25 @@ export async function getQuotations(): Promise<Quotation[]> {
   return localList;
 }
 
+export async function deleteQuotation(id: string): Promise<boolean> {
+  // 1. Delete locally
+  const existing = loadLocal<Quotation[]>(LOCAL_QUOTATIONS_KEY, []);
+  const updated = existing.filter((q) => q.id !== id);
+  saveLocal(LOCAL_QUOTATIONS_KEY, updated);
+
+  // 2. Delete from Supabase
+  try {
+    const { error } = await supabase.from('quotations').delete().eq('id', id);
+    if (error) {
+      console.warn('Supabase delete quotation notice:', error.message);
+    }
+  } catch (err) {
+    console.warn('Supabase delete notice:', err);
+  }
+
+  return true;
+}
+
 // ============================================================
 // ENQUIRY OPERATIONS
 // ============================================================
@@ -451,6 +470,23 @@ export async function updateEnquiryStatus(id: string, status: Enquiry['status'],
   }
 
   return list[idx] ?? null;
+}
+
+export async function deleteEnquiry(id: string): Promise<boolean> {
+  const existing = loadLocal<Enquiry[]>(LOCAL_ENQUIRIES_KEY, []);
+  const updated = existing.filter((e) => e.id !== id);
+  saveLocal(LOCAL_ENQUIRIES_KEY, updated);
+
+  try {
+    const { error } = await supabase.from('enquiries').delete().eq('id', id);
+    if (error) {
+      console.warn('Supabase delete enquiry notice:', error.message);
+    }
+  } catch (err) {
+    console.warn('Supabase delete notice:', err);
+  }
+
+  return true;
 }
 
 // ============================================================

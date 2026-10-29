@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
-import { getEnquiries, getQuotations, updateEnquiryStatus } from '../../lib/dataStore'
+import { getEnquiries, getQuotations, updateEnquiryStatus, deleteQuotation, deleteEnquiry } from '../../lib/dataStore'
 import { generateQuotationPDF } from '../../lib/pdfGenerator'
 import type { Enquiry, EnquiryStatus, Quotation } from '../../types'
 import { formatINR } from '../../lib/pricingEngine'
@@ -8,7 +8,7 @@ import { Badge, EmptyState } from '../../components/ui'
 import {
   Users, Search, RefreshCw, ChevronDown, X, FileText, Download,
   Phone, MessageSquare, ArrowLeft, Filter, Sparkles, Calendar,
-  TrendingUp, CheckCircle, Clock, Tag
+  TrendingUp, CheckCircle, Clock, Tag, Trash2
 } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -153,6 +153,31 @@ export default function AdminEnquiries() {
       toast.error('Failed to generate PDF')
     } finally {
       setDownloadingId(null)
+    }
+  }
+
+  async function handleDeleteQuote(id: string, e?: React.MouseEvent) {
+    e?.stopPropagation()
+    if (!window.confirm(`Delete quotation ${id}? This cannot be undone.`)) return
+    try {
+      await deleteQuotation(id)
+      toast.success(`Quotation ${id} deleted`)
+      load()
+    } catch {
+      toast.error('Failed to delete quotation')
+    }
+  }
+
+  async function handleDeleteEnquiry(id: string, e?: React.MouseEvent) {
+    e?.stopPropagation()
+    if (!window.confirm(`Delete enquiry ${id}? This cannot be undone.`)) return
+    try {
+      await deleteEnquiry(id)
+      toast.success(`Enquiry ${id} deleted`)
+      if (selected?.id === id) setSelected(null)
+      load()
+    } catch {
+      toast.error('Failed to delete enquiry')
     }
   }
 
@@ -526,16 +551,25 @@ export default function AdminEnquiries() {
                         </span>
                       </div>
 
-                      {/* Action: 1-Click PDF Download */}
-                      <div className="pt-2 border-t border-gray-100">
+                      {/* Actions: Download PDF & Delete Quotation */}
+                      <div className="pt-2 border-t border-gray-100 flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => handleDownloadSavedQuote(q)}
                           disabled={isDownloading}
-                          className="w-full py-2.5 px-3 rounded-xl bg-accent/10 hover:bg-accent/20 text-accent font-bold text-xs flex items-center justify-center gap-2 border border-accent/25 active:scale-98 transition-all"
+                          className="flex-1 py-2 px-3 rounded-xl bg-accent/10 hover:bg-accent/20 text-accent font-bold text-xs flex items-center justify-center gap-1.5 border border-accent/25 active:scale-98 transition-all"
                         >
-                          <Download size={14} className={isDownloading ? 'animate-bounce' : ''} />
-                          {isDownloading ? 'Generating PDF…' : 'Download Quotation PDF'}
+                          <Download size={13} className={isDownloading ? 'animate-bounce' : ''} />
+                          {isDownloading ? 'Downloading…' : 'PDF Quotation'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteQuote(q.id, e)}
+                          className="py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs flex items-center justify-center gap-1.5 border border-rose-200 active:scale-98 transition-all"
+                          title="Delete Quotation"
+                        >
+                          <Trash2 size={13} />
+                          <span>Delete</span>
                         </button>
                       </div>
                     </div>
@@ -549,7 +583,7 @@ export default function AdminEnquiries() {
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-b border-border">
                       <tr>
-                        {['Quotation Ref', 'Client / Business', 'Campaign', 'Campaign Spec', 'Total Quote', 'Valid Until', 'Created', 'Action'].map((h) => (
+                        {['Quotation Ref', 'Client / Business', 'Campaign', 'Campaign Spec', 'Total Quote', 'Valid Until', 'Created', 'Actions'].map((h) => (
                           <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-secondary-text whitespace-nowrap">
                             {h}
                           </th>
@@ -582,15 +616,26 @@ export default function AdminEnquiries() {
                               {format(new Date(q.createdAt), 'dd MMM yyyy')}
                             </td>
                             <td className="px-4 py-3">
-                              <button
-                                type="button"
-                                onClick={() => handleDownloadSavedQuote(q)}
-                                disabled={isDownloading}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-accent/40 text-accent hover:bg-blue-50 text-xs font-bold transition-colors"
-                              >
-                                <Download size={12} className={isDownloading ? 'animate-bounce' : ''} />
-                                Download
-                              </button>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleDownloadSavedQuote(q)}
+                                  disabled={isDownloading}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-accent/40 text-accent hover:bg-blue-50 text-xs font-bold transition-colors"
+                                  title="Download PDF"
+                                >
+                                  <Download size={12} className={isDownloading ? 'animate-bounce' : ''} />
+                                  PDF
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleDeleteQuote(q.id, e)}
+                                  className="inline-flex items-center gap-1 p-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold transition-colors"
+                                  title="Delete Quotation"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         )
@@ -695,22 +740,33 @@ export default function AdminEnquiries() {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-3 sm:p-4 bg-gray-50 border-t border-border flex items-center justify-end gap-2">
+            <div className="p-3 sm:p-4 bg-gray-50 border-t border-border flex items-center justify-between gap-2">
               <button
                 type="button"
-                onClick={() => setSelected(null)}
-                className="px-3.5 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-200 rounded-xl transition-colors"
+                onClick={(e) => handleDeleteEnquiry(selected.id, e)}
+                className="px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl flex items-center gap-1.5 border border-rose-200 transition-colors"
+                title="Delete this lead"
               >
-                Cancel
+                <Trash2 size={13} />
+                <span>Delete Deal</span>
               </button>
-              <button
-                type="button"
-                onClick={handleStatusUpdate}
-                disabled={savingStatus}
-                className="px-4 py-2 text-xs font-bold bg-accent hover:bg-blue-600 text-white rounded-xl shadow-xs active:scale-95 transition-all"
-              >
-                {savingStatus ? 'Saving…' : 'Save Status Update'}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelected(null)}
+                  className="px-3.5 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-200 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleStatusUpdate}
+                  disabled={savingStatus}
+                  className="px-4 py-2 text-xs font-bold bg-accent hover:bg-blue-600 text-white rounded-xl shadow-xs active:scale-95 transition-all"
+                >
+                  {savingStatus ? 'Saving…' : 'Save Status Update'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

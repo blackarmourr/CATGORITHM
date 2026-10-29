@@ -1,7 +1,7 @@
-// Test script to verify Catgorithm Pricing Engine & Winter Spotlight rules
-import { calculatePrice } from './src/lib/pricingEngine.ts';
+// Verification script for updated Catgorithm Pricing Model
+import { calculatePrice, getMonthlyRatePerBus10 } from './src/lib/pricingEngine.ts';
 
-console.log('=== CATGORITHM PRICING & WINTER SPOTLIGHT VERIFICATION ===\n');
+console.log('=== CATGORITHM NEW PRICING ENGINE VERIFICATION ===\n');
 
 let allPassed = true;
 
@@ -15,44 +15,57 @@ function assert(condition, message, details) {
   }
 }
 
-// 1. Winter Spotlight 2026-27 core benchmark: 10 buses, 30s ad, 2 months
-const p10_2_30 = calculatePrice(10, 2, 30);
-assert(p10_2_30.standardPrice === 45000, '10 buses @ 30s for 2 mo: Standard price is Rs. 45,000', p10_2_30);
-assert(p10_2_30.packagePrice === 35000, '10 buses @ 30s for 2 mo: Package price is Rs. 35,000', p10_2_30);
-assert(p10_2_30.savings === 10000, '10 buses @ 30s for 2 mo: Savings is Rs. 10,000', p10_2_30);
-assert(Math.round(p10_2_30.savingsPercentage) === 22, '10 buses @ 30s for 2 mo: Discount is ~22.22%', p10_2_30);
-assert(p10_2_30.pricePerBusMonth === 1750, '10 buses @ 30s for 2 mo: Rate per bus/mo is Rs. 1,750', p10_2_30);
+// 1. Benchmark 1-Month (10 buses, 30s)
+const p1 = calculatePrice(10, 1, 30);
+assert(p1.packagePrice === 18500, '1 month @ 10 buses: Package price is Rs. 18,500', p1.packagePrice);
+assert(p1.pricePerBusMonth === 1850, '1 month @ 10 buses: Rate is Rs. 1,850 / bus / mo', p1.pricePerBusMonth);
 
-// 2. 1-Month 10 buses benchmark
-const p10_1_30 = calculatePrice(10, 1, 30);
-assert(p10_1_30.standardPrice === 22500, '10 buses @ 30s for 1 mo: Standard price is Rs. 22,500', p10_1_30);
-assert(p10_1_30.packagePrice === 18500, '10 buses @ 30s for 1 mo: Package price is Rs. 18,500', p10_1_30);
-assert(p10_1_30.savings === 4000, '10 buses @ 30s for 1 mo: Savings is Rs. 4,000', p10_1_30);
+// 2. Benchmark 2-Month (10 buses, 30s)
+const p2 = calculatePrice(10, 2, 30);
+assert(p2.packagePrice === 35000, '2 months @ 10 buses: Package price is Rs. 35,000', p2.packagePrice);
+assert(p2.pricePerBusMonth === 1750, '2 months @ 10 buses: Rate is Rs. 1,750 / bus / mo', p2.pricePerBusMonth);
 
-// 3. 15-second variation: 10 buses, 2 months
-const p10_2_15 = calculatePrice(10, 2, 15);
-assert(p10_2_15.standardPrice === 22500, '10 buses @ 15s for 2 mo: Standard price is Rs. 22,500', p10_2_15);
-assert(p10_2_15.packagePrice === 17500, '10 buses @ 15s for 2 mo: Package price is Rs. 17,500', p10_2_15);
-assert(p10_2_15.savings === 5000, '10 buses @ 15s for 2 mo: Savings is Rs. 5,000', p10_2_15);
+// 3. Test progressive reduction by Rs. 25 per bus per month from 1,750 down to 1,500 at 12 months
+const expectedMonthlyRates = [
+  { m: 2,  rate: 1750, total: 35000 },
+  { m: 3,  rate: 1725, total: 51750 },
+  { m: 4,  rate: 1700, total: 68000 },
+  { m: 5,  rate: 1675, total: 83750 },
+  { m: 6,  rate: 1650, total: 99000 },
+  { m: 7,  rate: 1625, total: 113750 },
+  { m: 8,  rate: 1600, total: 128000 },
+  { m: 9,  rate: 1575, total: 141750 },
+  { m: 10, rate: 1550, total: 155000 },
+  { m: 11, rate: 1525, total: 167750 },
+  { m: 12, rate: 1500, total: 180000 },
+];
 
-// 4. 60-second variation: 10 buses, 2 months
-const p10_2_60 = calculatePrice(10, 2, 60);
-assert(p10_2_60.standardPrice === 90000, '10 buses @ 60s for 2 mo: Standard price is Rs. 90,000', p10_2_60);
-assert(p10_2_60.packagePrice === 70000, '10 buses @ 60s for 2 mo: Package price is Rs. 70,000', p10_2_60);
-assert(p10_2_60.savings === 20000, '10 buses @ 60s for 2 mo: Savings is Rs. 20,000', p10_2_60);
+for (const { m, rate, total } of expectedMonthlyRates) {
+  const p = calculatePrice(10, m, 30);
+  assert(
+    p.pricePerBusMonth === rate,
+    `${m} months: Rate per bus/mo is Rs. ${rate} (expected Rs. ${rate})`,
+    { got: p.pricePerBusMonth, expected: rate }
+  );
+  assert(
+    p.packagePrice === total,
+    `${m} months: Total for 10 buses is Rs. ${total} (expected Rs. ${total})`,
+    { got: p.packagePrice, expected: total }
+  );
+}
 
-// 5. 3-Month clean rounding: 10 buses, 30s
-const p10_3_30 = calculatePrice(10, 3, 30);
-assert(p10_3_30.packagePrice === 48000, '10 buses @ 30s for 3 mo: Clean rounded price is Rs. 48,000', p10_3_30);
+// 4. Rate floor: Check that 12 months does not reduce below 1,500
+const p12 = calculatePrice(10, 12, 30);
+assert(p12.pricePerBusMonth === 1500, '12 months rate floor is exactly Rs. 1,500 / bus / mo', p12.pricePerBusMonth);
+assert(p12.pricePerBusMonth >= 1500, 'Price per bus per month never reduces below Rs. 1,500', p12.pricePerBusMonth);
 
-// 6. 12-Month milestone: 10 buses, 30s
-const p10_12_30 = calculatePrice(10, 12, 30);
-assert(p10_12_30.packagePrice === 150000, '10 buses @ 30s for 12 mo: Milestone price is Rs. 150,000', p10_12_30);
-assert(p10_12_30.pricePerBusMonth === 1250, '10 buses @ 30s for 12 mo: Rate is Rs. 1,250/bus/mo', p10_12_30);
+// 5. Video duration scaling with new model (10 buses, 12 months, 15s)
+const p12_15s = calculatePrice(10, 12, 15);
+assert(p12_15s.packagePrice === 90000, '10 buses @ 15s for 12 months: Exactly half of 180,000 = Rs. 90,000', p12_15s.packagePrice);
 
-console.log('\n--- Test Summary ---');
+console.log('\n--- Test Result ---');
 if (allPassed) {
-  console.log('🎉 ALL SECTION 10 PRICING & WINTER SPOTLIGHT BENCHMARKS PASSED PERFECTLY!\n');
+  console.log('🎉 ALL NEW PRICING REDUCTION BENCHMARKS PASSED PERFECTLY!\n');
   process.exit(0);
 } else {
   console.error('💥 SOME BENCHMARKS FAILED!\n');
