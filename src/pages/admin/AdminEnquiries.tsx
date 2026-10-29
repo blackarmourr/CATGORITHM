@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { getEnquiries, updateEnquiryStatus } from '../../lib/dataStore'
-import type { Enquiry, EnquiryStatus } from '../../types'
+import { getEnquiries, getQuotations, updateEnquiryStatus } from '../../lib/dataStore'
+import { generateQuotationPDF } from '../../lib/pdfGenerator'
+import type { Enquiry, EnquiryStatus, Quotation } from '../../types'
 import { formatINR } from '../../lib/pricingEngine'
 import { Badge, EmptyState, ConfirmDialog } from '../../components/ui'
-import { Users, Search, RefreshCw, ChevronDown, X } from 'lucide-react'
+import { Users, Search, RefreshCw, ChevronDown, X, FileText, Download } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 
@@ -22,7 +23,9 @@ const STATUS_VARIANT: Record<EnquiryStatus, 'default' | 'success' | 'warning' | 
 }
 
 export default function AdminEnquiries() {
+  const [activeTab, setActiveTab] = useState<'enquiries' | 'quotations'>('enquiries')
   const [enquiries, setEnquiries] = useState<Enquiry[]>([])
+  const [quotations, setQuotations] = useState<Quotation[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<EnquiryStatus | 'All'>('All')
@@ -35,14 +38,15 @@ export default function AdminEnquiries() {
 
   async function load() {
     setLoading(true)
-    const data = await getEnquiries()
-    setEnquiries(data)
+    const [eData, qData] = await Promise.all([getEnquiries(), getQuotations()])
+    setEnquiries(eData)
+    setQuotations(qData)
     setLoading(false)
   }
 
   useEffect(() => { load() }, [])
 
-  const filtered = enquiries.filter((e) => {
+  const filteredEnquiries = enquiries.filter((e) => {
     const matchSearch =
       !search ||
       e.customerDetails.businessName.toLowerCase().includes(search.toLowerCase()) ||
@@ -51,6 +55,16 @@ export default function AdminEnquiries() {
       e.id.includes(search)
     const matchStatus = statusFilter === 'All' || e.status === statusFilter
     return matchSearch && matchStatus
+  })
+
+  const filteredQuotations = quotations.filter((q) => {
+    return (
+      !search ||
+      q.customerDetails.businessName.toLowerCase().includes(search.toLowerCase()) ||
+      q.customerDetails.contactName.toLowerCase().includes(search.toLowerCase()) ||
+      q.customerDetails.phone.includes(search) ||
+      q.id.includes(search)
+    )
   })
 
   async function handleStatusUpdate() {
@@ -71,16 +85,47 @@ export default function AdminEnquiries() {
     setStatusNote('')
   }
 
+  async function handleDownloadSavedQuote(q: Quotation) {
+    try {
+      await generateQuotationPDF(q)
+      toast.success(`Downloaded Quotation ${q.id}`)
+    } catch {
+      toast.error('Failed to generate PDF')
+    }
+  }
+
   return (
     <div className="space-y-5 max-w-7xl">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-primary-text">Enquiries</h1>
-          <p className="text-secondary-text text-sm">{enquiries.length} total enquiries</p>
+          <h1 className="text-2xl font-black text-primary-text">Pipeline & Quotations</h1>
+          <p className="text-secondary-text text-sm">Track customer enquiries and download past prepared quotations.</p>
         </div>
-        <button onClick={load} className="btn-ghost text-sm">
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Segmented Control */}
+          <div className="bg-gray-200/80 p-1 rounded-xl flex items-center gap-1 text-xs font-bold">
+            <button
+              onClick={() => setActiveTab('enquiries')}
+              className={`px-3 py-1.5 rounded-lg transition-all ${
+                activeTab === 'enquiries' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Enquiries ({enquiries.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('quotations')}
+              className={`px-3 py-1.5 rounded-lg transition-all ${
+                activeTab === 'quotations' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Quotations ({quotations.length})
+            </button>
+          </div>
+
+          <button onClick={load} className="btn-ghost text-sm p-2" aria-label="Refresh">
+            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -89,83 +134,154 @@ export default function AdminEnquiries() {
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-text" />
           <input
             type="text"
-            placeholder="Search by name, phone or reference…"
+            placeholder="Search by customer name, phone, or quotation reference…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-border text-sm focus:outline-none focus:border-accent"
           />
         </div>
-        <div className="relative">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as EnquiryStatus | 'All')}
-            className="appearance-none pl-4 pr-9 py-2.5 rounded-xl border border-border text-sm focus:outline-none focus:border-accent bg-white w-full"
-          >
-            <option value="All">All Statuses</option>
-            {STATUS_OPTIONS.map((s) => <option key={s}>{s}</option>)}
-          </select>
-          <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-text pointer-events-none" />
-        </div>
+        {activeTab === 'enquiries' && (
+          <div className="relative">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as EnquiryStatus | 'All')}
+              className="appearance-none pl-4 pr-9 py-2.5 rounded-xl border border-border text-sm focus:outline-none focus:border-accent bg-white w-full"
+            >
+              <option value="All">All Statuses</option>
+              {STATUS_OPTIONS.map((s) => <option key={s}>{s}</option>)}
+            </select>
+            <ChevronDown size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-text pointer-events-none" />
+          </div>
+        )}
       </div>
 
-      {/* Table */}
-      <div className="card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-border">
-              <tr>
-                {['Reference', 'Customer', 'Phone', 'Buses', 'Ad Duration', 'Campaign', 'Quoted Price', 'Status', 'Date'].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-secondary-text whitespace-nowrap">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {loading ? (
-                <tr><td colSpan={9} className="px-4 py-12 text-center text-secondary-text">Loading…</td></tr>
-              ) : filtered.length === 0 ? (
+      {/* Tab: Enquiries */}
+      {activeTab === 'enquiries' && (
+        <div className="card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-border">
                 <tr>
-                  <td colSpan={9}>
-                    <EmptyState
-                      title="No enquiries found"
-                      description="No enquiries match your current filters."
-                      icon={Users}
-                    />
-                  </td>
+                  {['Reference', 'Customer', 'Phone', 'Buses', 'Ad Duration', 'Campaign', 'Quoted Price', 'Status', 'Date'].map((h) => (
+                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-secondary-text whitespace-nowrap">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ) : (
-                filtered.map((e) => (
-                  <tr
-                    key={e.id}
-                    className="hover:bg-gray-50 cursor-pointer transition-colors"
-                    onClick={() => openDetail(e)}
-                  >
-                    <td className="px-4 py-3 font-mono text-xs font-semibold text-accent">{e.id}</td>
-                    <td className="px-4 py-3">
-                      <p className="font-semibold text-primary-text">{e.customerDetails.businessName}</p>
-                      <p className="text-secondary-text text-xs">{e.customerDetails.contactName}</p>
-                    </td>
-                    <td className="px-4 py-3 text-secondary-text">{e.customerDetails.phone}</td>
-                    <td className="px-4 py-3 tabular-nums font-semibold">{e.pricingSnapshot?.buses ?? '—'}</td>
-                    <td className="px-4 py-3 tabular-nums">{e.pricingSnapshot?.videoDurationSeconds ?? '—'}s</td>
-                    <td className="px-4 py-3 tabular-nums">{e.pricingSnapshot?.months ?? '—'} mo</td>
-                    <td className="px-4 py-3 font-bold tabular-nums text-accent">
-                      {e.pricingSnapshot ? formatINR(e.negotiatedPrice ?? e.pricingSnapshot.packagePrice) : '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge variant={STATUS_VARIANT[e.status]}>{e.status}</Badge>
-                    </td>
-                    <td className="px-4 py-3 text-secondary-text whitespace-nowrap text-xs">
-                      {format(new Date(e.createdAt), 'dd MMM yyyy')}
+              </thead>
+              <tbody className="divide-y divide-border">
+                {loading ? (
+                  <tr><td colSpan={9} className="px-4 py-12 text-center text-secondary-text">Loading…</td></tr>
+                ) : filteredEnquiries.length === 0 ? (
+                  <tr>
+                    <td colSpan={9}>
+                      <EmptyState
+                        title="No enquiries found"
+                        description="No enquiries match your current search criteria."
+                        icon={Users}
+                      />
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  filteredEnquiries.map((e) => (
+                    <tr
+                      key={e.id}
+                      className="hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => openDetail(e)}
+                    >
+                      <td className="px-4 py-3 font-mono text-xs font-semibold text-accent">{e.id}</td>
+                      <td className="px-4 py-3">
+                        <p className="font-semibold text-primary-text">{e.customerDetails.businessName}</p>
+                        <p className="text-secondary-text text-xs">{e.customerDetails.contactName}</p>
+                      </td>
+                      <td className="px-4 py-3 text-secondary-text">{e.customerDetails.phone}</td>
+                      <td className="px-4 py-3 tabular-nums font-semibold">{e.pricingSnapshot?.buses ?? '—'}</td>
+                      <td className="px-4 py-3 tabular-nums">{e.pricingSnapshot?.videoDurationSeconds ?? '—'}s</td>
+                      <td className="px-4 py-3 tabular-nums">{e.pricingSnapshot?.months ?? '—'} mo</td>
+                      <td className="px-4 py-3 font-bold tabular-nums text-accent">
+                        {e.pricingSnapshot ? formatINR(e.negotiatedPrice ?? e.pricingSnapshot.packagePrice) : '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={STATUS_VARIANT[e.status]}>{e.status}</Badge>
+                      </td>
+                      <td className="px-4 py-3 text-secondary-text whitespace-nowrap text-xs">
+                        {format(new Date(e.createdAt), 'dd MMM yyyy')}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Tab: Saved Quotations */}
+      {activeTab === 'quotations' && (
+        <div className="card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-border">
+                <tr>
+                  {['Quotation Ref', 'Client / Business', 'Phone', 'Campaign Spec', 'Total Quote', 'Valid Until', 'Created', 'Action'].map((h) => (
+                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-secondary-text whitespace-nowrap">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {loading ? (
+                  <tr><td colSpan={8} className="px-4 py-12 text-center text-secondary-text">Loading…</td></tr>
+                ) : filteredQuotations.length === 0 ? (
+                  <tr>
+                    <td colSpan={8}>
+                      <EmptyState
+                        title="No quotations saved yet"
+                        description="Generate a PDF quote from the calculator to see it tracked here."
+                        icon={FileText}
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  filteredQuotations.map((q) => (
+                    <tr key={q.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 font-mono text-xs font-semibold text-accent">{q.id}</td>
+                      <td className="px-4 py-3">
+                        <p className="font-semibold text-primary-text">{q.customerDetails.businessName}</p>
+                        <p className="text-secondary-text text-xs">{q.customerDetails.contactName}</p>
+                      </td>
+                      <td className="px-4 py-3 text-secondary-text text-xs">{q.customerDetails.phone}</td>
+                      <td className="px-4 py-3 text-xs">
+                        <span className="font-semibold text-gray-900">{q.pricingSnapshot?.buses} Buses</span> · {q.pricingSnapshot?.videoDurationSeconds}s · {q.pricingSnapshot?.months} Mo
+                      </td>
+                      <td className="px-4 py-3 font-bold tabular-nums text-accent">
+                        {q.pricingSnapshot ? formatINR(q.pricingSnapshot.packagePrice) : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-secondary-text text-xs whitespace-nowrap">
+                        {format(new Date(q.validUntil), 'dd MMM yyyy')}
+                      </td>
+                      <td className="px-4 py-3 text-secondary-text text-xs whitespace-nowrap">
+                        {format(new Date(q.createdAt), 'dd MMM yyyy')}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadSavedQuote(q)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-accent/40 text-accent hover:bg-blue-50 text-xs font-bold transition-colors"
+                        >
+                          <Download size={12} />
+                          Download
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Enquiry detail modal */}
       {selected && (
@@ -268,9 +384,9 @@ export default function AdminEnquiries() {
                       className="input-field pl-8"
                     />
                   </div>
-                  {negotiatedPrice && Number(negotiatedPrice) < 30000 && selected.pricingSnapshot?.buses === 10 && selected.pricingSnapshot?.months === 2 && (
+                  {negotiatedPrice && Number(negotiatedPrice) < (selected.pricingSnapshot?.packagePrice ? selected.pricingSnapshot.packagePrice * 0.75 : 0) && (
                     <p className="text-amber-600 text-xs bg-amber-50 border border-amber-200 rounded-lg p-2">
-                      ⚠ This price is below the configured negotiation floor (₹30,000) for 10 buses / 2 months. Explicit authorisation required.
+                      ⚠ Negotiated price is more than 25% below the standard package price. Document the justification below.
                     </p>
                   )}
                   <input

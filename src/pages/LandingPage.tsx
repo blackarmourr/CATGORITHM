@@ -154,14 +154,14 @@ export default function LandingPage() {
               {/* Floating stats */}
               <div className="absolute -top-4 -right-4 bg-white rounded-2xl shadow-xl p-4 min-w-36">
                 <p className="text-xs text-secondary-text font-semibold uppercase tracking-wider mb-1">Campaign Price</p>
-                <p className="text-2xl font-black text-accent tabular-nums">₹84,000</p>
+                <p className="text-2xl font-black text-accent tabular-nums">₹88,800</p>
                 <p className="text-xs text-secondary-text">10 buses · 6 months</p>
               </div>
 
               <div className="absolute -bottom-4 -left-4 bg-white rounded-2xl shadow-xl p-4">
                 <p className="text-xs text-secondary-text font-semibold uppercase tracking-wider mb-1">You Save</p>
-                <p className="text-xl font-black text-success tabular-nums">₹36,000</p>
-                <p className="text-xs text-secondary-text">30% off standard rate</p>
+                <p className="text-xl font-black text-success tabular-nums">₹46,200</p>
+                <p className="text-xs text-secondary-text">34% off standard rate</p>
               </div>
             </div>
           </motion.div>

@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { getPricingSettings, updatePricingSettings } from '../../lib/dataStore'
 import {
   ONE_MONTH_PACKAGE_PRICES, TWO_MONTH_PACKAGE_PRICES,
-  DURATION_DISCOUNT_RULES, formatINR, validatePricingMonotonicity
+  DURATION_DISCOUNT_RULES, formatINR, validatePricingMonotonicity,
+  STANDARD_RATE_PER_SECOND, STANDARD_PRICE_PER_BUS_PER_MONTH_30S
 } from '../../lib/pricingEngine'
 import type { PricingSettings } from '../../types'
 import { LoadingSpinner, ConfirmDialog } from '../../components/ui'
@@ -102,10 +103,19 @@ export default function AdminPricing() {
 
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="label">Standard Rate per Bus/Month (30s ad) — ₹</label>
+            <label className="label">Standard Rate per Second (₹ / sec / bus / month)</label>
             <input
               type="number"
-              value={settings.standardRatePerBusPerMonth30s}
+              value={settings.standardRatePerSecond || 75}
+              onChange={(e) => update('standardRatePerSecond', Number(e.target.value))}
+              className="input-field"
+            />
+          </div>
+          <div>
+            <label className="label">Standard 30s Ad Rate per Bus/Month — ₹</label>
+            <input
+              type="number"
+              value={settings.standardRatePerBusPerMonth30s || 2250}
               onChange={(e) => update('standardRatePerBusPerMonth30s', Number(e.target.value))}
               className="input-field"
             />
@@ -270,7 +280,7 @@ export default function AdminPricing() {
                 <tbody className="divide-y divide-border">
                   {Object.entries(ONE_MONTH_PACKAGE_PRICES).map(([b, price]) => {
                     const buses = Number(b)
-                    const standard = 2000 * buses
+                    const standard = STANDARD_PRICE_PER_BUS_PER_MONTH_30S * buses
                     const savings = standard - price
                     const pct = savings > 0 ? ((savings / standard) * 100).toFixed(1) : '0'
                     return (
@@ -300,7 +310,7 @@ export default function AdminPricing() {
                 <tbody className="divide-y divide-border">
                   {Object.entries(TWO_MONTH_PACKAGE_PRICES).map(([b, price]) => {
                     const buses = Number(b)
-                    const standard = 2000 * buses * 2
+                    const standard = STANDARD_PRICE_PER_BUS_PER_MONTH_30S * buses * 2
                     const savings = standard - price
                     const pct = savings > 0 ? ((savings / standard) * 100).toFixed(1) : '0'
                     return (

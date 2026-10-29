@@ -39,7 +39,9 @@ ${pricing.savings > 0 ? `• *Direct Client Savings: ${formatINR(pricing.savings
 • Daily Cost per Bus: *Only ${formatINR(pricing.pricePerBusDay, { decimals: 2 })} / day!*
 
 _Offer valid for 30 days. Contact us to reserve your screen inventory._
-*Catgorithm* · Kollam, Kerala · +91 98765 43210`
+*Catgorithm Digital Growth*
+📍 Parayathumukku, Umayanalloor, Kollam 691020
+📞 +91 97463 36175 | ✉️ teamcatgorithm@gmail.com`
 
   // WhatsApp launcher
   function handleWhatsAppShare() {

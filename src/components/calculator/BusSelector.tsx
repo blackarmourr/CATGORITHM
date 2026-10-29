@@ -76,24 +76,6 @@ export default function BusSelector() {
           )
         })}
       </div>
-
-      {/* Touch slider for rapid dragging */}
-      <div className="pt-1">
-        <input
-          type="range"
-          min={1}
-          max={MAX_BUSES}
-          value={buses}
-          onChange={(e) => setConfig({ buses: parseInt(e.target.value) })}
-          className="w-full h-2 rounded-full appearance-none cursor-pointer accent-accent bg-gray-200"
-          aria-label="Adjust number of buses"
-        />
-        <div className="flex justify-between text-[11px] text-gray-500 mt-1">
-          <span>1 Bus</span>
-          <span className="font-semibold text-gray-900">{buses} selected</span>
-          <span>10 Buses (Full Fleet)</span>
-        </div>
-      </div>
     </div>
   )
 }

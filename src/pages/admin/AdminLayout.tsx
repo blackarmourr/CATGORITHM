@@ -30,9 +30,14 @@ export default function AdminLayout() {
       {/* Logo */}
       <div className="p-5 border-b border-white/10">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-accent-violet flex items-center justify-center">
-            <Bus size={15} className="text-white" />
-          </div>
+          <img
+            src="./catgorithm-logo.png"
+            alt="Catgorithm"
+            className="h-7 w-auto object-contain filter brightness-110"
+            onError={(e) => {
+              (e.currentTarget as HTMLElement).style.display = 'none';
+            }}
+          />
           <div>
             <p className="text-white font-bold text-sm">Catgorithm</p>
             <p className="text-white/40 text-xs">Admin Panel</p>

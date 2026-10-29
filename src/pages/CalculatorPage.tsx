@@ -25,12 +25,12 @@ export default function CalculatorPage() {
 
   function handleQuickShare() {
     const text = `*Catgorithm Bus Screen Advertising Quotation*
-📍 Kollam Bus Fleet
+📍 *Kollam Bus Fleet, Kerala*
 • ${config.buses} Buses | ${config.videoDurationSeconds}s Video Ad | ${config.months} Months
 • Package Offer: *${formatINR(pricing.packagePrice)}*
 • Standard Tariff: ${formatINR(pricing.standardPrice)}
 ${pricing.savings > 0 ? `• Direct Savings: *${formatINR(pricing.savings)} (${pricing.savingsPercentage.toFixed(0)}% OFF)*\n` : ''}• Effective Rate: ${formatINR(pricing.pricePerBusMonth)}/bus/mo (~${formatINR(pricing.pricePerBusDay, { decimals: 2 })}/day)
-Valid for 30 days.`
+Valid for 30 days. Contact: +91 97463 36175`
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
   }
 
@@ -39,11 +39,17 @@ Valid for 30 days.`
       {/* ── Compact Header for Sales Head ── */}
       <header className="sticky top-0 z-40 bg-[#080B12]/95 backdrop-blur-md border-b border-gray-800 text-white shadow-sm">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-          {/* Brand & Badge */}
+          {/* Brand & Logo */}
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-accent to-accent-violet flex items-center justify-center shadow-xs">
-              <Bus size={16} className="text-white" />
-            </div>
+            <img
+              src="./catgorithm-logo.png"
+              alt="Catgorithm"
+              className="h-8 w-auto object-contain max-w-[120px] filter brightness-110"
+              onError={(e) => {
+                // fallback
+                (e.currentTarget as HTMLElement).style.display = 'none';
+              }}
+            />
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-black text-sm tracking-tight text-white">Catgorithm</span>

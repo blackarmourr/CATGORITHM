@@ -4,43 +4,44 @@
 // in UI components. Always import from this module.
 // ============================================================
 
-export const STANDARD_PRICE_PER_BUS_PER_MONTH_30S = 2000; // INR
+export const STANDARD_RATE_PER_SECOND = 75; // ₹75 per second, per bus, per month
 export const BASE_VIDEO_DURATION_SECONDS = 30;
+export const STANDARD_PRICE_PER_BUS_PER_MONTH_30S = STANDARD_RATE_PER_SECOND * BASE_VIDEO_DURATION_SECONDS; // ₹2,250
 export const MAX_BUSES = 10;
 export const MAX_MONTHS = 12;
 export const PRICING_DAYS_PER_MONTH = 30;
 
 // ------------------------------------------------------------
-// ONE-MONTH PACKAGE PRICES (total for all buses, 30s ad)
+// ONE-MONTH APPROVED PACKAGE TARIFF (total for all buses, 30s ad)
 // These are the approved source-of-truth values.
 // ------------------------------------------------------------
 export const ONE_MONTH_PACKAGE_PRICES: Record<number, number> = {
-  1:  2000,
-  2:  3900,
-  3:  5700,
-  4:  7400,
-  5:  9000,
-  6:  10800,
-  7:  12600,
-  8:  14400,
-  9:  15750,
-  10: 17500,
+  1:  2250,
+  2:  4350,
+  3:  6450,
+  4:  8500,
+  5:  10500,
+  6:  12500,
+  7:  14500,
+  8:  16000,
+  9:  17250,
+  10: 18500,
 };
 
 // ------------------------------------------------------------
-// TWO-MONTH PACKAGE PRICES (total for all buses, 30s ad)
+// TWO-MONTH APPROVED PACKAGE TARIFF (total for all buses, 30s ad)
 // ------------------------------------------------------------
 export const TWO_MONTH_PACKAGE_PRICES: Record<number, number> = {
-  1:  3800,
-  2:  7200,
-  3:  10500,
-  4:  14000,
-  5:  17000,
-  6:  20000,
-  7:  23000,
-  8:  26000,
-  9:  29000,
-  10: 32000,
+  1:  4250,
+  2:  8200,
+  3:  12000,
+  4:  15800,
+  5:  19500,
+  6:  23000,
+  7:  26500,
+  8:  29500,
+  9:  32500,
+  10: 35000,
 };
 
 // ------------------------------------------------------------
@@ -60,20 +61,6 @@ export const DURATION_DISCOUNT_RULES: DurationDiscountRule[] = [
   { minMonths: 9,  maxMonths: 11, discountRate: 0.23 },
   { minMonths: 12, maxMonths: 12, discountRate: 0.25 },
 ];
-
-// ------------------------------------------------------------
-// PRIVATE — negotiated floor (Internal sales head reference)
-// ------------------------------------------------------------
-export const PRIVATE_NEGOTIATED_FLOOR_10BUS_2MONTH_30S = 30000;
-
-export function getNegotiationFloor(buses: number, months: number, videoDurationSeconds: number): number | null {
-  // Only defined for 10 buses, 2 months as per spec
-  if (buses === 10 && months === 2) {
-    const durMultiplier = getDurationMultiplier(videoDurationSeconds);
-    return Math.round(PRIVATE_NEGOTIATED_FLOOR_10BUS_2MONTH_30S * durMultiplier);
-  }
-  return null;
-}
 
 // ============================================================
 // HELPER: Duration multiplier
@@ -103,8 +90,8 @@ export interface PricingResult {
   videoDurationSeconds: number;
 
   // Pricing
-  standardPrice: number;           // undiscounted comparison price
-  packagePrice: number;            // final customer price (rounded)
+  standardPrice: number;           // undiscounted comparison price (75 * sec * buses * months)
+  packagePrice: number;            // final customer package price (rounded)
   savings: number;                 // standardPrice - packagePrice
   savingsPercentage: number;       // savings / standardPrice * 100
 
@@ -137,9 +124,9 @@ export function calculatePrice(
 
   const durationMultiplier = getDurationMultiplier(s);
 
-  // Standard undiscounted price
+  // Standard undiscounted price: 75 * videoDurationSeconds * numberOfBuses * numberOfMonths
   const standardPrice = Math.round(
-    STANDARD_PRICE_PER_BUS_PER_MONTH_30S * b * m * durationMultiplier
+    STANDARD_RATE_PER_SECOND * s * b * m
   );
 
   let packagePrice30s: number;
@@ -153,7 +140,7 @@ export function calculatePrice(
     packagePrice30s = TWO_MONTH_PACKAGE_PRICES[b] ?? (STANDARD_PRICE_PER_BUS_PER_MONTH_30S * b * 2);
     pricingMethod = '2month';
   } else {
-    // 3–12 months: use 1-month package × months × duration discount
+    // 3–12 months: use 1-month package × months × (1 - duration discount)
     const oneMonthBase30s = ONE_MONTH_PACKAGE_PRICES[b] ?? (STANDARD_PRICE_PER_BUS_PER_MONTH_30S * b);
     durationDiscountRate = getDurationDiscountRate(m);
     packagePrice30s = oneMonthBase30s * m * (1 - durationDiscountRate);

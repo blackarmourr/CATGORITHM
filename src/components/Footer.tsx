@@ -42,15 +42,15 @@ export default function Footer() {
             <ul className="space-y-3">
               <li className="flex items-center gap-2.5 text-white/50 text-sm">
                 <Phone size={14} className="text-accent flex-shrink-0" />
-                <a href="tel:+919876543210" className="hover:text-white/80 transition-colors">+91 98765 43210</a>
+                <a href="tel:+919746336175" className="hover:text-white/80 transition-colors">+91 97463 36175</a>
               </li>
               <li className="flex items-center gap-2.5 text-white/50 text-sm">
                 <Mail size={14} className="text-accent flex-shrink-0" />
-                <a href="mailto:hello@catgorithm.com" className="hover:text-white/80 transition-colors">hello@catgorithm.com</a>
+                <a href="mailto:teamcatgorithm@gmail.com" className="hover:text-white/80 transition-colors">teamcatgorithm@gmail.com</a>
               </li>
               <li className="flex items-start gap-2.5 text-white/50 text-sm">
                 <MapPin size={14} className="text-accent flex-shrink-0 mt-0.5" />
-                <span>Kollam, Kerala, India</span>
+                <span>Parayathumukku, Umayanalloor, Kollam, Keralam 691020</span>
               </li>
             </ul>
           </div>

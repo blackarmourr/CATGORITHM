@@ -25,6 +25,8 @@ export interface PricingSnapshot {
   pricePerBusCampaign: number;
   pricePerBusMonth: number;
   pricePerBusDay: number;
+  pricePerSecondBusMonth?: number;
+  pricePerSecondBusCampaign?: number;
 }
 
 export interface CustomerDetails {
@@ -77,6 +79,7 @@ export interface Fleet {
 }
 
 export interface PricingSettings {
+  standardRatePerSecond: number;
   standardRatePerBusPerMonth30s: number;
   maxBuses: number;
   maxMonths: number;

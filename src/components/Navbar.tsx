@@ -30,9 +30,14 @@ export default function Navbar() {
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group" aria-label="Catgorithm Home">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-accent-violet flex items-center justify-center flex-shrink-0">
-              <Bus size={16} className="text-white" />
-            </div>
+            <img
+              src="./catgorithm-logo.png"
+              alt="Catgorithm"
+              className="h-8 w-auto object-contain filter brightness-110"
+              onError={(e) => {
+                (e.currentTarget as HTMLElement).style.display = 'none';
+              }}
+            />
             <span className="text-white font-bold text-lg tracking-tight">
               Catgorithm
             </span>
