@@ -1,5 +1,5 @@
 // ============================================================
-// SHARED TYPES
+// SHARED TYPES — CATGORITHM BUS ADVERTISING PLATFORM
 // ============================================================
 
 export type EnquiryStatus =
@@ -10,6 +10,53 @@ export type EnquiryStatus =
   | 'Confirmed'
   | 'Rejected'
   | 'Completed';
+
+export type CampaignStatus = 'Scheduled' | 'Active' | 'Completed' | 'Archived';
+
+export interface CampaignTheme {
+  primaryColor: string;       // e.g. '#070B14' (midnight navy)
+  secondaryColor: string;     // e.g. '#0F172A'
+  accentColor: string;        // e.g. '#D4AF37' (champagne gold)
+  goldColor?: string;         // e.g. '#F3C669'
+  textColor: string;          // e.g. '#F8FAFC'
+  coverBadge?: string;        // e.g. 'SEASONAL SPOTLIGHT'
+  style: 'standard' | 'winter-spotlight' | 'custom';
+}
+
+export interface CampaignMessaging {
+  headline: string;           // 'WINTER SPOTLIGHT 2026–27'
+  subheadline: string;        // 'CATGORITHM PRESENTS'
+  tagline: string;            // 'Your Brand. The Season. The Spotlight.'
+  seasonalThemes?: string[];  // ['Black Friday', 'Christmas', 'New Year', 'End-of-Season Sales']
+  supportingCopy: string;     // 'Make your brand part of the season with Catgorithm\'s bus-screen advertising packages.'
+  additionalCopy?: string;    // 'One campaign. A season full of opportunities.'
+  offerTitle: string;         // 'Winter Spotlight Special Package'
+}
+
+export interface CampaignQuotationSettings {
+  enableSeasonalCover: boolean;
+  coverTitle: string;
+  quotationValidityDays: number;
+}
+
+export interface Campaign {
+  id: string;                 // 'winter-spotlight-2026' or 'standard'
+  slug: string;
+  name: string;               // 'Winter Spotlight 2026–27'
+  tagline: string;
+  description: string;
+  startDate: string;          // '2026-11-20'
+  endDate: string;            // '2027-01-20'
+  defaultBilledMonths: number;// 2
+  status: CampaignStatus;
+  theme: CampaignTheme;
+  messaging: CampaignMessaging;
+  quotationSettings: CampaignQuotationSettings;
+  isDefault?: boolean;
+  isArchived?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface PricingSnapshot {
   buses: number;
@@ -36,6 +83,7 @@ export interface CustomerDetails {
   email?: string;
   businessCategory?: string;
   campaignStartDate?: string;
+  campaignEndDate?: string;
   notes?: string;
 }
 
@@ -45,6 +93,8 @@ export interface Enquiry {
   customerDetails: CustomerDetails;
   pricingSnapshot: PricingSnapshot;
   quotationId?: string;
+  campaignId?: string;
+  campaignName?: string;
   adminNotes?: string;
   negotiatedPrice?: number;
   negotiationReason?: string;
@@ -57,6 +107,13 @@ export interface Quotation {
   enquiryId?: string;
   customerDetails: CustomerDetails;
   pricingSnapshot: PricingSnapshot;
+  campaignId?: string;
+  campaignName?: string;
+  campaignStartDate?: string;
+  campaignEndDate?: string;
+  billedMonths?: number;
+  campaignThemeSnapshot?: CampaignTheme;
+  campaignMessagingSnapshot?: CampaignMessaging;
   validUntil: string;
   createdAt: string;
   taxAmount?: number;
@@ -100,5 +157,7 @@ export interface CampaignConfig {
   buses: number;
   months: number;
   videoDurationSeconds: number;
-  startDate?: string;
+  campaignId: string;
+  startDate: string;
+  endDate: string;
 }

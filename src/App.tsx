@@ -3,6 +3,7 @@ import CalculatorPage from './pages/CalculatorPage'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminEnquiries from './pages/admin/AdminEnquiries'
+import AdminCampaigns from './pages/admin/AdminCampaigns'
 import AdminFleet from './pages/admin/AdminFleet'
 import AdminPricing from './pages/admin/AdminPricing'
 
@@ -12,12 +13,14 @@ export default function App() {
       {/* Primary Sales Calculator Pitch Page */}
       <Route path="/" element={<CalculatorPage />} />
       <Route path="/calculator" element={<Navigate to="/" replace />} />
+      <Route path="/campaigns" element={<Navigate to="/admin/campaigns" replace />} />
 
-      {/* Direct, frictionless access to Admin, Pipeline & Quotations (No Login Required) */}
+      {/* Direct, frictionless access to Admin, Pipeline, Quotations & Campaigns (No Login Required) */}
       <Route path="/admin/login" element={<Navigate to="/admin/enquiries" replace />} />
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />
         <Route path="enquiries" element={<AdminEnquiries />} />
+        <Route path="campaigns" element={<AdminCampaigns />} />
         <Route path="fleet" element={<AdminFleet />} />
         <Route path="pricing" element={<AdminPricing />} />
       </Route>

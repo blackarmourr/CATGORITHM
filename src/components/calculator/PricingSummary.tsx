@@ -10,7 +10,10 @@ import {
 export default function PricingSummary() {
   const pricing = useCalculatorStore((s) => s.pricing)
   const config = useCalculatorStore((s) => s.config)
+  const selectedCampaign = useCalculatorStore((s) => s.selectedCampaign)
   const [breakdownOpen, setBreakdownOpen] = useState(false)
+
+  const isWinterSpotlight = selectedCampaign?.theme?.style === 'winter-spotlight'
 
   const {
     standardPrice, packagePrice, savings, savingsPercentage,
@@ -23,19 +26,41 @@ export default function PricingSummary() {
 
   return (
     <div className="space-y-3">
-      {/* ── Main Hero Pitch Card (Deep Midnight Futuristic Aesthetic) ── */}
-      <div className="bg-[#080B12] text-white rounded-2xl p-5 shadow-xl relative overflow-hidden border border-gray-800/80">
+      {/* ── Main Hero Pitch Card (Deep Midnight Futuristic Aesthetic / Winter Spotlight) ── */}
+      <div
+        className={`text-white rounded-2xl p-5 shadow-xl relative overflow-hidden transition-all duration-300 border ${
+          isWinterSpotlight
+            ? 'bg-[#070B14] border-[#D4AF37]/50 shadow-[#D4AF37]/10'
+            : 'bg-[#080B12] border-gray-800/80 shadow-black/20'
+        }`}
+      >
         {/* Subtle radial glow */}
-        <div className="absolute top-0 right-0 w-44 h-44 bg-accent/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-44 h-44 bg-[#A0354E]/20 rounded-full blur-3xl pointer-events-none" />
+        {isWinterSpotlight ? (
+          <>
+            <div className="absolute top-0 right-0 w-48 h-48 bg-[#D4AF37]/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#1E293B]/60 rounded-full blur-3xl pointer-events-none" />
+          </>
+        ) : (
+          <>
+            <div className="absolute top-0 right-0 w-44 h-44 bg-accent/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-44 h-44 bg-[#A0354E]/20 rounded-full blur-3xl pointer-events-none" />
+          </>
+        )}
 
         <div className="relative z-10">
           {/* Header pill */}
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-accent/90 bg-accent/10 px-2.5 py-0.5 rounded-full border border-accent/20">
-              Live Campaign Price
+          <div className="flex flex-wrap items-center justify-between gap-1.5 mb-3">
+            <span
+              className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${
+                isWinterSpotlight
+                  ? 'text-[#F3C669] bg-[#D4AF37]/20 border-[#D4AF37]/40 shadow-xs'
+                  : 'text-accent/90 bg-accent/10 border-accent/20'
+              }`}
+            >
+              <Sparkles size={11} className={isWinterSpotlight ? 'text-[#F3C669]' : 'text-accent'} />
+              {isWinterSpotlight ? 'Winter Spotlight Special Package' : 'Live Campaign Price'}
             </span>
-            <span className="text-xs text-gray-400 font-medium">
+            <span className="text-xs text-gray-300 font-medium">
               {config.buses} {config.buses === 1 ? 'Bus' : 'Buses'} · {config.videoDurationSeconds}s · {config.months} {config.months === 1 ? 'Month' : 'Months'}
             </span>
           </div>

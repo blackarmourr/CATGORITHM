@@ -1,13 +1,14 @@
 import { Outlet, NavLink, Link } from 'react-router-dom'
 import {
   Bus, LayoutDashboard, Users,
-  Tag, ChevronRight, Calculator, ArrowLeft,
+  Tag, ChevronRight, Calculator, ArrowLeft, Sparkles,
 } from 'lucide-react'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const NAV_ITEMS = [
   { to: '/admin/enquiries', label: 'Pipeline & Quotes', icon: Users, exact: false },
+  { to: '/admin/campaigns', label: 'Campaigns', icon: Sparkles, exact: false },
   { to: '/admin', label: 'Revenue Dashboard', icon: LayoutDashboard, exact: true },
   { to: '/admin/fleet', label: 'Fleet Inventory', icon: Bus, exact: false },
   { to: '/admin/pricing', label: 'Pricing Rules', icon: Tag, exact: false },

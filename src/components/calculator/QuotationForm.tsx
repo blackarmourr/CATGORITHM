@@ -14,6 +14,7 @@ import { format, addDays } from 'date-fns'
 export default function QuotationForm() {
   const pricing = useCalculatorStore((s) => s.pricing)
   const config = useCalculatorStore((s) => s.config)
+  const selectedCampaign = useCalculatorStore((s) => s.selectedCampaign)
 
   const [clientName, setClientName] = useState('')
   const [clientPhone, setClientPhone] = useState('')
@@ -25,11 +26,11 @@ export default function QuotationForm() {
   // Construct crisp, professional WhatsApp quote text
   const quoteMessage = `*Catgorithm Bus Screen Advertising Quotation*
 📍 *Kollam Bus Fleet, Kerala*
-${clientName ? `Prepared for: *${clientName}*\n` : ''}
-*Campaign Configuration:*
+${clientName ? `Prepared for: *${clientName}*\n` : ''}*Campaign:* ${selectedCampaign?.name || 'Bus Advertising'}
+• Campaign Period: ${config.startDate ? format(new Date(config.startDate), 'dd MMM yyyy') : ''} – ${config.endDate ? format(new Date(config.endDate), 'dd MMM yyyy') : ''}
 • Fleet Size: ${config.buses} ${config.buses === 1 ? 'Bus' : 'Buses'}
 • Video Ad Duration: ${config.videoDurationSeconds} Seconds
-• Campaign Duration: ${config.months} ${config.months === 1 ? 'Month' : 'Months'}
+• Billed Duration: ${config.months} ${config.months === 1 ? 'Month' : 'Months'}
 
 *Commercials:*
 • Standard Rate: ${formatINR(pricing.standardPrice)}
@@ -76,7 +77,9 @@ _Offer valid for 30 days. Contact us to reserve your screen inventory._
           phone: clientPhone.trim() || '+91 -',
           email: '',
           businessCategory: 'Bus Screen Advertising',
-          notes: `Quote generated in field: ${config.buses} buses, ${config.videoDurationSeconds}s ad, ${config.months} months.`,
+          campaignStartDate: config.startDate,
+          campaignEndDate: config.endDate,
+          notes: `Quote generated in field: ${config.buses} buses, ${config.videoDurationSeconds}s ad, ${config.months} months. Campaign: ${selectedCampaign?.name}.`,
         },
         pricingSnapshot: {
           buses: pricing.buses,
@@ -93,6 +96,13 @@ _Offer valid for 30 days. Contact us to reserve your screen inventory._
           pricePerBusMonth: pricing.pricePerBusMonth,
           pricePerBusDay: pricing.pricePerBusDay,
         },
+        campaignId: selectedCampaign?.id,
+        campaignName: selectedCampaign?.name,
+        campaignStartDate: config.startDate,
+        campaignEndDate: config.endDate,
+        billedMonths: config.months,
+        campaignThemeSnapshot: selectedCampaign?.theme,
+        campaignMessagingSnapshot: selectedCampaign?.messaging,
         validUntil,
       })
       await generateQuotationPDF(quotation)
@@ -119,7 +129,9 @@ _Offer valid for 30 days. Contact us to reserve your screen inventory._
           businessName: clientName.trim() || 'Field Prospect',
           contactName: clientName.trim() || 'Prospect',
           phone: clientPhone.trim() || 'Not specified',
-          notes: `Logged via Sales Head Mobile App.`,
+          campaignStartDate: config.startDate,
+          campaignEndDate: config.endDate,
+          notes: `Logged via Sales App. Campaign: ${selectedCampaign?.name}.`,
         },
         pricingSnapshot: {
           buses: pricing.buses,
@@ -136,6 +148,8 @@ _Offer valid for 30 days. Contact us to reserve your screen inventory._
           pricePerBusMonth: pricing.pricePerBusMonth,
           pricePerBusDay: pricing.pricePerBusDay,
         },
+        campaignId: selectedCampaign?.id,
+        campaignName: selectedCampaign?.name,
       })
       toast.success('Deal logged to Admin Dashboard!')
       setShowSaveModal(false)
