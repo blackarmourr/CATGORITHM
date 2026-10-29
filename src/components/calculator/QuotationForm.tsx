@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useCalculatorStore } from '../../stores/calculatorStore'
 import { formatINR, formatINR2 } from '../../lib/pricingEngine'
 import { createEnquiry, createQuotation } from '../../lib/dataStore'
@@ -222,6 +223,17 @@ _Offer valid for 30 days. Contact us to reserve your screen inventory._
           <BookmarkCheck size={14} />
           Log as Pipeline Deal
         </button>
+      </div>
+
+      {/* Direct Link to View Pipeline & Past Sent Quotations */}
+      <div className="pt-2 text-center border-t border-gray-100">
+        <Link
+          to="/admin/enquiries"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-blue-700 transition-colors"
+        >
+          <span>View Pipeline & Past Sent Quotations</span>
+          <ExternalLink size={12} />
+        </Link>
       </div>
 
       {/* Save Lead Modal */}

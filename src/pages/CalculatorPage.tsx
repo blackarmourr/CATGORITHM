@@ -8,8 +8,7 @@ import QuotationForm from '../components/calculator/QuotationForm'
 import { useCalculatorStore } from '../stores/calculatorStore'
 import { formatINR } from '../lib/pricingEngine'
 import {
-  Bus, RotateCcw, ShieldCheck, Share2,
-  TrendingDown, Check, Smartphone
+  RotateCcw, Share2, FileText,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -46,7 +45,6 @@ Valid for 30 days. Contact: +91 97463 36175`
               alt="Catgorithm"
               className="h-8 w-auto object-contain max-w-[120px] filter brightness-110"
               onError={(e) => {
-                // fallback
                 (e.currentTarget as HTMLElement).style.display = 'none';
               }}
             />
@@ -61,8 +59,8 @@ Valid for 30 days. Contact: +91 97463 36175`
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="flex items-center gap-1.5">
+          {/* Quick Actions: Reset & Direct Pipeline Access (No Login) */}
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleReset}
@@ -73,11 +71,12 @@ Valid for 30 days. Contact: +91 97463 36175`
               <RotateCcw size={16} />
             </button>
             <Link
-              to="/admin"
-              className="p-2 text-gray-400 hover:text-white rounded-xl hover:bg-white/10 active:scale-95 transition-all flex items-center gap-1"
-              title="Admin Dashboard"
+              to="/admin/enquiries"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent hover:bg-blue-600 text-white rounded-xl text-xs font-bold active:scale-95 transition-all shadow-sm shadow-accent/25"
+              title="View Enquiries Pipeline & Sent Quotations"
             >
-              <ShieldCheck size={16} />
+              <FileText size={14} />
+              <span>Pipeline & Quotes</span>
             </Link>
           </div>
         </div>
