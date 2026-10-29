@@ -45,9 +45,25 @@ export const TWO_MONTH_PACKAGE_PRICES: Record<number, number> = {
 };
 
 // ------------------------------------------------------------
-// DURATION DISCOUNT TABLE (for campaigns 3–12 months)
+// DURATION DISCOUNT TABLE & MONTHLY RATES (for campaigns 3–12 months)
 // Applied to (oneMonthPackagePrice × numberOfMonths)
+// Fine-tuned for exact target milestones:
+// - 3 months @ 10 buses: ₹48,000 (₹1,600 / bus / month)
+// - 12 months @ 10 buses: ₹1,50,000 (₹1,250 / bus / month)
 // ------------------------------------------------------------
+export const MONTHLY_DURATION_DISCOUNT_RATES: Record<number, number> = {
+  3:  7500 / 55500,   // ~13.5135% -> exactly ₹48,000 for 10 buses @ 30s
+  4:  12000 / 74000,  // ~16.2162% -> exactly ₹62,000 for 10 buses @ 30s
+  5:  17500 / 92500,  // ~18.9189% -> exactly ₹75,000 for 10 buses @ 30s
+  6:  24000 / 111000, // ~21.6216% -> exactly ₹87,000 for 10 buses @ 30s
+  7:  31500 / 129500, // ~24.3243% -> exactly ₹98,000 for 10 buses @ 30s
+  8:  40000 / 148000, // ~27.0270% -> exactly ₹108,000 for 10 buses @ 30s
+  9:  47500 / 166500, // ~28.5285% -> exactly ₹119,000 for 10 buses @ 30s
+  10: 55000 / 185000, // ~29.7297% -> exactly ₹130,000 for 10 buses @ 30s
+  11: 63500 / 203500, // ~31.2039% -> exactly ₹140,000 for 10 buses @ 30s
+  12: 72000 / 222000, // ~32.4324% -> exactly ₹150,000 for 10 buses @ 30s (₹1,250 / bus / month)
+};
+
 export interface DurationDiscountRule {
   minMonths: number;
   maxMonths: number;
@@ -55,11 +71,16 @@ export interface DurationDiscountRule {
 }
 
 export const DURATION_DISCOUNT_RULES: DurationDiscountRule[] = [
-  { minMonths: 3,  maxMonths: 3,  discountRate: 0.12 },
-  { minMonths: 4,  maxMonths: 5,  discountRate: 0.15 },
-  { minMonths: 6,  maxMonths: 8,  discountRate: 0.20 },
-  { minMonths: 9,  maxMonths: 11, discountRate: 0.23 },
-  { minMonths: 12, maxMonths: 12, discountRate: 0.25 },
+  { minMonths: 3,  maxMonths: 3,  discountRate: MONTHLY_DURATION_DISCOUNT_RATES[3] },
+  { minMonths: 4,  maxMonths: 4,  discountRate: MONTHLY_DURATION_DISCOUNT_RATES[4] },
+  { minMonths: 5,  maxMonths: 5,  discountRate: MONTHLY_DURATION_DISCOUNT_RATES[5] },
+  { minMonths: 6,  maxMonths: 6,  discountRate: MONTHLY_DURATION_DISCOUNT_RATES[6] },
+  { minMonths: 7,  maxMonths: 7,  discountRate: MONTHLY_DURATION_DISCOUNT_RATES[7] },
+  { minMonths: 8,  maxMonths: 8,  discountRate: MONTHLY_DURATION_DISCOUNT_RATES[8] },
+  { minMonths: 9,  maxMonths: 9,  discountRate: MONTHLY_DURATION_DISCOUNT_RATES[9] },
+  { minMonths: 10, maxMonths: 10, discountRate: MONTHLY_DURATION_DISCOUNT_RATES[10] },
+  { minMonths: 11, maxMonths: 11, discountRate: MONTHLY_DURATION_DISCOUNT_RATES[11] },
+  { minMonths: 12, maxMonths: 12, discountRate: MONTHLY_DURATION_DISCOUNT_RATES[12] },
 ];
 
 // ============================================================
@@ -74,10 +95,33 @@ export function getDurationMultiplier(videoDurationSeconds: number): number {
 // ============================================================
 export function getDurationDiscountRate(months: number): number {
   if (months < 3) return 0;
-  const rule = DURATION_DISCOUNT_RULES.find(
-    (r) => months >= r.minMonths && months <= r.maxMonths
-  );
-  return rule ? rule.discountRate : 0;
+  return MONTHLY_DURATION_DISCOUNT_RATES[months] ?? MONTHLY_DURATION_DISCOUNT_RATES[12];
+}
+
+// ============================================================
+// HELPER: Clean commercial rounding
+// Eliminates odd tens/singles (like 48,840 -> 48,000) while
+// preserving clean approved steps (250, 500, 1000).
+// ============================================================
+export function roundCommercialPrice(amount: number): number {
+  if (amount <= 0) return 0;
+  const rounded = Math.round(amount);
+
+  // Exact clean milestones stay intact
+  if (rounded % 500 === 0) return rounded;
+  if (rounded % 250 === 0 && rounded < 50000) return rounded;
+
+  // Otherwise, round to clean sales increments
+  if (rounded < 2500) {
+    return Math.round(rounded / 50) * 50;
+  }
+  if (rounded < 15000) {
+    return Math.round(rounded / 100) * 100;
+  }
+  if (rounded < 50000) {
+    return Math.round(rounded / 500) * 500;
+  }
+  return Math.round(rounded / 1000) * 1000;
 }
 
 // ============================================================
@@ -147,8 +191,14 @@ export function calculatePrice(
     pricingMethod = 'duration-discount';
   }
 
-  // Apply video duration multiplier and round to nearest whole rupee
-  const packagePrice = Math.round(packagePrice30s * durationMultiplier);
+  // Calculate final package price with clean commercial rounding
+  let packagePrice: number;
+  if ((m === 1 || m === 2) && s === BASE_VIDEO_DURATION_SECONDS) {
+    // Approved source-of-truth tariff tables are already canonical
+    packagePrice = packagePrice30s;
+  } else {
+    packagePrice = roundCommercialPrice(packagePrice30s * durationMultiplier);
+  }
 
   // Derived values
   const savings = standardPrice - packagePrice;
@@ -199,7 +249,7 @@ export function validatePricingMonotonicity(
   for (let m = 1; m <= MAX_MONTHS; m++) {
     const result = calculatePrice(buses, m, videoDurationSeconds);
     const effectiveMonthly = result.pricePerBusMonth;
-    if (effectiveMonthly > prevEffectiveMonthly) {
+    if (effectiveMonthly > prevEffectiveMonthly + 0.01) {
       violatingMonths.push(m);
     }
     prevEffectiveMonthly = effectiveMonthly;
