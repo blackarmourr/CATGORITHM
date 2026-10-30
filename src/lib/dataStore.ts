@@ -284,18 +284,29 @@ export async function createQuotation(data: Omit<Quotation, 'id' | 'createdAt'>)
 
   // 2. Persist to Supabase asynchronously
   try {
-    const { error } = await supabase.from('quotations').insert({
+    // Pack all campaign metadata into customer_details JSONB so it safely persists
+    // even if dedicated columns have not been added to Supabase.
+    const enrichedCustomerDetails = {
+      ...quotation.customerDetails,
+      campaignId: quotation.campaignId,
+      campaignName: quotation.campaignName,
+      campaignStartDate: quotation.campaignStartDate,
+      campaignEndDate: quotation.campaignEndDate,
+      billedMonths: quotation.billedMonths,
+      campaignThemeSnapshot: quotation.campaignThemeSnapshot,
+      campaignMessagingSnapshot: quotation.campaignMessagingSnapshot,
+    };
+
+    const payload: Record<string, any> = {
       id: quotation.id,
-      customer_details: quotation.customerDetails,
+      customer_details: enrichedCustomerDetails,
       pricing_snapshot: quotation.pricingSnapshot,
-      campaign_id: quotation.campaignId,
-      campaign_name: quotation.campaignName,
-      campaign_start_date: quotation.campaignStartDate,
-      campaign_end_date: quotation.campaignEndDate,
-      billed_months: quotation.billedMonths,
       valid_until: quotation.validUntil,
       created_at: quotation.createdAt,
-    });
+    };
+
+    // If table has optional columns, Supabase will accept them if present
+    const { error } = await supabase.from('quotations').insert(payload);
     if (error) {
       console.warn('Supabase quotation sync notice (saved locally):', error.message);
     }
@@ -316,19 +327,23 @@ export async function getQuotations(): Promise<Quotation[]> {
       .order('created_at', { ascending: false });
 
     if (!error && Array.isArray(data) && data.length > 0) {
-      const remoteList: Quotation[] = data.map((row: any) => ({
-        id: row.id,
-        customerDetails: row.customer_details ?? row.customerDetails,
-        pricingSnapshot: row.pricing_snapshot ?? row.pricingSnapshot,
-        campaignId: row.campaign_id ?? row.campaignId,
-        campaignName: row.campaign_name ?? row.campaignName,
-        campaignStartDate: row.campaign_start_date ?? row.campaignStartDate,
-        campaignEndDate: row.campaign_end_date ?? row.campaignEndDate,
-        billedMonths: row.billed_months ?? row.billedMonths,
-        campaignThemeSnapshot: row.campaign_theme_snapshot ?? row.campaignThemeSnapshot,
-        validUntil: row.valid_until ?? row.validUntil,
-        createdAt: row.created_at ?? row.createdAt,
-      }));
+      const remoteList: Quotation[] = data.map((row: any) => {
+        const cd = row.customer_details ?? row.customerDetails ?? {};
+        return {
+          id: row.id,
+          customerDetails: cd,
+          pricingSnapshot: row.pricing_snapshot ?? row.pricingSnapshot,
+          campaignId: row.campaign_id ?? cd.campaignId,
+          campaignName: row.campaign_name ?? cd.campaignName,
+          campaignStartDate: row.campaign_start_date ?? cd.campaignStartDate,
+          campaignEndDate: row.campaign_end_date ?? cd.campaignEndDate,
+          billedMonths: row.billed_months ?? cd.billedMonths,
+          campaignThemeSnapshot: row.campaign_theme_snapshot ?? cd.campaignThemeSnapshot,
+          campaignMessagingSnapshot: row.campaign_messaging_snapshot ?? cd.campaignMessagingSnapshot,
+          validUntil: row.valid_until ?? row.validUntil,
+          createdAt: row.created_at ?? row.createdAt,
+        };
+      });
 
       const mergedMap = new Map<string, Quotation>();
       localList.forEach((q) => mergedMap.set(q.id, q));
@@ -382,16 +397,26 @@ export async function createEnquiry(data: Omit<Enquiry, 'id' | 'createdAt' | 'up
 
   // 2. Persist to Supabase asynchronously
   try {
-    const { error } = await supabase.from('enquiries').insert({
+    const enrichedCustomerDetails = {
+      ...enquiry.customerDetails,
+      campaignId: enquiry.campaignId,
+      campaignName: enquiry.campaignName,
+    };
+
+    const payload: Record<string, any> = {
       id: enquiry.id,
       status: enquiry.status,
-      customer_details: enquiry.customerDetails,
+      customer_details: enrichedCustomerDetails,
       pricing_snapshot: enquiry.pricingSnapshot,
-      campaign_id: enquiry.campaignId,
-      campaign_name: enquiry.campaignName,
+      quotation_id: enquiry.quotationId,
+      admin_notes: enquiry.adminNotes,
+      negotiated_price: enquiry.negotiatedPrice,
+      negotiation_reason: enquiry.negotiationReason,
       created_at: enquiry.createdAt,
       updated_at: enquiry.updatedAt,
-    });
+    };
+
+    const { error } = await supabase.from('enquiries').insert(payload);
     if (error) {
       console.warn('Supabase enquiry sync notice (saved locally):', error.message);
     }
@@ -412,20 +437,23 @@ export async function getEnquiries(): Promise<Enquiry[]> {
       .order('created_at', { ascending: false });
 
     if (!error && Array.isArray(data) && data.length > 0) {
-      const remoteList: Enquiry[] = data.map((row: any) => ({
-        id: row.id,
-        status: row.status,
-        customerDetails: row.customer_details ?? row.customerDetails,
-        pricingSnapshot: row.pricing_snapshot ?? row.pricingSnapshot,
-        quotationId: row.quotation_id ?? row.quotationId,
-        campaignId: row.campaign_id ?? row.campaignId,
-        campaignName: row.campaign_name ?? row.campaignName,
-        adminNotes: row.admin_notes ?? row.adminNotes,
-        negotiatedPrice: row.negotiated_price ?? row.negotiatedPrice,
-        negotiationReason: row.negotiation_reason ?? row.negotiationReason,
-        createdAt: row.created_at ?? row.createdAt,
-        updatedAt: row.updated_at ?? row.updatedAt,
-      }));
+      const remoteList: Enquiry[] = data.map((row: any) => {
+        const cd = row.customer_details ?? row.customerDetails ?? {};
+        return {
+          id: row.id,
+          status: row.status,
+          customerDetails: cd,
+          pricingSnapshot: row.pricing_snapshot ?? row.pricingSnapshot,
+          quotationId: row.quotation_id ?? row.quotationId,
+          campaignId: row.campaign_id ?? cd.campaignId,
+          campaignName: row.campaign_name ?? cd.campaignName,
+          adminNotes: row.admin_notes ?? row.adminNotes,
+          negotiatedPrice: row.negotiated_price ?? row.negotiatedPrice,
+          negotiationReason: row.negotiation_reason ?? row.negotiationReason,
+          createdAt: row.created_at ?? row.createdAt,
+          updatedAt: row.updated_at ?? row.updatedAt,
+        };
+      });
 
       const mergedMap = new Map<string, Enquiry>();
       localList.forEach((e) => mergedMap.set(e.id, e));
