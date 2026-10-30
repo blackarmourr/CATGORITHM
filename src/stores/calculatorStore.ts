@@ -30,9 +30,9 @@ interface CalculatorStore {
 }
 
 const defaultCampaigns = getDefaultCampaigns()
-const initialCampaign = defaultCampaigns[0] // Winter Spotlight 2026–27
-const initialMonths = initialCampaign.defaultBilledMonths || 2
-const initialStartDate = initialCampaign.startDate || new Date().toISOString().split('T')[0]
+const initialCampaign = defaultCampaigns[0] // Standard Campaign
+const initialMonths = initialCampaign?.defaultBilledMonths || 1
+const initialStartDate = initialCampaign?.startDate || new Date().toISOString().split('T')[0]
 const initialEndDate = computeAutoEndDate(initialStartDate, initialMonths)
 
 const DEFAULT_CONFIG: CampaignConfig = {

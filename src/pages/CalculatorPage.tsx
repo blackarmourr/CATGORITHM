@@ -9,7 +9,7 @@ import QuotationForm from '../components/calculator/QuotationForm'
 import { useCalculatorStore } from '../stores/calculatorStore'
 import { formatINR } from '../lib/pricingEngine'
 import {
-  RotateCcw, Share2, FileText, Users, Sparkles
+  RotateCcw, Share2, FileText, Users, Bus, Layers
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -39,10 +39,9 @@ Valid for 30 days. Contact: +91 97463 36175`
   return (
     <div className="min-h-screen bg-[#F5F7FA] text-gray-900 pb-24 sm:pb-12">
       {/* ── PART 1: Clean, Uncluttered Mobile-First Header ── */}
-      {/* Logo image and "Sales Head" badge removed as specified */}
       <header className="sticky top-0 z-40 bg-[#080B12]/95 backdrop-blur-md border-b border-gray-800 text-white shadow-sm">
         <div className="max-w-3xl mx-auto px-2.5 sm:px-4 h-14 flex items-center justify-between gap-1.5">
-          {/* Clean Brand Name (No logo image, no designation badges) */}
+          {/* Clean Brand Name */}
           <Link
             to="/"
             className="flex items-center gap-1.5 py-1 text-white hover:text-gray-200 transition-colors flex-shrink-0"
@@ -51,7 +50,7 @@ Valid for 30 days. Contact: +91 97463 36175`
             <span className="font-extrabold text-base tracking-tight text-white">Catgorithm</span>
           </Link>
 
-          {/* ── Equal-Height, Perfectly Aligned Navigation Buttons ── */}
+          {/* ── Top Navigation Links ── */}
           <nav className="flex items-center gap-1 sm:gap-2">
             {/* Pipeline Button */}
             <Link
@@ -73,14 +72,24 @@ Valid for 30 days. Contact: +91 97463 36175`
               <span>Quotes</span>
             </Link>
 
-            {/* Campaigns Button */}
+            {/* Fleet Button (Desktop) */}
+            <Link
+              to="/admin/fleet"
+              className="hidden sm:flex h-9 px-2.5 sm:px-3 text-xs font-semibold rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white items-center gap-1.5 transition-all"
+              title="Fleet Inventory & Routes"
+            >
+              <Bus size={13} className="text-emerald-400" />
+              <span>Fleet</span>
+            </Link>
+
+            {/* Campaigns Button (Desktop) */}
             <Link
               to="/admin/campaigns"
-              className="h-9 px-2 sm:px-3 text-xs font-semibold rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center gap-1.5 transition-all"
+              className="hidden sm:flex h-9 px-2 sm:px-3 text-xs font-semibold rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white items-center gap-1.5 transition-all"
               title="Campaign Management"
             >
-              <Sparkles size={13} className="text-[#F3C669]" />
-              <span className="hidden xs:inline sm:inline">Campaigns</span>
+              <Layers size={13} className="text-purple-400" />
+              <span>Campaigns</span>
             </Link>
 
             {/* Quick Reset Button (Consistent h-9 height) */}
@@ -88,7 +97,7 @@ Valid for 30 days. Contact: +91 97463 36175`
               type="button"
               onClick={handleReset}
               className="h-9 w-9 text-gray-400 hover:text-white rounded-xl hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center flex-shrink-0"
-              title="Reset configuration"
+              title="Reset calculator"
               aria-label="Reset calculator"
             >
               <RotateCcw size={14} />
@@ -96,6 +105,40 @@ Valid for 30 days. Contact: +91 97463 36175`
           </nav>
         </div>
       </header>
+
+      {/* ── Mobile-Only Sticky Quick Navigation Bar ── */}
+      <div className="bg-white border-b border-gray-200 px-2.5 py-1.5 sm:hidden sticky top-14 z-30 shadow-xs">
+        <div className="flex items-center justify-between gap-1 text-[11px] font-bold">
+          <Link
+            to="/admin/enquiries?tab=enquiries"
+            className="flex-1 py-1.5 px-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-800 flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
+          >
+            <Users size={12} className="text-accent" />
+            <span>Pipeline</span>
+          </Link>
+          <Link
+            to="/admin/enquiries?tab=quotations"
+            className="flex-1 py-1.5 px-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-800 flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
+          >
+            <FileText size={12} className="text-amber-500" />
+            <span>Quotes</span>
+          </Link>
+          <Link
+            to="/admin/fleet"
+            className="flex-1 py-1.5 px-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-800 flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
+          >
+            <Bus size={12} className="text-emerald-600" />
+            <span>Fleet</span>
+          </Link>
+          <Link
+            to="/admin/campaigns"
+            className="flex-1 py-1.5 px-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-800 flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
+          >
+            <Layers size={12} className="text-purple-600" />
+            <span>Campaigns</span>
+          </Link>
+        </div>
+      </div>
 
       {/* ── Main Mobile-Optimized Body ── */}
       <main className="max-w-2xl mx-auto px-3.5 sm:px-4 pt-3.5 space-y-3.5">

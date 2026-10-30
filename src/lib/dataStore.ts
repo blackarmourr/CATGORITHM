@@ -4,7 +4,7 @@
 // quotations, enquiries, and campaigns are never lost.
 // ============================================================
 
-import type { Enquiry, Quotation, PricingSettings, Fleet, Campaign, CampaignStatus } from '../types';
+import type { Enquiry, Quotation, PricingSettings, Fleet, BusRecord, Campaign, CampaignStatus } from '../types';
 import { supabase } from './supabase';
 
 const LOCAL_ENQUIRIES_KEY = 'catgorithm_enquiries_v2';
@@ -64,44 +64,6 @@ export function computeCampaignStatus(startDate: string, endDate: string, isArch
 export function getDefaultCampaigns(): Campaign[] {
   return [
     {
-      id: 'winter-spotlight-2026',
-      slug: 'winter-spotlight-2026',
-      name: 'Winter Spotlight 2026–27',
-      tagline: 'Your Brand. The Season. The Spotlight.',
-      description: 'A seasonal advertising campaign by Catgorithm, designed to help businesses promote their brands and seasonal offers during the festive and year-end shopping period.',
-      startDate: '2026-11-20',
-      endDate: '2027-01-20',
-      defaultBilledMonths: 2,
-      status: computeCampaignStatus('2026-11-20', '2027-01-20'),
-      theme: {
-        primaryColor: '#070B14',
-        secondaryColor: '#0F172A',
-        accentColor: '#D4AF37',
-        goldColor: '#F3C669',
-        textColor: '#F8FAFC',
-        coverBadge: 'SEASONAL SPOTLIGHT',
-        style: 'winter-spotlight',
-      },
-      messaging: {
-        headline: 'WINTER SPOTLIGHT 2026–27',
-        subheadline: 'CATGORITHM PRESENTS',
-        tagline: 'Your Brand. The Season. The Spotlight.',
-        seasonalThemes: ['Black Friday', 'Christmas', 'New Year', 'End-of-Season Sales'],
-        supportingCopy: "Make your brand part of the season with Catgorithm's bus-screen advertising packages.",
-        additionalCopy: 'One campaign. A season full of opportunities.',
-        offerTitle: 'Winter Spotlight Special Package',
-      },
-      quotationSettings: {
-        enableSeasonalCover: true,
-        coverTitle: 'Winter Spotlight 2026–27',
-        quotationValidityDays: 30,
-      },
-      isDefault: false,
-      isArchived: false,
-      createdAt: '2026-10-01T00:00:00.000Z',
-      updatedAt: '2026-10-29T00:00:00.000Z',
-    },
-    {
       id: 'standard',
       slug: 'standard',
       name: 'Standard Campaign',
@@ -135,7 +97,7 @@ export function getDefaultCampaigns(): Campaign[] {
       isDefault: true,
       isArchived: false,
       createdAt: '2026-01-01T00:00:00.000Z',
-      updatedAt: '2026-10-29T00:00:00.000Z',
+      updatedAt: '2026-10-30T00:00:00.000Z',
     },
   ];
 }
@@ -227,6 +189,13 @@ export async function archiveCampaign(id: string): Promise<Campaign> {
   return updateCampaign(id, { isArchived: true });
 }
 
+export async function deleteCampaign(id: string): Promise<boolean> {
+  const campaigns = await getCampaigns();
+  const updated = campaigns.filter((c) => c.id !== id);
+  saveLocal(LOCAL_CAMPAIGNS_KEY, updated);
+  return true;
+}
+
 export async function getCampaignQuotationsCount(campaignId: string): Promise<number> {
   const quotes = await getQuotations();
   return quotes.filter((q) => q.campaignId === campaignId).length;
@@ -254,16 +223,122 @@ export function getDefaultPricingSettings(): PricingSettings {
 }
 
 export function getDefaultFleet(): Fleet {
-  return {
-    totalBuses: 10,
-    buses: Array.from({ length: 10 }, (_, i) => ({
-      id: `BUS-${String(i + 1).padStart(3, '0')}`,
-      busNumber: i + 1,
-      internalName: `Bus ${i + 1}`,
-      route: '',
+  const defaultBuses: BusRecord[] = [
+    {
+      id: 'BUS-001',
+      busNumber: 'KL-02-AB-1011',
+      busName: 'St. Antony Travels',
+      routeStart: 'Kollam KSRTC',
+      routeEnd: 'Karunagappally',
+      intermediateStops: 'Chinnakada, Ramankulangara, Neendakara, Chavara, Titanium, Sankaramangalam',
+      route: 'Kollam ➔ Karunagappally',
       available: true,
-      notes: '',
-    })),
+      notes: 'Heavy morning/evening coastal commuter belt',
+    },
+    {
+      id: 'BUS-002',
+      busNumber: 'KL-02-AC-2022',
+      busName: 'Kollam Express',
+      routeStart: 'Kollam KSRTC',
+      routeEnd: 'Kottarakkara',
+      intermediateStops: 'Kilikolloor, Chandanathope, Kundara, Ezhukone, Pulamon',
+      route: 'Kollam ➔ Kottarakkara',
+      available: true,
+      notes: 'Key student & government office route',
+    },
+    {
+      id: 'BUS-003',
+      busNumber: 'KL-02-AD-3033',
+      busName: 'Royal Star',
+      routeStart: 'Kollam Chinnakada',
+      routeEnd: 'Paravoor',
+      intermediateStops: 'Polayathodu, Eravipuram, Mayyanad, Kottiyam, Chathannoor',
+      route: 'Kollam ➔ Paravoor',
+      available: true,
+      notes: 'High visibility south district corridor',
+    },
+    {
+      id: 'BUS-004',
+      busNumber: 'KL-02-AE-4044',
+      busName: 'Prince Super',
+      routeStart: 'Kollam Bus Stand',
+      routeEnd: 'Adoor',
+      intermediateStops: 'Kundara, Bharanikkavu, Sasthamcotta, Kadampanad',
+      route: 'Kollam ➔ Adoor',
+      available: true,
+      notes: 'Inter-district commercial commuter corridor',
+    },
+    {
+      id: 'BUS-005',
+      busNumber: 'KL-02-AF-5055',
+      busName: 'Holy Grace',
+      routeStart: 'Kollam Chinnakada',
+      routeEnd: 'Oachira',
+      intermediateStops: 'Neendakara, Chavara, Karunagappally, Vavvakkavu',
+      route: 'Kollam ➔ Oachira',
+      available: true,
+      notes: 'NH 66 trunk route passing major markets',
+    },
+    {
+      id: 'BUS-006',
+      busNumber: 'KL-02-AG-6066',
+      busName: 'City Rider',
+      routeStart: 'Kollam Port',
+      routeEnd: 'Kottiyam Junction',
+      intermediateStops: 'Asramam, Kadappakada, Polayathodu, Thattamala, Umayanalloor',
+      route: 'Kollam ➔ Kottiyam',
+      available: true,
+      notes: 'Prime city center & shopping hub connection',
+    },
+    {
+      id: 'BUS-007',
+      busNumber: 'KL-02-AH-7077',
+      busName: 'Golden Arrow',
+      routeStart: 'Kollam KSRTC',
+      routeEnd: 'Punalur',
+      intermediateStops: 'Kundara, Kottarakkara, Valakom, Anchal',
+      route: 'Kollam ➔ Punalur',
+      available: true,
+      notes: 'Long-distance eastern highway commuter run',
+    },
+    {
+      id: 'BUS-008',
+      busNumber: 'KL-02-AJ-8088',
+      busName: 'Silver Star',
+      routeStart: 'Kollam Chinnakada',
+      routeEnd: 'Kayamkulam',
+      intermediateStops: 'Chavara, Karunagappally, Oachira, Krishnapuram',
+      route: 'Kollam ➔ Kayamkulam',
+      available: true,
+      notes: 'Northbound commercial transit link',
+    },
+    {
+      id: 'BUS-009',
+      busNumber: 'KL-02-AK-9099',
+      busName: 'Catgorithm Shuttle',
+      routeStart: 'Kollam Beach',
+      routeEnd: 'Anchalummoodu',
+      intermediateStops: 'Collectorate, Cutcherry, Thevally, Kadavoor, Perumon',
+      route: 'Kollam ➔ Anchalummoodu',
+      available: true,
+      notes: 'Dense college and residential route',
+    },
+    {
+      id: 'BUS-010',
+      busNumber: 'KL-02-AL-1010',
+      busName: 'Venture Express',
+      routeStart: 'Kollam Chinnakada',
+      routeEnd: 'Ayur',
+      intermediateStops: 'Kottiyam, Chathannoor, Parippally, Nilamel',
+      route: 'Kollam ➔ Ayur',
+      available: true,
+      notes: 'Southern MC Road feeder route',
+    },
+  ];
+
+  return {
+    totalBuses: defaultBuses.length,
+    buses: defaultBuses,
   };
 }
 

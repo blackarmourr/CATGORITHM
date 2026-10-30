@@ -8,7 +8,7 @@ import { Badge, EmptyState } from '../../components/ui'
 import {
   Users, Search, RefreshCw, ChevronDown, X, FileText, Download,
   Phone, MessageSquare, ArrowLeft, Filter, Sparkles, Calendar,
-  TrendingUp, CheckCircle, Clock, Tag, Trash2
+  TrendingUp, CheckCircle, Clock, Tag, Trash2, Bus
 } from 'lucide-react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -183,6 +183,57 @@ export default function AdminEnquiries() {
 
   return (
     <div className="space-y-4 max-w-7xl mx-auto pb-12">
+      {/* ── Mobile-First Quick Nav Bar ── */}
+      <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 border-b border-gray-200 text-xs">
+        <div className="flex items-center gap-1.5 flex-nowrap">
+          <Link
+            to="/"
+            className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap"
+          >
+            <ArrowLeft size={13} />
+            <span>Calculator</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => handleTabChange('enquiries')}
+            className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 whitespace-nowrap transition-colors ${
+              activeTab === 'enquiries'
+                ? 'bg-accent text-white shadow-xs'
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold'
+            }`}
+          >
+            <Users size={13} />
+            <span>Pipeline ({enquiries.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTabChange('quotations')}
+            className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 whitespace-nowrap transition-colors ${
+              activeTab === 'quotations'
+                ? 'bg-accent text-white shadow-xs'
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold'
+            }`}
+          >
+            <FileText size={13} />
+            <span>Quotes ({quotations.length})</span>
+          </button>
+          <Link
+            to="/admin/fleet"
+            className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap"
+          >
+            <Bus size={13} className="text-emerald-600" />
+            <span>Fleet Inventory</span>
+          </Link>
+          <Link
+            to="/admin/campaigns"
+            className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap"
+          >
+            <Tag size={13} className="text-purple-600" />
+            <span>Campaigns</span>
+          </Link>
+        </div>
+      </div>
+
       {/* ── Page Header (Mobile-Optimized) ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>

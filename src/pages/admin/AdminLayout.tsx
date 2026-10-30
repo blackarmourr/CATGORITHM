@@ -1,21 +1,23 @@
-import { Outlet, NavLink, Link } from 'react-router-dom'
+import { Outlet, NavLink, Link, useLocation } from 'react-router-dom'
 import {
   Bus, LayoutDashboard, Users,
-  Tag, ChevronRight, Calculator, ArrowLeft, Sparkles,
+  Tag, ChevronRight, Calculator, ArrowLeft, Layers, FileText
 } from 'lucide-react'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const NAV_ITEMS = [
-  { to: '/admin/enquiries', label: 'Pipeline & Quotes', icon: Users, exact: false },
-  { to: '/admin/campaigns', label: 'Campaigns', icon: Sparkles, exact: false },
+  { to: '/admin/enquiries?tab=enquiries', label: 'Pipeline Leads', icon: Users, exact: false },
+  { to: '/admin/enquiries?tab=quotations', label: 'Sent Quotations', icon: FileText, exact: false },
+  { to: '/admin/fleet', label: 'Fleet & Routes', icon: Bus, exact: false },
+  { to: '/admin/campaigns', label: 'Campaigns', icon: Layers, exact: false },
   { to: '/admin', label: 'Revenue Dashboard', icon: LayoutDashboard, exact: true },
-  { to: '/admin/fleet', label: 'Fleet Inventory', icon: Bus, exact: false },
   { to: '/admin/pricing', label: 'Pricing Rules', icon: Tag, exact: false },
 ]
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const location = useLocation()
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -146,9 +148,67 @@ export default function AdminLayout() {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 sm:p-6">
+        <main className="flex-1 p-3 sm:p-6 pb-20 lg:pb-6">
           <Outlet />
         </main>
+
+        {/* ── Mobile Bottom Navigation Bar (Persistent 1-Tap Access) ── */}
+        <nav
+          aria-label="Mobile Navigation"
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 px-1 py-1.5 shadow-lg flex items-center justify-around text-[10px] font-bold"
+        >
+          <Link
+            to="/"
+            className="flex flex-col items-center gap-0.5 text-gray-500 hover:text-accent p-1"
+          >
+            <Calculator size={18} />
+            <span>Calculator</span>
+          </Link>
+
+          <Link
+            to="/admin/enquiries?tab=enquiries"
+            className={`flex flex-col items-center gap-0.5 p-1 ${
+              location.pathname === '/admin/enquiries' && location.search.includes('tab=enquiries')
+                ? 'text-accent'
+                : 'text-gray-500 hover:text-accent'
+            }`}
+          >
+            <Users size={18} />
+            <span>Pipeline</span>
+          </Link>
+
+          <Link
+            to="/admin/enquiries?tab=quotations"
+            className={`flex flex-col items-center gap-0.5 p-1 ${
+              location.pathname === '/admin/enquiries' && location.search.includes('tab=quotations')
+                ? 'text-amber-600'
+                : 'text-gray-500 hover:text-accent'
+            }`}
+          >
+            <FileText size={18} />
+            <span>Quotes</span>
+          </Link>
+
+          <Link
+            to="/admin/fleet"
+            className={`flex flex-col items-center gap-0.5 p-1 ${
+              location.pathname === '/admin/fleet' ? 'text-emerald-600' : 'text-gray-500 hover:text-accent'
+            }`}
+          >
+            <Bus size={18} />
+            <span>Fleet</span>
+          </Link>
+
+          <Link
+            to="/admin/campaigns"
+            className={`flex flex-col items-center gap-0.5 p-1 ${
+              location.pathname === '/admin/campaigns' ? 'text-purple-600' : 'text-gray-500 hover:text-accent'
+            }`}
+          >
+            <Layers size={18} />
+            <span>Campaigns</span>
+          </Link>
+        </nav>
       </div>
     </div>
   )

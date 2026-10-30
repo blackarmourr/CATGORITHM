@@ -123,11 +123,15 @@ export interface Quotation {
 
 export interface BusRecord {
   id: string;
-  busNumber: number;
-  internalName: string;
-  route: string;
+  busNumber: string;        // Registration / Bus Plate No: e.g. 'KL-02-AB-1234'
+  busName: string;          // Bus Name: e.g. 'Royal Travels'
+  routeStart: string;       // Route origin / start: e.g. 'Kollam KSRTC'
+  routeEnd: string;         // Route destination / end: e.g. 'Karunagappally'
+  intermediateStops: string;// Major intermediate stops: e.g. 'Chavara, Neendakara, Titanium'
+  route?: string;           // Formatted summary route: e.g. 'Kollam ➔ Karunagappally'
+  internalName?: string;    // Backward compatibility
   available: boolean;
-  notes: string;
+  notes?: string;
 }
 
 export interface Fleet {
