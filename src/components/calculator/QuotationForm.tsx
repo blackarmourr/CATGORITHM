@@ -4,6 +4,7 @@ import { useCalculatorStore } from '../../stores/calculatorStore'
 import { formatINR, formatINR2 } from '../../lib/pricingEngine'
 import { createEnquiry, createQuotation } from '../../lib/dataStore'
 import { generateQuotationPDF } from '../../lib/pdfGenerator'
+import type { EnquiryStatus } from '../../types'
 import {
   Share2, FileDown, BookmarkCheck, Copy, Check,
   User, Phone, Building2, ExternalLink, Sparkles
@@ -18,6 +19,7 @@ export default function QuotationForm() {
 
   const [clientName, setClientName] = useState('')
   const [clientPhone, setClientPhone] = useState('')
+  const [dealStatus, setDealStatus] = useState<EnquiryStatus>('Quotation Sent')
   const [copied, setCopied] = useState(false)
   const [savingLead, setSavingLead] = useState(false)
   const [generatingPDF, setGeneratingPDF] = useState(false)
@@ -125,6 +127,7 @@ _Offer valid for 30 days. Contact us to reserve your screen inventory._
     setSavingLead(true)
     try {
       await createEnquiry({
+        status: dealStatus,
         customerDetails: {
           businessName: clientName.trim() || 'Field Prospect',
           contactName: clientName.trim() || 'Prospect',
@@ -151,7 +154,7 @@ _Offer valid for 30 days. Contact us to reserve your screen inventory._
         campaignId: selectedCampaign?.id,
         campaignName: selectedCampaign?.name,
       })
-      toast.success('Deal logged to Admin Dashboard!')
+      toast.success(`Deal logged as "${dealStatus}" to Pipeline!`)
       setShowSaveModal(false)
     } catch {
       toast.error('Failed to save lead')
@@ -283,6 +286,29 @@ _Offer valid for 30 days. Contact us to reserve your screen inventory._
                   onChange={(e) => setClientPhone(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-gray-300 focus:outline-none focus:border-accent"
                 />
+              </div>
+
+              {/* Deal Status Selection */}
+              <div>
+                <label className="text-[11px] font-bold text-gray-700 block mb-1.5">
+                  Pipeline Deal Status
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                  {(['New', 'Contacted', 'Quotation Sent', 'Negotiation', 'Confirmed'] as EnquiryStatus[]).map((st) => (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => setDealStatus(st)}
+                      className={`px-2 py-1.5 text-[11px] font-bold rounded-xl border text-center transition-all ${
+                        dealStatus === st
+                          ? 'bg-accent text-white border-accent shadow-xs'
+                          : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200'
+                      }`}
+                    >
+                      {st}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="bg-blue-50 p-2.5 rounded-xl text-xs space-y-1">
                 <div className="flex justify-between text-gray-600">

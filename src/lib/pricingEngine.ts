@@ -4,16 +4,21 @@
 // in UI components. Always import from this module.
 // ============================================================
 
-export const STANDARD_RATE_PER_SECOND = 75; // ₹75 per second, per bus, per month
+export const STANDARD_BASE_PRICE_30S = 2500; // ₹2,500 base standard price for 30s ad per bus per month
 export const BASE_VIDEO_DURATION_SECONDS = 30;
-export const STANDARD_PRICE_PER_BUS_PER_MONTH_30S = STANDARD_RATE_PER_SECOND * BASE_VIDEO_DURATION_SECONDS; // ₹2,250
+export const STANDARD_RATE_PER_SECOND = STANDARD_BASE_PRICE_30S / BASE_VIDEO_DURATION_SECONDS; // ₹83.3333... per second
+export const STANDARD_PRICE_PER_BUS_PER_MONTH_30S = STANDARD_BASE_PRICE_30S; // ₹2,500
 export const MAX_BUSES = 10;
 export const MAX_MONTHS = 12;
 export const PRICING_DAYS_PER_MONTH = 30;
 
 // ------------------------------------------------------------
 // ONE-MONTH APPROVED PACKAGE TARIFF (total for all buses, 30s ad)
-// These are the approved source-of-truth values.
+// Standard reference: ₹2,500 / bus / month (₹25,000 for 10 buses)
+// Discounted package prices:
+// 1 bus:  ₹2,250 (Save ₹250)
+// 2 buses: ₹4,350 (Save ₹650)
+// 10 buses: ₹20,000 (Save ₹5,000)
 // ------------------------------------------------------------
 export const ONE_MONTH_PACKAGE_PRICES: Record<number, number> = {
   1:  2250,
@@ -23,13 +28,15 @@ export const ONE_MONTH_PACKAGE_PRICES: Record<number, number> = {
   5:  10500,
   6:  12500,
   7:  14500,
-  8:  16000,
-  9:  17250,
-  10: 18500,
+  8:  16500,
+  9:  18250,
+  10: 20000,
 };
 
 // ------------------------------------------------------------
 // TWO-MONTH APPROVED PACKAGE TARIFF (total for all buses, 30s ad)
+// Standard reference: ₹5,000 / bus / 2 months (₹50,000 for 10 buses)
+// 10 buses: ₹35,000 (Save ₹15,000, 30% OFF)
 // ------------------------------------------------------------
 export const TWO_MONTH_PACKAGE_PRICES: Record<number, number> = {
   1:  4250,
@@ -45,41 +52,24 @@ export const TWO_MONTH_PACKAGE_PRICES: Record<number, number> = {
 };
 
 // ------------------------------------------------------------
-// ------------------------------------------------------------
 // DURATION DISCOUNT TABLE & MONTHLY RATES (for campaigns 3–12 months)
-// Progression rule:
-// Starting from 2 months @ ₹1,750 per bus per month,
-// reduces by ₹25 per bus per month for each additional month:
-// Month 2:  ₹1,750 / bus / month (₹35,000 for 10 buses @ 30s)
-// Month 3:  ₹1,725 / bus / month (₹51,750 for 10 buses @ 30s)
-// Month 4:  ₹1,700 / bus / month (₹68,000 for 10 buses @ 30s)
-// Month 5:  ₹1,675 / bus / month (₹83,750 for 10 buses @ 30s)
-// Month 6:  ₹1,650 / bus / month (₹99,000 for 10 buses @ 30s)
-// Month 7:  ₹1,625 / bus / month (₹113,750 for 10 buses @ 30s)
-// Month 8:  ₹1,600 / bus / month (₹128,000 for 10 buses @ 30s)
-// Month 9:  ₹1,575 / bus / month (₹141,750 for 10 buses @ 30s)
-// Month 10: ₹1,550 / bus / month (₹155,000 for 10 buses @ 30s)
-// Month 11: ₹1,525 / bus / month (₹167,750 for 10 buses @ 30s)
-// Month 12: ₹1,500 / bus / month (₹180,000 for 10 buses @ 30s)
-// Rate locks at ₹1,500 minimum (never reduces below ₹1,500).
+// Applied to (oneMonthPackagePrice × numberOfMonths):
+// - 3 months @ 10 buses: ₹54,000 (Standard ₹75,000, Save ₹21,000, 28% OFF)
+// - 4 months @ 10 buses: ₹70,000 (Standard ₹1,00,000, Save ₹30,000, 30% OFF)
+// - 6 months @ 10 buses: ₹1,05,000 (Standard ₹1,50,000, Save ₹45,000, 30% OFF)
+// - 12 months @ 10 buses: ₹2,10,000 (Standard ₹3,00,000, Save ₹90,000, 30% OFF)
 // ------------------------------------------------------------
-export function getMonthlyRatePerBus10(months: number): number {
-  if (months <= 1) return 1850;
-  if (months === 2) return 1750;
-  return Math.max(1500, 1750 - (months - 2) * 25);
-}
-
 export const MONTHLY_DURATION_DISCOUNT_RATES: Record<number, number> = {
-  3:  (1850 - 1725) / 1850, // 125 / 1850 -> ₹1,725 / bus / mo (₹51,750 for 10 buses @ 30s)
-  4:  (1850 - 1700) / 1850, // 150 / 1850 -> ₹1,700 / bus / mo (₹68,000 for 10 buses @ 30s)
-  5:  (1850 - 1675) / 1850, // 175 / 1850 -> ₹1,675 / bus / mo (₹83,750 for 10 buses @ 30s)
-  6:  (1850 - 1650) / 1850, // 200 / 1850 -> ₹1,650 / bus / mo (₹99,000 for 10 buses @ 30s)
-  7:  (1850 - 1625) / 1850, // 225 / 1850 -> ₹1,625 / bus / mo (₹113,750 for 10 buses @ 30s)
-  8:  (1850 - 1600) / 1850, // 250 / 1850 -> ₹1,600 / bus / mo (₹128,000 for 10 buses @ 30s)
-  9:  (1850 - 1575) / 1850, // 275 / 1850 -> ₹1,575 / bus / mo (₹141,750 for 10 buses @ 30s)
-  10: (1850 - 1550) / 1850, // 300 / 1850 -> ₹1,550 / bus / mo (₹155,000 for 10 buses @ 30s)
-  11: (1850 - 1525) / 1850, // 325 / 1850 -> ₹1,525 / bus / mo (₹167,750 for 10 buses @ 30s)
-  12: (1850 - 1500) / 1850, // 350 / 1850 -> ₹1,500 / bus / mo (₹180,000 for 10 buses @ 30s, exactly ₹1,500 floor)
+  3:  0.100,  // 10.0% discount -> ₹54,000 for 10 buses (Standard ₹75,000)
+  4:  0.125,  // 12.5% discount -> ₹70,000 for 10 buses (Standard ₹1,00,000)
+  5:  0.125,  // 12.5% discount -> ₹87,500 for 10 buses (Standard ₹1,25,000)
+  6:  0.125,  // 12.5% discount -> ₹1,05,000 for 10 buses (Standard ₹1,50,000)
+  7:  0.125,  // 12.5% discount -> ₹1,22,500 for 10 buses (Standard ₹1,75,000)
+  8:  0.125,  // 12.5% discount -> ₹1,40,000 for 10 buses (Standard ₹2,00,000)
+  9:  0.125,  // 12.5% discount -> ₹1,57,500 for 10 buses (Standard ₹2,25,000)
+  10: 0.125,  // 12.5% discount -> ₹1,75,000 for 10 buses (Standard ₹2,50,000)
+  11: 0.125,  // 12.5% discount -> ₹1,92,500 for 10 buses (Standard ₹2,75,000)
+  12: 0.125,  // 12.5% discount -> ₹2,10,000 for 10 buses (Standard ₹3,00,000, 30% OFF)
 };
 
 export interface DurationDiscountRule {

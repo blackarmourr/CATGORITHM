@@ -4,7 +4,7 @@
 // quotations, enquiries, and campaigns are never lost.
 // ============================================================
 
-import type { Enquiry, Quotation, PricingSettings, Fleet, BusRecord, Campaign, CampaignStatus } from '../types';
+import type { Enquiry, EnquiryStatus, Quotation, PricingSettings, Fleet, BusRecord, Campaign, CampaignStatus, SlotBooking } from '../types';
 import { supabase } from './supabase';
 
 const LOCAL_ENQUIRIES_KEY = 'catgorithm_enquiries_v2';
@@ -233,7 +233,30 @@ export function getDefaultFleet(): Fleet {
       intermediateStops: 'Chinnakada, Ramankulangara, Neendakara, Chavara, Titanium, Sankaramangalam',
       route: 'Kollam ➔ Karunagappally',
       available: true,
+      totalSlots: 10,
       notes: 'Heavy morning/evening coastal commuter belt',
+      slotBookings: [
+        {
+          id: 'SB-001-A',
+          clientName: 'Malabar Gold & Diamonds',
+          slotsCount: 3,
+          videoDurationSeconds: 30,
+          campaignName: 'Winter Fest 2026',
+          startDate: '2026-10-20',
+          endDate: '2026-11-20',
+          notes: 'Screen ad loop prime slot',
+        },
+        {
+          id: 'SB-001-B',
+          clientName: 'Muthoot Finance',
+          slotsCount: 3,
+          videoDurationSeconds: 30,
+          campaignName: 'Gold Loan Campaign',
+          startDate: '2026-10-15',
+          endDate: '2026-12-15',
+          notes: '2-month continuous display',
+        },
+      ],
     },
     {
       id: 'BUS-002',
@@ -244,7 +267,29 @@ export function getDefaultFleet(): Fleet {
       intermediateStops: 'Kilikolloor, Chandanathope, Kundara, Ezhukone, Pulamon',
       route: 'Kollam ➔ Kottarakkara',
       available: true,
+      totalSlots: 10,
       notes: 'Key student & government office route',
+      slotBookings: [
+        {
+          id: 'SB-002-A',
+          clientName: 'Kalyan Silks',
+          slotsCount: 4,
+          videoDurationSeconds: 30,
+          campaignName: 'Wedding Season 2026',
+          startDate: '2026-10-01',
+          endDate: '2026-11-30',
+          notes: 'High visibility morning runs',
+        },
+        {
+          id: 'SB-002-B',
+          clientName: 'Oxygen Digital Shop',
+          slotsCount: 3,
+          videoDurationSeconds: 30,
+          campaignName: 'Mobile Expo',
+          startDate: '2026-10-25',
+          endDate: '2026-12-25',
+        },
+      ],
     },
     {
       id: 'BUS-003',
@@ -255,7 +300,28 @@ export function getDefaultFleet(): Fleet {
       intermediateStops: 'Polayathodu, Eravipuram, Mayyanad, Kottiyam, Chathannoor',
       route: 'Kollam ➔ Paravoor',
       available: true,
+      totalSlots: 10,
       notes: 'High visibility south district corridor',
+      slotBookings: [
+        {
+          id: 'SB-003-A',
+          clientName: 'Lulu Daily Supermarket',
+          slotsCount: 3,
+          videoDurationSeconds: 30,
+          campaignName: 'Weekend Savings',
+          startDate: '2026-10-10',
+          endDate: '2026-12-10',
+        },
+        {
+          id: 'SB-003-B',
+          clientName: 'Jos Alukkas',
+          slotsCount: 2,
+          videoDurationSeconds: 30,
+          campaignName: 'Festival Spotlight',
+          startDate: '2026-11-05',
+          endDate: '2027-01-05',
+        },
+      ],
     },
     {
       id: 'BUS-004',
@@ -266,7 +332,19 @@ export function getDefaultFleet(): Fleet {
       intermediateStops: 'Kundara, Bharanikkavu, Sasthamcotta, Kadampanad',
       route: 'Kollam ➔ Adoor',
       available: true,
+      totalSlots: 10,
       notes: 'Inter-district commercial commuter corridor',
+      slotBookings: [
+        {
+          id: 'SB-004-A',
+          clientName: 'Travancore Medicity',
+          slotsCount: 4,
+          videoDurationSeconds: 30,
+          campaignName: 'Healthcare Awareness',
+          startDate: '2026-10-05',
+          endDate: '2026-12-05',
+        },
+      ],
     },
     {
       id: 'BUS-005',
@@ -277,7 +355,28 @@ export function getDefaultFleet(): Fleet {
       intermediateStops: 'Neendakara, Chavara, Karunagappally, Vavvakkavu',
       route: 'Kollam ➔ Oachira',
       available: true,
+      totalSlots: 10,
       notes: 'NH 66 trunk route passing major markets',
+      slotBookings: [
+        {
+          id: 'SB-005-A',
+          clientName: 'Kalyan Jewellers',
+          slotsCount: 5,
+          videoDurationSeconds: 30,
+          campaignName: 'Grand Fest',
+          startDate: '2026-10-25',
+          endDate: '2026-11-25',
+        },
+        {
+          id: 'SB-005-B',
+          clientName: 'Supreme Food Court',
+          slotsCount: 3,
+          videoDurationSeconds: 30,
+          campaignName: 'Highway Dine In',
+          startDate: '2026-10-20',
+          endDate: '2026-12-20',
+        },
+      ],
     },
     {
       id: 'BUS-006',
@@ -288,7 +387,28 @@ export function getDefaultFleet(): Fleet {
       intermediateStops: 'Asramam, Kadappakada, Polayathodu, Thattamala, Umayanalloor',
       route: 'Kollam ➔ Kottiyam',
       available: true,
+      totalSlots: 10,
       notes: 'Prime city center & shopping hub connection',
+      slotBookings: [
+        {
+          id: 'SB-006-A',
+          clientName: 'MyG Future Store',
+          slotsCount: 4,
+          videoDurationSeconds: 30,
+          campaignName: 'Diwali & New Year Deals',
+          startDate: '2026-10-12',
+          endDate: '2026-12-12',
+        },
+        {
+          id: 'SB-006-B',
+          clientName: 'Sankar Institute of Commerce',
+          slotsCount: 2,
+          videoDurationSeconds: 30,
+          campaignName: 'Admissions 2027',
+          startDate: '2026-11-15',
+          endDate: '2027-01-15',
+        },
+      ],
     },
     {
       id: 'BUS-007',
@@ -299,7 +419,28 @@ export function getDefaultFleet(): Fleet {
       intermediateStops: 'Kundara, Kottarakkara, Valakom, Anchal',
       route: 'Kollam ➔ Punalur',
       available: true,
+      totalSlots: 10,
       notes: 'Long-distance eastern highway commuter run',
+      slotBookings: [
+        {
+          id: 'SB-007-A',
+          clientName: 'Canara Bank',
+          slotsCount: 3,
+          videoDurationSeconds: 30,
+          campaignName: 'MSME Loan Scheme',
+          startDate: '2026-10-18',
+          endDate: '2026-12-18',
+        },
+        {
+          id: 'SB-007-B',
+          clientName: 'Nandilath G-Mart',
+          slotsCount: 2,
+          videoDurationSeconds: 30,
+          campaignName: 'Mega Home Appliances',
+          startDate: '2026-11-20',
+          endDate: '2027-01-20',
+        },
+      ],
     },
     {
       id: 'BUS-008',
@@ -310,7 +451,28 @@ export function getDefaultFleet(): Fleet {
       intermediateStops: 'Chavara, Karunagappally, Oachira, Krishnapuram',
       route: 'Kollam ➔ Kayamkulam',
       available: true,
+      totalSlots: 10,
       notes: 'Northbound commercial transit link',
+      slotBookings: [
+        {
+          id: 'SB-008-A',
+          clientName: 'Seematti Textiles',
+          slotsCount: 4,
+          videoDurationSeconds: 30,
+          campaignName: 'Bridal Launch',
+          startDate: '2026-10-28',
+          endDate: '2026-11-28',
+        },
+        {
+          id: 'SB-008-B',
+          clientName: 'Bheema Jewellers',
+          slotsCount: 3,
+          videoDurationSeconds: 30,
+          campaignName: 'Wedding Diamonds',
+          startDate: '2026-10-30',
+          endDate: '2026-12-30',
+        },
+      ],
     },
     {
       id: 'BUS-009',
@@ -321,7 +483,19 @@ export function getDefaultFleet(): Fleet {
       intermediateStops: 'Collectorate, Cutcherry, Thevally, Kadavoor, Perumon',
       route: 'Kollam ➔ Anchalummoodu',
       available: true,
+      totalSlots: 10,
       notes: 'Dense college and residential route',
+      slotBookings: [
+        {
+          id: 'SB-009-A',
+          clientName: 'KIMS Health Hospital',
+          slotsCount: 3,
+          videoDurationSeconds: 30,
+          campaignName: 'Super Specialty Care',
+          startDate: '2026-11-08',
+          endDate: '2027-01-08',
+        },
+      ],
     },
     {
       id: 'BUS-010',
@@ -332,7 +506,19 @@ export function getDefaultFleet(): Fleet {
       intermediateStops: 'Kottiyam, Chathannoor, Parippally, Nilamel',
       route: 'Kollam ➔ Ayur',
       available: true,
+      totalSlots: 10,
       notes: 'Southern MC Road feeder route',
+      slotBookings: [
+        {
+          id: 'SB-010-A',
+          clientName: 'Federal Bank',
+          slotsCount: 4,
+          videoDurationSeconds: 30,
+          campaignName: 'Digital Savings Account',
+          startDate: '2026-10-22',
+          endDate: '2026-12-22',
+        },
+      ],
     },
   ];
 
@@ -456,11 +642,13 @@ export async function deleteQuotation(id: string): Promise<boolean> {
 // ============================================================
 // ENQUIRY OPERATIONS
 // ============================================================
-export async function createEnquiry(data: Omit<Enquiry, 'id' | 'createdAt' | 'updatedAt' | 'status'>): Promise<Enquiry> {
+export async function createEnquiry(
+  data: Omit<Enquiry, 'id' | 'createdAt' | 'updatedAt' | 'status'> & { status?: EnquiryStatus }
+): Promise<Enquiry> {
   const enquiry: Enquiry = {
     ...data,
     id: nextId('CAT'),
-    status: 'New',
+    status: data.status || 'New',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -607,10 +795,66 @@ export async function updatePricingSettings(updates: Partial<PricingSettings>): 
 }
 
 // ============================================================
-// FLEET MANAGEMENT
+// FLEET MANAGEMENT & SLOT METRICS
 // ============================================================
+export function getBusSlotMetrics(bus: BusRecord) {
+  const totalSlots = bus.totalSlots || 10;
+  const bookings = bus.slotBookings || [];
+  const bookedSlots = bookings.reduce((sum, b) => sum + (b.slotsCount || 0), 0);
+  const availableSlots = Math.max(0, totalSlots - bookedSlots);
+
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  const activeBookings = bookings.filter((b) => {
+    const end = new Date(b.endDate);
+    end.setHours(23, 59, 59, 999);
+    return end >= now;
+  });
+
+  const sortedByExpiry = [...activeBookings].sort(
+    (a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime()
+  );
+
+  const earliestExpiry = sortedByExpiry[0] || null;
+
+  return {
+    totalSlots,
+    bookedSlots,
+    availableSlots,
+    occupancyPercent: Math.min(100, Math.round((bookedSlots / totalSlots) * 100)),
+    activeBookingsCount: activeBookings.length,
+    nextFreesUpDate: earliestExpiry ? earliestExpiry.endDate : null,
+    nextFreesUpClient: earliestExpiry ? earliestExpiry.clientName : null,
+    nextFreesUpSlotsCount: earliestExpiry ? earliestExpiry.slotsCount : 0,
+  };
+}
+
 export async function getFleet(): Promise<Fleet> {
-  return loadLocal<Fleet>(LOCAL_FLEET_KEY, getDefaultFleet());
+  const defaultFleet = getDefaultFleet();
+  const rawFleet = loadLocal<Fleet>(LOCAL_FLEET_KEY, defaultFleet);
+
+  // Migration safeguard: Ensure every bus has totalSlots=10 and slotBookings populated
+  const updatedBuses = (rawFleet.buses && rawFleet.buses.length > 0 ? rawFleet.buses : defaultFleet.buses).map((bus, idx) => {
+    const defaultBus = defaultFleet.buses[idx] || defaultFleet.buses[0];
+    const totalSlots = bus.totalSlots || 10;
+    const slotBookings = (bus.slotBookings && bus.slotBookings.length > 0)
+      ? bus.slotBookings
+      : (defaultBus ? defaultBus.slotBookings || [] : []);
+
+    return {
+      ...bus,
+      totalSlots,
+      slotBookings,
+    };
+  });
+
+  const fleet: Fleet = {
+    totalBuses: updatedBuses.length,
+    buses: updatedBuses,
+  };
+
+  return fleet;
 }
 
 export async function updateFleet(updates: Partial<Fleet>): Promise<Fleet> {
@@ -618,6 +862,74 @@ export async function updateFleet(updates: Partial<Fleet>): Promise<Fleet> {
   const next = { ...current, ...updates };
   saveLocal(LOCAL_FLEET_KEY, next);
   return next;
+}
+
+export async function bookBusSlots(
+  busId: string,
+  booking: Omit<SlotBooking, 'id' | 'createdAt'>
+): Promise<Fleet> {
+  const fleet = await getFleet();
+  const busIndex = fleet.buses.findIndex((b) => b.id === busId);
+  if (busIndex === -1) throw new Error(`Bus ${busId} not found`);
+
+  const newBooking: SlotBooking = {
+    ...booking,
+    id: `SLOT-${Date.now().toString(36)}-${Math.floor(Math.random() * 1000)}`,
+    videoDurationSeconds: booking.videoDurationSeconds || 30,
+    createdAt: new Date().toISOString(),
+  };
+
+  const currentBookings = fleet.buses[busIndex].slotBookings || [];
+  fleet.buses[busIndex] = {
+    ...fleet.buses[busIndex],
+    slotBookings: [...currentBookings, newBooking],
+  };
+
+  saveLocal(LOCAL_FLEET_KEY, fleet);
+  return fleet;
+}
+
+export async function releaseBusSlot(
+  busId: string,
+  bookingId: string
+): Promise<Fleet> {
+  const fleet = await getFleet();
+  const busIndex = fleet.buses.findIndex((b) => b.id === busId);
+  if (busIndex === -1) throw new Error(`Bus ${busId} not found`);
+
+  const currentBookings = fleet.buses[busIndex].slotBookings || [];
+  fleet.buses[busIndex] = {
+    ...fleet.buses[busIndex],
+    slotBookings: currentBookings.filter((b) => b.id !== bookingId),
+  };
+
+  saveLocal(LOCAL_FLEET_KEY, fleet);
+  return fleet;
+}
+
+export async function bookFleetWideSlots(
+  busIds: string[],
+  booking: Omit<SlotBooking, 'id' | 'createdAt'>
+): Promise<Fleet> {
+  const fleet = await getFleet();
+  const timestamp = Date.now().toString(36);
+
+  fleet.buses = fleet.buses.map((bus, idx) => {
+    if (!busIds.includes(bus.id)) return bus;
+    const newBooking: SlotBooking = {
+      ...booking,
+      id: `FLEET-SLOT-${timestamp}-${idx}`,
+      videoDurationSeconds: booking.videoDurationSeconds || 30,
+      createdAt: new Date().toISOString(),
+    };
+    return {
+      ...bus,
+      slotBookings: [...(bus.slotBookings || []), newBooking],
+    };
+  });
+
+  saveLocal(LOCAL_FLEET_KEY, fleet);
+  return fleet;
 }
 
 // ============================================================

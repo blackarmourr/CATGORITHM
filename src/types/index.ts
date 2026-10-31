@@ -121,6 +121,18 @@ export interface Quotation {
   totalWithTax?: number;
 }
 
+export interface SlotBooking {
+  id: string;
+  clientName: string;
+  slotsCount: number;         // e.g. 1 to 10
+  videoDurationSeconds?: number; // 30s per slot standard
+  campaignName?: string;
+  startDate: string;          // ISO date YYYY-MM-DD
+  endDate: string;            // ISO date YYYY-MM-DD
+  notes?: string;
+  createdAt?: string;
+}
+
 export interface BusRecord {
   id: string;
   busNumber: string;        // Registration / Bus Plate No: e.g. 'KL-02-AB-1234'
@@ -131,6 +143,8 @@ export interface BusRecord {
   route?: string;           // Formatted summary route: e.g. 'Kollam ➔ Karunagappally'
   internalName?: string;    // Backward compatibility
   available: boolean;
+  totalSlots: number;       // Total ad slots per loop (Default: 10 slots, 30s each)
+  slotBookings?: SlotBooking[];
   notes?: string;
 }
 
