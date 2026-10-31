@@ -564,6 +564,11 @@ export async function createQuotation(data: Omit<Quotation, 'id' | 'createdAt'>)
       pricing_snapshot: quotation.pricingSnapshot,
       valid_until: quotation.validUntil,
       created_at: quotation.createdAt,
+      campaign_id: quotation.campaignId || null,
+      campaign_name: quotation.campaignName || null,
+      campaign_start_date: quotation.campaignStartDate || null,
+      campaign_end_date: quotation.campaignEndDate || null,
+      billed_months: quotation.billedMonths || null,
     };
 
     // If table has optional columns, Supabase will accept them if present
@@ -677,6 +682,8 @@ export async function createEnquiry(
       negotiation_reason: enquiry.negotiationReason,
       created_at: enquiry.createdAt,
       updated_at: enquiry.updatedAt,
+      campaign_id: enquiry.campaignId || null,
+      campaign_name: enquiry.campaignName || null,
     };
 
     const { error } = await supabase.from('enquiries').insert(payload);
@@ -834,6 +841,26 @@ export async function getFleet(): Promise<Fleet> {
   const defaultFleet = getDefaultFleet();
   const rawFleet = loadLocal<Fleet>(LOCAL_FLEET_KEY, defaultFleet);
 
+  // Try fetching remote fleet from Supabase if table exists
+  try {
+    const { data, error } = await supabase
+      .from('fleet')
+      .select('buses, total_buses')
+      .eq('id', 'kollam_fleet')
+      .maybeSingle();
+
+    if (!error && data && Array.isArray(data.buses) && data.buses.length > 0) {
+      const remoteFleet: Fleet = {
+        totalBuses: data.total_buses || data.buses.length,
+        buses: data.buses,
+      };
+      saveLocal(LOCAL_FLEET_KEY, remoteFleet);
+      return remoteFleet;
+    }
+  } catch {
+    // fallback to local storage
+  }
+
   // Migration safeguard: Ensure every bus has totalSlots=10 and slotBookings populated
   const updatedBuses = (rawFleet.buses && rawFleet.buses.length > 0 ? rawFleet.buses : defaultFleet.buses).map((bus, idx) => {
     const defaultBus = defaultFleet.buses[idx] || defaultFleet.buses[0];
@@ -861,6 +888,19 @@ export async function updateFleet(updates: Partial<Fleet>): Promise<Fleet> {
   const current = await getFleet();
   const next = { ...current, ...updates };
   saveLocal(LOCAL_FLEET_KEY, next);
+
+  // Attempt to sync to Supabase if table exists
+  try {
+    await supabase.from('fleet').upsert({
+      id: 'kollam_fleet',
+      total_buses: next.totalBuses,
+      buses: next.buses,
+      updated_at: new Date().toISOString(),
+    });
+  } catch {
+    // Ignore if table does not exist
+  }
+
   return next;
 }
 
