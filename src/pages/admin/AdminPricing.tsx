@@ -62,7 +62,7 @@ export default function AdminPricing() {
   if (!settings) return null
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 w-full max-w-full min-w-0 pb-12 overflow-x-hidden">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black text-primary-text">Pricing Settings</h1>

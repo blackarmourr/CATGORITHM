@@ -89,7 +89,7 @@ export default function AdminLayout() {
   )
 
   return (
-    <div className="min-h-screen bg-primary-light flex">
+    <div className="min-h-screen bg-primary-light flex w-full max-w-full overflow-x-hidden relative">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex w-56 bg-[#080B12] border-r border-white/10 flex-col fixed inset-y-0 left-0 z-30">
         <SidebarContent />
@@ -120,12 +120,12 @@ export default function AdminLayout() {
       </AnimatePresence>
 
       {/* Main content */}
-      <div className="flex-1 lg:ml-56 flex flex-col min-h-screen">
+      <div className="flex-1 min-w-0 w-full max-w-full lg:ml-56 flex flex-col min-h-screen overflow-x-hidden">
         {/* Top bar */}
-        <header className="bg-white border-b border-border h-14 flex items-center px-4 sm:px-6 gap-3 sticky top-0 z-20">
+        <header className="bg-white border-b border-border h-14 flex items-center px-3 sm:px-6 gap-2 sm:gap-3 sticky top-0 z-20 w-full max-w-full min-w-0">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="lg:hidden p-1.5 text-secondary-text hover:text-primary-text rounded-lg hover:bg-gray-100 transition-colors"
+            className="lg:hidden p-1.5 text-secondary-text hover:text-primary-text rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
             aria-label="Toggle sidebar"
           >
             <ChevronRight size={18} className={`transition-transform ${sidebarOpen ? 'rotate-180' : ''}`} />
@@ -133,29 +133,29 @@ export default function AdminLayout() {
 
           <Link
             to="/"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-accent bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-accent bg-gray-100 hover:bg-gray-200 px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors flex-shrink-0"
           >
             <ArrowLeft size={14} />
             <span>Sales Pitch Calculator</span>
           </Link>
 
-          <div className="flex-1" />
+          <div className="flex-1 min-w-0" />
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <span className="text-xs text-secondary-text font-medium hidden sm:block">Kollam Screen Fleet</span>
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-3 sm:p-6 pb-20 lg:pb-6">
+        <main className="flex-1 min-w-0 w-full max-w-full p-2.5 sm:p-6 pb-24 lg:pb-6 overflow-x-hidden">
           <Outlet />
         </main>
 
         {/* ── Mobile Bottom Navigation Bar (Persistent 1-Tap Access) ── */}
         <nav
           aria-label="Mobile Navigation"
-          className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 px-1 py-1.5 shadow-lg flex items-center justify-around text-[10px] font-bold"
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-200 px-1 py-1.5 shadow-lg flex items-center justify-around text-[10px] font-bold w-full max-w-full"
         >
           <Link
             to="/"

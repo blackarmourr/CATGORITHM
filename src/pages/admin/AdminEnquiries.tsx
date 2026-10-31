@@ -182,10 +182,10 @@ export default function AdminEnquiries() {
   }
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto pb-12">
-      {/* ── Mobile-First Quick Nav Bar ── */}
-      <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 border-b border-gray-200 text-xs">
-        <div className="flex items-center gap-1.5 flex-nowrap">
+    <div className="space-y-4 w-full max-w-full min-w-0 pb-12 overflow-x-hidden">
+      {/* ── Mobile-First Quick Nav Bar (Safe Horizontal Scroll with No Screen Bleed) ── */}
+      <div className="w-full max-w-full overflow-x-auto no-scrollbar pb-1 border-b border-gray-200 text-xs">
+        <div className="inline-flex items-center gap-1.5 whitespace-nowrap min-w-max">
           <Link
             to="/"
             className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap"
@@ -235,51 +235,51 @@ export default function AdminEnquiries() {
       </div>
 
       {/* ── Page Header (Mobile-Optimized) ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full max-w-full min-w-0">
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
             <Link
               to="/"
-              className="p-1.5 -ml-1 text-gray-500 hover:text-gray-900 rounded-lg hover:bg-gray-100 transition-colors"
+              className="p-1.5 -ml-1 text-gray-500 hover:text-gray-900 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
               title="Return to Sales Calculator"
             >
               <ArrowLeft size={18} />
             </Link>
-            <h1 className="text-xl sm:text-2xl font-black text-primary-text tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-black text-primary-text tracking-tight truncate">
               {activeTab === 'enquiries' ? 'Enquiries Pipeline' : 'Sent Quotations'}
             </h1>
           </div>
-          <p className="text-secondary-text text-xs sm:text-sm mt-0.5">
+          <p className="text-secondary-text text-xs sm:text-sm mt-0.5 truncate">
             {activeTab === 'enquiries'
               ? 'Track leads, follow-ups, and negotiation progress in real time.'
               : 'Review and re-download all prepared campaign proposals.'}
           </p>
         </div>
 
-        {/* Tab Switcher & Refresh Button (Equal Heights, Touch-Friendly) */}
-        <div className="flex items-center gap-2">
-          <div className="bg-gray-200/80 p-1 rounded-xl flex items-center gap-1 text-xs font-bold w-full sm:w-auto">
+        {/* Tab Switcher & Refresh Button (Equal Heights, Touch-Friendly, Strictly 100% Mobile Safe) */}
+        <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
+          <div className="bg-gray-200/80 p-1 rounded-xl flex items-center gap-1 text-xs font-bold flex-1 sm:flex-initial min-w-0">
             <button
               onClick={() => handleTabChange('enquiries')}
-              className={`flex-1 sm:flex-initial h-8 px-3.5 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 sm:flex-initial h-8 px-2.5 sm:px-3.5 rounded-lg transition-all flex items-center justify-center gap-1.5 min-w-0 truncate ${
                 activeTab === 'enquiries'
                   ? 'bg-white text-gray-900 shadow-xs'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <Users size={13} />
-              <span>Pipeline ({enquiries.length})</span>
+              <Users size={13} className="flex-shrink-0" />
+              <span className="truncate">Pipeline ({enquiries.length})</span>
             </button>
             <button
               onClick={() => handleTabChange('quotations')}
-              className={`flex-1 sm:flex-initial h-8 px-3.5 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 sm:flex-initial h-8 px-2.5 sm:px-3.5 rounded-lg transition-all flex items-center justify-center gap-1.5 min-w-0 truncate ${
                 activeTab === 'quotations'
                   ? 'bg-white text-gray-900 shadow-xs'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <FileText size={13} />
-              <span>Quotes ({quotations.length})</span>
+              <FileText size={13} className="flex-shrink-0" />
+              <span className="truncate">Quotes ({quotations.length})</span>
             </button>
           </div>
 
@@ -295,31 +295,31 @@ export default function AdminEnquiries() {
       </div>
 
       {/* ── Summary Metrics Bar (2x2 Grid on Mobile, 4-Col on Desktop) ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
-        <div className="card p-3 sm:p-4 bg-white border-border shadow-xs">
-          <p className="text-[11px] font-semibold text-secondary-text uppercase tracking-wider flex items-center gap-1">
-            <Users size={12} className="text-accent" /> Total Deals
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 w-full max-w-full">
+        <div className="card p-3 sm:p-4 bg-white border-border shadow-xs min-w-0 overflow-hidden">
+          <p className="text-[11px] font-semibold text-secondary-text uppercase tracking-wider flex items-center gap-1 truncate">
+            <Users size={12} className="text-accent flex-shrink-0" /> Total Deals
           </p>
           <p className="text-xl sm:text-2xl font-black text-primary-text mt-1">{enquiries.length}</p>
         </div>
 
-        <div className="card p-3 sm:p-4 bg-white border-border shadow-xs">
-          <p className="text-[11px] font-semibold text-secondary-text uppercase tracking-wider flex items-center gap-1">
-            <Clock size={12} className="text-amber-500" /> Active Deals
+        <div className="card p-3 sm:p-4 bg-white border-border shadow-xs min-w-0 overflow-hidden">
+          <p className="text-[11px] font-semibold text-secondary-text uppercase tracking-wider flex items-center gap-1 truncate">
+            <Clock size={12} className="text-amber-500 flex-shrink-0" /> Active Deals
           </p>
           <p className="text-xl sm:text-2xl font-black text-amber-600 mt-1">{activeDealsCount}</p>
         </div>
 
-        <div className="card p-3 sm:p-4 bg-white border-border shadow-xs">
-          <p className="text-[11px] font-semibold text-secondary-text uppercase tracking-wider flex items-center gap-1">
-            <CheckCircle size={12} className="text-emerald-500" /> Won Deals
+        <div className="card p-3 sm:p-4 bg-white border-border shadow-xs min-w-0 overflow-hidden">
+          <p className="text-[11px] font-semibold text-secondary-text uppercase tracking-wider flex items-center gap-1 truncate">
+            <CheckCircle size={12} className="text-emerald-500 flex-shrink-0" /> Won Deals
           </p>
           <p className="text-xl sm:text-2xl font-black text-emerald-600 mt-1">{confirmedCount}</p>
         </div>
 
-        <div className="card p-3 sm:p-4 bg-white border-border shadow-xs">
-          <p className="text-[11px] font-semibold text-secondary-text uppercase tracking-wider flex items-center gap-1">
-            <TrendingUp size={12} className="text-accent" /> Pipeline Value
+        <div className="card p-3 sm:p-4 bg-white border-border shadow-xs min-w-0 overflow-hidden">
+          <p className="text-[11px] font-semibold text-secondary-text uppercase tracking-wider flex items-center gap-1 truncate">
+            <TrendingUp size={12} className="text-accent flex-shrink-0" /> Pipeline Value
           </p>
           <p className="text-xl sm:text-2xl font-black text-accent mt-1 tabular-nums truncate">
             {formatINR(totalPipelineValue)}
@@ -328,8 +328,8 @@ export default function AdminEnquiries() {
       </div>
 
       {/* ── Filters & Search Controls ── */}
-      <div className="card p-3 sm:p-4 flex flex-col sm:flex-row gap-2.5">
-        <div className="relative flex-1">
+      <div className="card p-3 sm:p-4 flex flex-col sm:flex-row gap-2.5 w-full max-w-full min-w-0">
+        <div className="relative flex-1 min-w-0 w-full">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary-text" />
           <input
             type="text"
@@ -348,13 +348,13 @@ export default function AdminEnquiries() {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
           {activeTab === 'enquiries' && (
-            <div className="relative flex-1 sm:w-44">
+            <div className="relative flex-1 min-w-0 sm:w-44">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as EnquiryStatus | 'All')}
-                className="appearance-none w-full pl-3 pr-8 py-2 text-xs sm:text-sm rounded-xl border border-border focus:outline-none focus:border-accent bg-white"
+                className="appearance-none w-full pl-3 pr-8 py-2 text-xs sm:text-sm rounded-xl border border-border focus:outline-none focus:border-accent bg-white truncate"
               >
                 <option value="All">All Statuses</option>
                 {STATUS_OPTIONS.map((s) => (
@@ -365,11 +365,11 @@ export default function AdminEnquiries() {
             </div>
           )}
 
-          <div className="relative flex-1 sm:w-36">
+          <div className="relative flex-1 min-w-0 sm:w-36">
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="appearance-none w-full pl-3 pr-8 py-2 text-xs sm:text-sm rounded-xl border border-border focus:outline-none focus:border-accent bg-white"
+              className="appearance-none w-full pl-3 pr-8 py-2 text-xs sm:text-sm rounded-xl border border-border focus:outline-none focus:border-accent bg-white truncate"
             >
               <option value="date">Sort: Newest</option>
               <option value="amount">Sort: Amount</option>

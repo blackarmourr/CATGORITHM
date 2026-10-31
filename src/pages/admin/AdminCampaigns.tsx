@@ -183,10 +183,10 @@ export default function AdminCampaigns() {
   }
 
   return (
-    <div className="space-y-4 max-w-6xl mx-auto pb-16">
+    <div className="space-y-4 w-full max-w-full min-w-0 pb-16 overflow-x-hidden">
       {/* ── Mobile-First Quick Nav Bar ── */}
-      <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 border-b border-gray-200 text-xs">
-        <div className="flex items-center gap-1.5 flex-nowrap">
+      <div className="w-full max-w-full overflow-x-auto no-scrollbar pb-1 border-b border-gray-200 text-xs flex-shrink-0">
+        <div className="inline-flex items-center gap-1.5 whitespace-nowrap min-w-max">
           <Link
             to="/"
             className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap"
