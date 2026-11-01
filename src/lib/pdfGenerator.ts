@@ -134,7 +134,7 @@ export async function generateQuotationPDF(quotation: Quotation): Promise<void> 
   doc.setFont('helvetica', 'normal')
   doc.text(`Video Ad Duration:`, rightX + 6, y + 17.5)
   doc.setFont('helvetica', 'bold')
-  doc.text(`${p.videoDurationSeconds} Seconds (${(p.videoDurationSeconds / 30).toFixed(2)}x base)`, rightX + 38, y + 17.5)
+  doc.text(`${p.videoDurationSeconds} Seconds`, rightX + 38, y + 17.5)
 
   doc.setFont('helvetica', 'normal')
   doc.text(`Campaign Period:`, rightX + 6, y + 23)
@@ -170,7 +170,7 @@ export async function generateQuotationPDF(quotation: Quotation): Promise<void> 
   const commercialsData: [string, string, string][] = [
     [
       'Standard Advertising Tariff (Reference Price)',
-      `Rs. 75/sec x ${p.videoDurationSeconds}s x ${p.buses} buses x ${p.months} mo`,
+      `Standard Tariff (${p.buses} ${p.buses === 1 ? 'Bus' : 'Buses'} x ${p.months} ${p.months === 1 ? 'Month' : 'Months'}, ${p.videoDurationSeconds}s Ad)`,
       formatPDFINR(p.standardPrice),
     ],
     [
