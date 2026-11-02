@@ -32,6 +32,10 @@ export default function AdminFleet() {
   const [managingBus, setManagingBus] = useState<BusRecord | null>(null)
   const [fleetBookingOpen, setFleetBookingOpen] = useState(false)
 
+  // Subtle inline confirmations
+  const [confirmReleaseId, setConfirmReleaseId] = useState<string | null>(null)
+  const [confirmDeleteBusId, setConfirmDeleteBusId] = useState<string | null>(null)
+
   // Edit / Add bus form fields
   const [formBusName, setFormBusName] = useState('')
   const [formBusNumber, setFormBusNumber] = useState('')
@@ -172,7 +176,6 @@ export default function AdminFleet() {
 
   async function handleDeleteBus(busId: string) {
     if (!fleet) return
-    if (!window.confirm('Are you sure you want to remove this bus from the fleet?')) return
 
     const newBuses = fleet.buses.filter((b) => b.id !== busId)
     const newFleet: Fleet = {
@@ -304,8 +307,8 @@ export default function AdminFleet() {
 
   async function handleReleaseAdvertisement(bookingId: string) {
     if (!managingBus) return
-    if (!window.confirm('Release and free up this advertising time?')) return
 
+    setSaving(true)
     try {
       const updatedFleet = await releaseBusAdvertisement(managingBus.id, bookingId)
       setFleet(updatedFleet)
@@ -314,6 +317,8 @@ export default function AdminFleet() {
       toast.success('Advertising time freed up successfully!')
     } catch {
       toast.error('Failed to release advertisement')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -666,15 +671,15 @@ export default function AdminFleet() {
 
               {/* Route: Start & End Points */}
               <div className="bg-gray-50 rounded-xl p-2.5 sm:p-3 border border-gray-100 space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-1.5">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <MapPin size={13} className="text-emerald-600 flex-shrink-0" />
                     <span className="font-bold text-gray-800 truncate">
                       {bus.routeStart || 'Origin'}
                     </span>
                   </div>
-                  <ArrowRight size={13} className="text-gray-400 flex-shrink-0 mx-2" />
-                  <div className="flex items-center gap-1.5 min-w-0 justify-end">
+                  <div className="hidden sm:block text-gray-400 font-bold">➔</div>
+                  <div className="flex items-center gap-1.5 min-w-0 sm:justify-end">
                     <MapPin size={13} className="text-rose-600 flex-shrink-0" />
                     <span className="font-bold text-gray-800 truncate">
                       {bus.routeEnd || 'Destination'}
@@ -764,44 +769,67 @@ export default function AdminFleet() {
               </div>
 
               {/* Actions Footer */}
-              <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5">
+              <div className="pt-2 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
                   <button
                     type="button"
                     onClick={() => openCapacityModal(bus)}
-                    className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-bold flex items-center gap-1.5 shadow-xs active:scale-95 transition-all"
+                    className="flex-1 sm:flex-initial px-3 py-2 sm:py-1.5 rounded-xl bg-accent hover:bg-blue-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition-all truncate"
                   >
-                    <Clock size={13} />
-                    <span>Advertising Capacity ({metrics.bookedAdTime}s / 420s)</span>
+                    <Clock size={13} className="flex-shrink-0" />
+                    <span className="truncate">Advertising Capacity ({metrics.bookedAdTime}s / 420s)</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setViewingRouteBus(bus)}
-                    className="px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold flex items-center gap-1 transition-colors"
+                    className="px-2.5 py-2 sm:py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold flex items-center gap-1 transition-colors flex-shrink-0"
                   >
                     <Eye size={12} className="text-accent" />
                     <span>Route</span>
                   </button>
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-shrink-0">
                   <button
                     type="button"
                     onClick={() => openEditModal(bus)}
-                    className="p-1.5 rounded-lg bg-blue-50 text-accent hover:bg-blue-100 transition-colors"
+                    className="p-2 rounded-xl bg-blue-50 text-accent hover:bg-blue-100 transition-colors"
                     title="Edit Bus & Routes"
                   >
                     <Edit2 size={13} />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteBus(bus.id)}
-                    className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors"
-                    title="Delete Bus"
-                  >
-                    <Trash2 size={13} />
-                  </button>
+                  {confirmDeleteBusId === bus.id ? (
+                    <div className="flex items-center gap-1 bg-rose-50 px-2 py-1 rounded-xl border border-rose-200 animate-fadeIn">
+                      <span className="text-[10px] font-bold text-rose-700">Delete?</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConfirmDeleteBusId(null)
+                          handleDeleteBus(bus.id)
+                        }}
+                        className="px-2 py-0.5 text-[10px] font-bold bg-rose-600 text-white rounded-md hover:bg-rose-700 active:scale-95 transition-all shadow-xs"
+                      >
+                        Yes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteBusId(null)}
+                        className="px-1.5 py-0.5 text-[10px] font-medium text-gray-600 hover:bg-gray-200 rounded-md transition-colors"
+                      >
+                        No
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteBusId(bus.id)}
+                      className="p-2 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors"
+                      title="Delete Bus"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -827,10 +855,10 @@ export default function AdminFleet() {
         const activeAds = managingBus.advertisements || []
 
         return (
-          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs">
-            <div className="bg-white rounded-2xl w-full max-w-xl shadow-2xl border border-border overflow-hidden">
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-2 sm:p-4 backdrop-blur-xs">
+            <div className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-xl shadow-2xl border border-border overflow-hidden max-h-[92vh] sm:max-h-[85vh] flex flex-col">
               {/* Modal Header */}
-              <div className="p-4 bg-gray-900 text-white flex items-center justify-between">
+              <div className="p-3.5 sm:p-4 bg-gray-900 text-white flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-2.5">
                   <Clock size={20} className="text-accent" />
                   <div>
@@ -977,14 +1005,38 @@ export default function AdminFleet() {
                             </div>
 
                             <div className="flex justify-end pt-1">
-                              <button
-                                type="button"
-                                onClick={() => handleReleaseAdvertisement(ad.id)}
-                                className="px-2 py-1 text-[10px] font-bold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-1"
-                              >
-                                <Trash2 size={11} />
-                                <span>Release Time</span>
-                              </button>
+                              {confirmReleaseId === ad.id ? (
+                                <div className="flex items-center gap-1.5 bg-rose-50 px-2.5 py-1 rounded-xl border border-rose-200 animate-fadeIn">
+                                  <span className="text-[10px] font-bold text-rose-700">Release ad?</span>
+                                  <button
+                                    type="button"
+                                    disabled={saving}
+                                    onClick={() => {
+                                      setConfirmReleaseId(null)
+                                      handleReleaseAdvertisement(ad.id)
+                                    }}
+                                    className="px-2.5 py-0.5 text-[10px] font-bold bg-rose-600 text-white rounded-md hover:bg-rose-700 active:scale-95 transition-all shadow-xs"
+                                  >
+                                    Yes, Release
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setConfirmReleaseId(null)}
+                                    className="px-2 py-0.5 text-[10px] font-medium text-gray-600 hover:bg-gray-200 rounded-md transition-colors"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmReleaseId(ad.id)}
+                                  className="px-2.5 py-1 text-[10px] font-bold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors flex items-center gap-1 active:scale-95"
+                                >
+                                  <Trash2 size={11} />
+                                  <span>Release Time</span>
+                                </button>
+                              )}
                             </div>
                           </div>
                         )
@@ -1032,13 +1084,13 @@ export default function AdminFleet() {
                       <span className="text-[10px] text-gray-500 font-medium">Exact video length</span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 flex-wrap">
+                    <div className="grid grid-cols-5 gap-1.5">
                       {DURATION_PRESETS.map((dur) => (
                         <button
                           key={dur}
                           type="button"
                           onClick={() => setAdDurationSeconds(dur)}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all ${
+                          className={`py-2 text-xs font-bold rounded-xl border transition-all text-center ${
                             adDurationSeconds === dur
                               ? 'bg-accent text-white border-accent shadow-xs'
                               : 'bg-white hover:bg-gray-100 text-gray-800 border-gray-300'
@@ -1047,8 +1099,11 @@ export default function AdminFleet() {
                           {dur}s
                         </button>
                       ))}
+                    </div>
 
-                      <div className="flex items-center gap-1 min-w-[100px] flex-1">
+                    <div className="flex items-center gap-2 pt-0.5">
+                      <span className="text-[11px] text-gray-500 font-medium">Custom duration:</span>
+                      <div className="flex items-center gap-1 w-28">
                         <input
                           type="number"
                           min={5}
@@ -1088,13 +1143,13 @@ export default function AdminFleet() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-6 sm:grid-cols-12 gap-1">
+                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-12 gap-1 sm:gap-1.5">
                       {MONTH_PRESETS.map((m) => (
                         <button
                           key={m}
                           type="button"
                           onClick={() => handleSingleBusMonthsPreset(m)}
-                          className={`py-1.5 text-xs font-extrabold rounded-lg border transition-all text-center ${
+                          className={`py-2 sm:py-1.5 text-xs font-extrabold rounded-xl border transition-all text-center active:scale-95 ${
                             adMonths === m
                               ? 'bg-accent text-white border-accent shadow-xs'
                               : 'bg-white hover:bg-gray-100 text-gray-700 border-gray-300'
@@ -1107,7 +1162,7 @@ export default function AdminFleet() {
                   </div>
 
                   {/* Start Date & Auto-calculated End Date */}
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
                       <label className="block text-[11px] font-bold text-gray-700 mb-1">
                         Start Date
@@ -1229,10 +1284,10 @@ export default function AdminFleet() {
         })
 
         return (
-          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs">
-            <div className="bg-white rounded-2xl w-full max-w-xl shadow-2xl border border-border overflow-hidden">
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-2 sm:p-4 backdrop-blur-xs">
+            <div className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-xl shadow-2xl border border-border overflow-hidden max-h-[92vh] sm:max-h-[85vh] flex flex-col">
               {/* Modal Header */}
-              <div className="p-4 bg-gradient-to-r from-gray-900 to-gray-800 text-white flex items-center justify-between">
+              <div className="p-3.5 sm:p-4 bg-gradient-to-r from-gray-900 to-gray-800 text-white flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center gap-2">
                   <Zap size={18} className="text-amber-400" />
                   <div>
@@ -1324,13 +1379,13 @@ export default function AdminFleet() {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-6 sm:grid-cols-12 gap-1">
+                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-12 gap-1 sm:gap-1.5">
                     {MONTH_PRESETS.map((m) => (
                       <button
                         key={m}
                         type="button"
                         onClick={() => handleFleetMonthsPreset(m)}
-                        className={`py-1.5 text-xs font-extrabold rounded-lg border transition-all text-center ${
+                        className={`py-2 sm:py-1.5 text-xs font-extrabold rounded-xl border transition-all text-center active:scale-95 ${
                           fleetMonths === m
                             ? 'bg-accent text-white border-accent shadow-xs'
                             : 'bg-white hover:bg-gray-100 text-gray-700 border-gray-300'
@@ -1343,7 +1398,7 @@ export default function AdminFleet() {
                 </div>
 
                 {/* Dates */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
                       Start Date
@@ -1465,10 +1520,10 @@ export default function AdminFleet() {
 
       {/* ── MODAL 3: VIEW ROUTE & INTERMEDIATE STOPS ── */}
       {viewingRouteBus && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl border border-border overflow-hidden">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-2 sm:p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-lg shadow-2xl border border-border overflow-hidden max-h-[92vh] sm:max-h-[85vh] flex flex-col">
             {/* Modal Header */}
-            <div className="p-4 bg-gray-900 text-white flex items-center justify-between">
+            <div className="p-3.5 sm:p-4 bg-gray-900 text-white flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2">
                 <Bus size={18} className="text-accent" />
                 <div>
@@ -1574,10 +1629,10 @@ export default function AdminFleet() {
 
       {/* ── MODAL 4: ADD / EDIT BUS & ROUTE DETAILS ── */}
       {editingBus && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl border border-border overflow-hidden">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-2 sm:p-4 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-lg shadow-2xl border border-border overflow-hidden max-h-[92vh] sm:max-h-[85vh] flex flex-col">
             {/* Header */}
-            <div className="p-4 bg-gray-900 text-white flex items-center justify-between">
+            <div className="p-3.5 sm:p-4 bg-gray-900 text-white flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2">
                 <Bus size={18} className="text-accent" />
                 <h3 className="font-extrabold text-sm">

@@ -1134,12 +1134,12 @@ export async function getFleet(): Promise<Fleet> {
       .maybeSingle();
 
     if (!error && data && Array.isArray(data.buses) && data.buses.length > 0) {
-      const remoteFleet: Fleet = {
-        totalBuses: data.total_buses || data.buses.length,
+      const remoteFleet = normalizeFleet({
+        totalBuses: Math.max(data.total_buses || 0, data.buses.length),
         buses: data.buses,
-      };
+      }, defaultFleet);
       saveLocal(LOCAL_FLEET_KEY, remoteFleet);
-      return normalizeFleet(remoteFleet, defaultFleet);
+      return remoteFleet;
     }
   } catch {
     // fallback to local storage
@@ -1149,25 +1149,43 @@ export async function getFleet(): Promise<Fleet> {
 }
 
 function normalizeFleet(fleetToNormalize: Fleet, defaultFleet: Fleet): Fleet {
-  const busesList = (fleetToNormalize.buses && fleetToNormalize.buses.length > 0
-    ? fleetToNormalize.buses
-    : defaultFleet.buses
-  );
+  const existingBuses = fleetToNormalize.buses || [];
+  const existingMap = new Map<string, BusRecord>();
+  existingBuses.forEach((b) => {
+    if (b && b.id) existingMap.set(b.id, b);
+  });
 
-  const updatedBuses = busesList.map((bus, idx) => {
-    const defaultBus = defaultFleet.buses[idx] || defaultFleet.buses[0];
+  // Ensure all 10 default buses are represented
+  const mergedBuses: BusRecord[] = [];
+  defaultFleet.buses.forEach((defBus) => {
+    if (existingMap.has(defBus.id)) {
+      mergedBuses.push(existingMap.get(defBus.id)!);
+      existingMap.delete(defBus.id);
+    } else {
+      mergedBuses.push(defBus);
+    }
+  });
+
+  // Append any custom added buses (BUS-011, etc.)
+  existingMap.forEach((customBus) => {
+    mergedBuses.push(customBus);
+  });
+
+  const updatedBuses = mergedBuses.map((bus) => {
     const physicalAdCapacity = bus.physicalAdCapacity || PHYSICAL_AD_CAPACITY;
     const normalAdCapacity = bus.normalAdCapacity || BOOKABLE_CAPACITY;
     const bufferAdCapacity = bus.bufferAdCapacity || RESERVED_BUFFER;
 
-    const rawAds = (bus.advertisements && bus.advertisements.length > 0)
+    // CRITICAL FIX: If bus.advertisements is an array (even if empty []), PRESERVE IT!
+    // Do NOT fall back to defaultBus if the user has released/emptied the ads!
+    const rawAds = Array.isArray(bus.advertisements)
       ? bus.advertisements
-      : (bus.slotBookings && bus.slotBookings.length > 0)
+      : Array.isArray(bus.slotBookings)
       ? bus.slotBookings
-      : (defaultBus ? defaultBus.advertisements || [] : []);
+      : [];
 
     const advertisements = rawAds.map((ad) => {
-      const dur = ad.durationSeconds || ad.videoDurationSeconds || ((ad.slotsCount || 1) * 30);
+      const dur = Number(ad.durationSeconds || ad.videoDurationSeconds || ((ad.slotsCount || 1) * 30));
       return {
         ...ad,
         durationSeconds: dur,
@@ -1194,27 +1212,37 @@ function normalizeFleet(fleetToNormalize: Fleet, defaultFleet: Fleet): Fleet {
 }
 
 export async function updateFleet(updates: Partial<Fleet>): Promise<Fleet> {
-  const current = await getFleet();
-  const next: Fleet = {
-    ...current,
-    ...updates,
-    buses: (updates.buses || current.buses).map((bus) => ({
+  const current = loadLocal<Fleet>(LOCAL_FLEET_KEY, getDefaultFleet());
+  const updatedBuses = (updates.buses || current.buses).map((bus) => {
+    const ads = bus.advertisements ?? bus.slotBookings ?? [];
+    return {
       ...bus,
-      slotBookings: bus.advertisements || bus.slotBookings || [],
-    })),
+      advertisements: ads,
+      slotBookings: ads,
+    };
+  });
+
+  const next: Fleet = {
+    totalBuses: updates.totalBuses ?? updatedBuses.length,
+    buses: updatedBuses,
   };
+
+  // 1. Save locally immediately
   saveLocal(LOCAL_FLEET_KEY, next);
 
-  // Attempt to sync to Supabase if table exists
+  // 2. Persist to Supabase asynchronously
   try {
-    await supabase.from('fleet').upsert({
+    const { error } = await supabase.from('fleet').upsert({
       id: 'kollam_fleet',
       total_buses: next.totalBuses,
       buses: next.buses,
       updated_at: new Date().toISOString(),
     });
-  } catch {
-    // Ignore if table does not exist
+    if (error) {
+      console.warn('Supabase fleet upsert error:', error.message);
+    }
+  } catch (err) {
+    console.warn('Supabase offline or table error:', err);
   }
 
   return next;
@@ -1290,8 +1318,8 @@ export async function releaseBusAdvertisement(
     slotBookings: filteredAds,
   };
 
-  await updateFleet(fleet);
-  return fleet;
+  const updatedFleet = await updateFleet(fleet);
+  return updatedFleet;
 }
 
 // Backward compatibility alias
