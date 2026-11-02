@@ -695,6 +695,7 @@ export async function createQuotation(data: Omit<Quotation, 'id' | 'createdAt'>)
     // even if dedicated columns have not been added to Supabase.
     const enrichedCustomerDetails = {
       ...quotation.customerDetails,
+      enquiryId: quotation.enquiryId,
       campaignId: quotation.campaignId,
       campaignName: quotation.campaignName,
       campaignStartDate: quotation.campaignStartDate,
@@ -710,6 +711,7 @@ export async function createQuotation(data: Omit<Quotation, 'id' | 'createdAt'>)
       pricing_snapshot: quotation.pricingSnapshot,
       valid_until: quotation.validUntil,
       created_at: quotation.createdAt,
+      enquiry_id: quotation.enquiryId || null,
       campaign_id: quotation.campaignId || null,
       campaign_name: quotation.campaignName || null,
       campaign_start_date: quotation.campaignStartDate || null,
@@ -743,6 +745,7 @@ export async function getQuotations(): Promise<Quotation[]> {
         const cd = row.customer_details ?? row.customerDetails ?? {};
         return {
           id: row.id,
+          enquiryId: row.enquiry_id ?? cd.enquiryId,
           customerDetails: cd,
           pricingSnapshot: row.pricing_snapshot ?? row.pricingSnapshot,
           campaignId: row.campaign_id ?? cd.campaignId,
@@ -911,6 +914,40 @@ export async function updateEnquiryStatus(id: string, status: Enquiry['status'],
     }).eq('id', id);
   } catch {
     // local already saved
+  }
+
+  return list[idx] ?? null;
+}
+
+export async function updateEnquiry(id: string, updates: Partial<Enquiry>): Promise<Enquiry | null> {
+  const list = loadLocal<Enquiry[]>(LOCAL_ENQUIRIES_KEY, []);
+  const idx = list.findIndex((e) => e.id === id);
+  if (idx !== -1) {
+    list[idx] = {
+      ...list[idx],
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    saveLocal(LOCAL_ENQUIRIES_KEY, list);
+  }
+
+  try {
+    const payload: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (updates.status !== undefined) payload.status = updates.status;
+    if (updates.adminNotes !== undefined) payload.admin_notes = updates.adminNotes;
+    if (updates.quotationId !== undefined) payload.quotation_id = updates.quotationId;
+    if (updates.negotiatedPrice !== undefined) payload.negotiated_price = updates.negotiatedPrice;
+    if (updates.negotiationReason !== undefined) payload.negotiation_reason = updates.negotiationReason;
+    if (updates.customerDetails !== undefined) payload.customer_details = updates.customerDetails;
+    if (updates.pricingSnapshot !== undefined) payload.pricing_snapshot = updates.pricingSnapshot;
+    if (updates.campaignId !== undefined) payload.campaign_id = updates.campaignId;
+    if (updates.campaignName !== undefined) payload.campaign_name = updates.campaignName;
+
+    await supabase.from('enquiries').update(payload).eq('id', id);
+  } catch (err) {
+    console.warn('Supabase update enquiry notice:', err);
   }
 
   return list[idx] ?? null;

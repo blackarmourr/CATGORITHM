@@ -126,12 +126,14 @@ _Offer valid for 30 days. Contact us to reserve your screen inventory._
     }
     setSavingLead(true)
     try {
-      await createEnquiry({
-        status: dealStatus,
+      const validUntil = format(addDays(new Date(), 30), 'yyyy-MM-dd')
+      const quotation = await createQuotation({
         customerDetails: {
           businessName: clientName.trim() || 'Field Prospect',
           contactName: clientName.trim() || 'Prospect',
           phone: clientPhone.trim() || 'Not specified',
+          email: '',
+          businessCategory: 'Bus Screen Advertising',
           campaignStartDate: config.startDate,
           campaignEndDate: config.endDate,
           notes: `Logged via Sales App. Campaign: ${selectedCampaign?.name}.`,
@@ -150,6 +152,46 @@ _Offer valid for 30 days. Contact us to reserve your screen inventory._
           pricePerBusCampaign: pricing.pricePerBusCampaign,
           pricePerBusMonth: pricing.pricePerBusMonth,
           pricePerBusDay: pricing.pricePerBusDay,
+          pricePerSecondBusMonth: pricing.pricePerSecondBusMonth,
+          pricePerSecondBusCampaign: pricing.pricePerSecondBusCampaign,
+        },
+        campaignId: selectedCampaign?.id,
+        campaignName: selectedCampaign?.name,
+        campaignStartDate: config.startDate,
+        campaignEndDate: config.endDate,
+        billedMonths: config.months,
+        campaignThemeSnapshot: selectedCampaign?.theme,
+        campaignMessagingSnapshot: selectedCampaign?.messaging,
+        validUntil,
+      })
+
+      await createEnquiry({
+        status: dealStatus,
+        quotationId: quotation.id,
+        customerDetails: {
+          businessName: clientName.trim() || 'Field Prospect',
+          contactName: clientName.trim() || 'Prospect',
+          phone: clientPhone.trim() || 'Not specified',
+          campaignStartDate: config.startDate,
+          campaignEndDate: config.endDate,
+          notes: `Logged via Sales App. Campaign: ${selectedCampaign?.name}. Quotation Ref: ${quotation.id}.`,
+        },
+        pricingSnapshot: {
+          buses: pricing.buses,
+          months: pricing.months,
+          videoDurationSeconds: pricing.videoDurationSeconds,
+          standardPrice: pricing.standardPrice,
+          packagePrice: pricing.packagePrice,
+          savings: pricing.savings,
+          savingsPercentage: pricing.savingsPercentage,
+          durationMultiplier: pricing.durationMultiplier,
+          durationDiscountRate: pricing.durationDiscountRate,
+          pricingMethod: pricing.pricingMethod,
+          pricePerBusCampaign: pricing.pricePerBusCampaign,
+          pricePerBusMonth: pricing.pricePerBusMonth,
+          pricePerBusDay: pricing.pricePerBusDay,
+          pricePerSecondBusMonth: pricing.pricePerSecondBusMonth,
+          pricePerSecondBusCampaign: pricing.pricePerSecondBusCampaign,
         },
         campaignId: selectedCampaign?.id,
         campaignName: selectedCampaign?.name,

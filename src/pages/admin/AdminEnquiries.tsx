@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
-import { getEnquiries, getQuotations, updateEnquiryStatus, deleteQuotation, deleteEnquiry } from '../../lib/dataStore'
+import { getEnquiries, getQuotations, updateEnquiryStatus, updateEnquiry, createQuotation, deleteQuotation, deleteEnquiry } from '../../lib/dataStore'
 import { generateQuotationPDF } from '../../lib/pdfGenerator'
-import type { Enquiry, EnquiryStatus, Quotation } from '../../types'
-import { formatINR } from '../../lib/pricingEngine'
+import type { Enquiry, EnquiryStatus, Quotation, PricingSnapshot } from '../../types'
+import { formatINR, calculatePrice } from '../../lib/pricingEngine'
 import { Badge, EmptyState } from '../../components/ui'
 import {
   Users, Search, RefreshCw, ChevronDown, X, FileText, Download,
   Phone, MessageSquare, ArrowLeft, Filter, Sparkles, Calendar,
   TrendingUp, CheckCircle, Clock, Tag, Trash2, Bus
 } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, addDays } from 'date-fns'
 import toast from 'react-hot-toast'
 
 const STATUS_OPTIONS: EnquiryStatus[] = [
@@ -151,6 +151,112 @@ export default function AdminEnquiries() {
     } catch (err) {
       console.error(err)
       toast.error('Failed to generate PDF')
+    } finally {
+      setDownloadingId(null)
+    }
+  }
+
+  async function handleDownloadEnquiryQuote(enquiry: Enquiry, ev?: React.MouseEvent) {
+    ev?.stopPropagation()
+    setDownloadingId(enquiry.id)
+    try {
+      // 1. Check if quotation already exists for this enquiry (by quotationId or enquiryId)
+      let quotation = quotations.find(
+        (q) => (enquiry.quotationId && q.id === enquiry.quotationId) || (q.enquiryId && q.enquiryId === enquiry.id)
+      )
+
+      if (!quotation) {
+        // Construct full pricing snapshot from enquiry or calculate fallback
+        const ps = enquiry.pricingSnapshot
+        const buses = ps?.buses || 1
+        const months = ps?.months || 1
+        const seconds = ps?.videoDurationSeconds || 30
+
+        const calculated = calculatePrice(buses, months, seconds)
+        const standardPrice = ps?.standardPrice || calculated.standardPrice
+        const basePackagePrice = ps?.packagePrice || calculated.packagePrice
+        const finalPackagePrice = enquiry.negotiatedPrice ?? basePackagePrice
+        const savings = Math.max(0, standardPrice - finalPackagePrice)
+        const savingsPercentage = standardPrice > 0 ? (savings / standardPrice) * 100 : 0
+
+        const fullPricingSnapshot: PricingSnapshot = {
+          buses,
+          months,
+          videoDurationSeconds: seconds,
+          standardPrice,
+          packagePrice: finalPackagePrice,
+          savings,
+          savingsPercentage,
+          durationMultiplier: ps?.durationMultiplier || calculated.durationMultiplier,
+          durationDiscountRate: ps?.durationDiscountRate || calculated.durationDiscountRate,
+          pricingMethod: ps?.pricingMethod || calculated.pricingMethod,
+          pricePerBusCampaign: finalPackagePrice / buses,
+          pricePerBusMonth: finalPackagePrice / (buses * months),
+          pricePerBusDay: finalPackagePrice / (buses * months * 30),
+          pricePerSecondBusMonth: finalPackagePrice / (buses * months * seconds),
+          pricePerSecondBusCampaign: finalPackagePrice / (buses * seconds),
+        }
+
+        const validUntil = format(addDays(new Date(enquiry.createdAt || new Date()), 30), 'yyyy-MM-dd')
+
+        quotation = await createQuotation({
+          enquiryId: enquiry.id,
+          customerDetails: {
+            businessName: enquiry.customerDetails.businessName || 'Valued Client',
+            contactName: enquiry.customerDetails.contactName || 'Representative',
+            phone: enquiry.customerDetails.phone || 'Not specified',
+            email: enquiry.customerDetails.email || '',
+            businessCategory: enquiry.customerDetails.businessCategory || 'Bus Screen Advertising',
+            campaignStartDate: enquiry.customerDetails.campaignStartDate,
+            campaignEndDate: enquiry.customerDetails.campaignEndDate,
+            notes: enquiry.customerDetails.notes || enquiry.adminNotes,
+          },
+          pricingSnapshot: fullPricingSnapshot,
+          campaignId: enquiry.campaignId,
+          campaignName: enquiry.campaignName || 'Standard Campaign',
+          campaignStartDate: enquiry.customerDetails.campaignStartDate,
+          campaignEndDate: enquiry.customerDetails.campaignEndDate,
+          billedMonths: months,
+          validUntil,
+        })
+
+        // Link quotationId to the enquiry
+        await updateEnquiry(enquiry.id, { quotationId: quotation.id })
+        enquiry.quotationId = quotation.id
+
+        // Refresh quotations in state
+        const updatedQuotes = await getQuotations()
+        setQuotations(updatedQuotes)
+      } else if (enquiry.negotiatedPrice && quotation.pricingSnapshot.packagePrice !== enquiry.negotiatedPrice) {
+        // Adapt if negotiated price was applied
+        const buses = quotation.pricingSnapshot.buses || 1
+        const months = quotation.pricingSnapshot.months || 1
+        const seconds = quotation.pricingSnapshot.videoDurationSeconds || 30
+        const standardPrice = quotation.pricingSnapshot.standardPrice
+        const finalPackagePrice = enquiry.negotiatedPrice
+        const savings = Math.max(0, standardPrice - finalPackagePrice)
+        const savingsPercentage = standardPrice > 0 ? (savings / standardPrice) * 100 : 0
+
+        quotation = {
+          ...quotation,
+          pricingSnapshot: {
+            ...quotation.pricingSnapshot,
+            packagePrice: finalPackagePrice,
+            savings,
+            savingsPercentage,
+            pricePerBusCampaign: finalPackagePrice / buses,
+            pricePerBusMonth: finalPackagePrice / (buses * months),
+            pricePerBusDay: finalPackagePrice / (buses * months * 30),
+            pricePerSecondBusMonth: finalPackagePrice / (buses * months * seconds),
+          },
+        }
+      }
+
+      await generateQuotationPDF(quotation)
+      toast.success(`Downloaded Quotation (${quotation.id}) for ${enquiry.customerDetails.businessName || 'Prospect'}`)
+    } catch (err) {
+      console.error('Failed to generate PDF quotation:', err)
+      toast.error('Failed to generate PDF quotation')
     } finally {
       setDownloadingId(null)
     }
@@ -403,6 +509,7 @@ export default function AdminEnquiries() {
                 {filteredEnquiries.map((e) => {
                   const isWinter = e.campaignId === 'winter-spotlight-2026' || e.campaignName?.includes('Winter')
                   const price = e.negotiatedPrice ?? e.pricingSnapshot?.packagePrice ?? 0
+                  const isDownloading = downloadingId === e.id
 
                   return (
                     <div
@@ -441,7 +548,7 @@ export default function AdminEnquiries() {
                         </span>
                       </div>
 
-                      {/* Contact Actions (Call & WhatsApp) */}
+                      {/* Date & Contact Actions */}
                       <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs gap-2">
                         <span className="text-[11px] text-gray-400">
                           {format(new Date(e.createdAt), 'dd MMM yyyy')}
@@ -468,12 +575,27 @@ export default function AdminEnquiries() {
                             </>
                           )}
                           <button
+                            type="button"
                             onClick={() => openDetail(e)}
                             className="px-2.5 py-1 text-[11px] font-semibold text-accent bg-accent/10 hover:bg-accent/20 rounded-lg"
                           >
                             Update
                           </button>
                         </div>
+                      </div>
+
+                      {/* Download PDF Quotation Button */}
+                      <div className="pt-2 border-t border-gray-100" onClick={(ev) => ev.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={(ev) => handleDownloadEnquiryQuote(e, ev)}
+                          disabled={isDownloading}
+                          className="w-full py-2 px-3 rounded-xl bg-accent/10 hover:bg-accent/20 text-accent font-bold text-xs flex items-center justify-center gap-1.5 border border-accent/25 active:scale-98 transition-all"
+                          title="Download PDF Quotation"
+                        >
+                          <Download size={13} className={isDownloading ? 'animate-bounce' : ''} />
+                          <span>{isDownloading ? 'Downloading Quote…' : 'Download PDF Quote'}</span>
+                        </button>
                       </div>
                     </div>
                   )
@@ -486,7 +608,7 @@ export default function AdminEnquiries() {
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-b border-border">
                       <tr>
-                        {['Reference', 'Customer / Business', 'Phone', 'Campaign', 'Buses', 'Duration', 'Price', 'Status', 'Date'].map((h) => (
+                        {['Reference', 'Customer / Business', 'Phone', 'Campaign', 'Buses', 'Duration', 'Price', 'Status', 'Date', 'Actions'].map((h) => (
                           <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-secondary-text whitespace-nowrap">
                             {h}
                           </th>
@@ -494,34 +616,59 @@ export default function AdminEnquiries() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {filteredEnquiries.map((e) => (
-                        <tr
-                          key={e.id}
-                          className="hover:bg-gray-50 cursor-pointer transition-colors"
-                          onClick={() => openDetail(e)}
-                        >
-                          <td className="px-4 py-3 font-mono text-xs font-semibold text-accent">{e.id}</td>
-                          <td className="px-4 py-3">
-                            <p className="font-semibold text-primary-text">{e.customerDetails.businessName}</p>
-                            <p className="text-secondary-text text-xs">{e.customerDetails.contactName}</p>
-                          </td>
-                          <td className="px-4 py-3 text-secondary-text text-xs">{e.customerDetails.phone}</td>
-                          <td className="px-4 py-3 text-xs">
-                            <span className="font-medium text-gray-800">{e.campaignName || 'Standard'}</span>
-                          </td>
-                          <td className="px-4 py-3 tabular-nums font-semibold">{e.pricingSnapshot?.buses ?? '—'}</td>
-                          <td className="px-4 py-3 tabular-nums text-xs">{e.pricingSnapshot?.videoDurationSeconds}s · {e.pricingSnapshot?.months} Mo</td>
-                          <td className="px-4 py-3 font-bold tabular-nums text-accent">
-                            {formatINR(e.negotiatedPrice ?? e.pricingSnapshot?.packagePrice ?? 0)}
-                          </td>
-                          <td className="px-4 py-3">
-                            <Badge variant={STATUS_VARIANT[e.status]}>{e.status}</Badge>
-                          </td>
-                          <td className="px-4 py-3 text-secondary-text whitespace-nowrap text-xs">
-                            {format(new Date(e.createdAt), 'dd MMM yyyy')}
-                          </td>
-                        </tr>
-                      ))}
+                      {filteredEnquiries.map((e) => {
+                        const isDownloading = downloadingId === e.id
+                        return (
+                          <tr
+                            key={e.id}
+                            className="hover:bg-gray-50 cursor-pointer transition-colors"
+                            onClick={() => openDetail(e)}
+                          >
+                            <td className="px-4 py-3 font-mono text-xs font-semibold text-accent">{e.id}</td>
+                            <td className="px-4 py-3">
+                              <p className="font-semibold text-primary-text">{e.customerDetails.businessName}</p>
+                              <p className="text-secondary-text text-xs">{e.customerDetails.contactName}</p>
+                            </td>
+                            <td className="px-4 py-3 text-secondary-text text-xs">{e.customerDetails.phone}</td>
+                            <td className="px-4 py-3 text-xs">
+                              <span className="font-medium text-gray-800">{e.campaignName || 'Standard'}</span>
+                            </td>
+                            <td className="px-4 py-3 tabular-nums font-semibold">{e.pricingSnapshot?.buses ?? '—'}</td>
+                            <td className="px-4 py-3 tabular-nums text-xs">{e.pricingSnapshot?.videoDurationSeconds}s · {e.pricingSnapshot?.months} Mo</td>
+                            <td className="px-4 py-3 font-bold tabular-nums text-accent">
+                              {formatINR(e.negotiatedPrice ?? e.pricingSnapshot?.packagePrice ?? 0)}
+                            </td>
+                            <td className="px-4 py-3">
+                              <Badge variant={STATUS_VARIANT[e.status]}>{e.status}</Badge>
+                            </td>
+                            <td className="px-4 py-3 text-secondary-text whitespace-nowrap text-xs">
+                              {format(new Date(e.createdAt), 'dd MMM yyyy')}
+                            </td>
+                            <td className="px-4 py-3" onClick={(ev) => ev.stopPropagation()}>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={(ev) => handleDownloadEnquiryQuote(e, ev)}
+                                  disabled={isDownloading}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-accent/40 text-accent hover:bg-blue-50 text-xs font-bold transition-colors"
+                                  title="Download PDF Quotation"
+                                >
+                                  <Download size={12} className={isDownloading ? 'animate-bounce' : ''} />
+                                  <span>{isDownloading ? 'PDF…' : 'PDF Quote'}</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => openDetail(e)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100 text-xs font-semibold transition-colors"
+                                  title="View details"
+                                >
+                                  Details
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -712,12 +859,24 @@ export default function AdminEnquiries() {
                   {selected.customerDetails.businessName || 'Prospect Details'}
                 </h2>
               </div>
-              <button
-                onClick={() => setSelected(null)}
-                className="p-2 text-gray-400 hover:text-gray-700 rounded-xl hover:bg-gray-100 transition-colors"
-              >
-                <X size={18} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleDownloadEnquiryQuote(selected)}
+                  disabled={downloadingId === selected.id}
+                  className="px-3 py-1.5 rounded-xl bg-accent/10 hover:bg-accent/20 text-accent font-bold text-xs flex items-center gap-1.5 border border-accent/25 active:scale-98 transition-all"
+                  title="Download PDF Quotation"
+                >
+                  <Download size={13} className={downloadingId === selected.id ? 'animate-bounce' : ''} />
+                  <span>{downloadingId === selected.id ? 'Downloading…' : 'PDF Quote'}</span>
+                </button>
+                <button
+                  onClick={() => setSelected(null)}
+                  className="p-2 text-gray-400 hover:text-gray-700 rounded-xl hover:bg-gray-100 transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
             {/* Modal Body (Scrollable) */}
@@ -742,6 +901,12 @@ export default function AdminEnquiries() {
                     {formatINR(selected.negotiatedPrice ?? selected.pricingSnapshot?.packagePrice ?? 0)}
                   </span>
                 </div>
+                {selected.quotationId && (
+                  <div className="col-span-2 pt-2 border-t border-gray-200/60 flex items-center justify-between text-[11px]">
+                    <span className="text-secondary-text">Linked Quotation Ref:</span>
+                    <span className="font-mono font-bold text-accent">{selected.quotationId}</span>
+                  </div>
+                )}
               </div>
 
               {/* Status Selector */}
@@ -802,6 +967,16 @@ export default function AdminEnquiries() {
                 <span>Delete Deal</span>
               </button>
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleDownloadEnquiryQuote(selected)}
+                  disabled={downloadingId === selected.id}
+                  className="px-3.5 py-2 text-xs font-bold text-accent bg-accent/10 hover:bg-accent/20 border border-accent/30 rounded-xl transition-colors flex items-center gap-1.5"
+                  title="Download PDF Quotation"
+                >
+                  <Download size={13} className={downloadingId === selected.id ? 'animate-bounce' : ''} />
+                  <span>{downloadingId === selected.id ? 'Generating…' : 'Download Quote'}</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setSelected(null)}
