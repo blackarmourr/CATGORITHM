@@ -5,9 +5,10 @@ import {
   DURATION_DISCOUNT_RULES, formatINR, validatePricingMonotonicity,
   STANDARD_RATE_PER_SECOND, STANDARD_PRICE_PER_BUS_PER_MONTH_30S
 } from '../../lib/pricingEngine'
+import { downloadTariffCardPDF } from '../../lib/tariffCardGenerator'
 import type { PricingSettings } from '../../types'
 import { LoadingSpinner, ConfirmDialog } from '../../components/ui'
-import { Tag, Save, AlertTriangle, Info, RefreshCw } from 'lucide-react'
+import { Tag, Save, AlertTriangle, Info, RefreshCw, Download } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function AdminPricing() {
@@ -16,6 +17,20 @@ export default function AdminPricing() {
   const [saving, setSaving] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [warnings, setWarnings] = useState<string[]>([])
+  const [downloadingTariff, setDownloadingTariff] = useState(false)
+
+  async function handleDownloadTariff() {
+    setDownloadingTariff(true)
+    try {
+      await downloadTariffCardPDF()
+      toast.success('Official Tariff Card 2026 downloaded!')
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to generate Tariff Card PDF')
+    } finally {
+      setDownloadingTariff(false)
+    }
+  }
 
   async function load() {
     setLoading(true)
@@ -63,14 +78,26 @@ export default function AdminPricing() {
 
   return (
     <div className="space-y-6 w-full max-w-full min-w-0 pb-12 overflow-x-hidden">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black text-primary-text">Pricing Settings</h1>
           <p className="text-secondary-text text-sm">Manage package prices, discount rules and platform configuration.</p>
         </div>
-        <button onClick={load} className="btn-ghost text-sm">
-          <RefreshCw size={14} /> Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleDownloadTariff}
+            disabled={downloadingTariff}
+            className="px-3.5 py-2 rounded-xl bg-accent hover:bg-blue-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs active:scale-95 transition-all"
+            title="Download Official Single-Page Tariff Card PDF"
+          >
+            <Download size={13} className={downloadingTariff ? 'animate-bounce' : ''} />
+            <span>{downloadingTariff ? 'Generating PDF…' : 'Download Tariff Card (PDF)'}</span>
+          </button>
+          <button onClick={load} className="btn-ghost text-sm">
+            <RefreshCw size={14} /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* Dev notice */}
