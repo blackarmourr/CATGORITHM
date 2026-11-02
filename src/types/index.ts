@@ -121,17 +121,27 @@ export interface Quotation {
   totalWithTax?: number;
 }
 
-export interface SlotBooking {
+export interface AdvertisementBooking {
   id: string;
   clientName: string;
-  slotsCount: number;         // e.g. 1 to 10
-  videoDurationSeconds?: number; // 30s per slot standard
   campaignName?: string;
-  startDate: string;          // ISO date YYYY-MM-DD
-  endDate: string;            // ISO date YYYY-MM-DD
+  durationSeconds: number;       // Actual video ad duration in seconds (e.g. 10, 15, 30, 45, 60)
+  startDate: string;            // ISO date YYYY-MM-DD
+  endDate: string;              // ISO date YYYY-MM-DD
+  months?: number;              // Billed duration in months
+  calculatedPrice?: number;     // Commercial price for this booking
+  pricingRate?: string;         // Pricing basis applied
+  usesBuffer?: boolean;         // True if this ad extends into the 30s buffer
+  bufferSecondsUsed?: number;   // How many seconds of buffer this ad uses
   notes?: string;
   createdAt?: string;
+  // Backward compatibility aliases:
+  slotsCount?: number;
+  videoDurationSeconds?: number;
 }
+
+// Backward compatibility alias
+export type SlotBooking = AdvertisementBooking;
 
 export interface BusRecord {
   id: string;
@@ -143,8 +153,12 @@ export interface BusRecord {
   route?: string;           // Formatted summary route: e.g. 'Kollam ➔ Karunagappally'
   internalName?: string;    // Backward compatibility
   available: boolean;
-  totalSlots: number;       // Total ad slots per loop (Default: 10 slots, 30s each)
-  slotBookings?: SlotBooking[];
+  physicalAdCapacity?: number; // 450 seconds physical capacity
+  normalAdCapacity?: number;   // 420 seconds normal bookable capacity
+  bufferAdCapacity?: number;   // 30 seconds emergency buffer
+  advertisements?: AdvertisementBooking[];
+  slotBookings?: AdvertisementBooking[]; // Backward compatibility
+  totalSlots?: number;      // Backward compatibility
   notes?: string;
 }
 

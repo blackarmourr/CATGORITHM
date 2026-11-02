@@ -267,6 +267,15 @@ export function validatePricingMonotonicity(
   return { valid: violatingMonths.length === 0, violatingMonths };
 }
 
+// Helper with options object
+export function calculatePricing(options: {
+  buses: number;
+  months: number;
+  videoDurationSeconds: number;
+}): PricingResult {
+  return calculatePrice(options.buses, options.months, options.videoDurationSeconds);
+}
+
 // ============================================================
 // CURRENCY FORMATTING — Indian numbering system
 // ============================================================
