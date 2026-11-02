@@ -1117,7 +1117,7 @@ export function checkBusAvailabilityForPeriod(
     bookedDuringPeriod,
     availableDuringPeriod: Math.max(0, normalCap - bookedDuringPeriod),
     shortageSeconds: shortage,
-    reason: `Requested ${requestedDurationSeconds}s exceeds total bus advertising loop limit (Max 450s). Shortage: ${shortage}s.`,
+    reason: `Requested ${requestedDurationSeconds}s exceeds total bus advertising capacity (Max 450s). Shortage: ${shortage}s.`,
   };
 }
 
@@ -1233,7 +1233,7 @@ export async function bookBusAdvertisement(
 
   const check = checkBusAvailabilityForPeriod(bus, booking.startDate, booking.endDate, duration);
   if (!check.isAvailable) {
-    throw new Error(check.reason || `Duration ${duration}s exceeds physical capacity (450s loop max).`);
+    throw new Error(check.reason || `Duration ${duration}s exceeds physical capacity (450s max).`);
   }
 
   const newBooking: AdvertisementBooking = {

@@ -3,9 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   getFleet, updateFleet, bookBusAdvertisement, releaseBusAdvertisement,
   bookFleetWideAdvertisements, getBusTimeMetrics, checkBusAvailabilityForPeriod,
-  BusTimeMetrics, TOTAL_LOOP_DURATION, PHYSICAL_AD_CAPACITY,
-  RESERVED_BUFFER, BOOKABLE_CAPACITY, SONG_ENTERTAINMENT_DURATION,
-  PASSENGER_ANNOUNCEMENT_DURATION
+  BusTimeMetrics, PHYSICAL_AD_CAPACITY, RESERVED_BUFFER, BOOKABLE_CAPACITY
 } from '../../lib/dataStore'
 import { calculatePricing } from '../../lib/pricingEngine'
 import type { Fleet, BusRecord, AdvertisementBooking } from '../../types'
@@ -257,7 +255,7 @@ export default function AdminFleet() {
     )
 
     if (!check.isAvailable) {
-      toast.error(check.reason || 'Requested duration exceeds maximum 450-second loop capacity!')
+      toast.error(check.reason || 'Requested duration exceeds maximum 450-second capacity!')
       return
     }
 
@@ -496,7 +494,7 @@ export default function AdminFleet() {
             Time-Based Advertising Inventory
           </h1>
           <p className="text-xs sm:text-sm text-secondary-text mt-0.5">
-            12-minute loop (720s) · 420s Bookable Ad Time · 30s Emergency Buffer · Exact seconds allocation.
+            420s Bookable Advertising Capacity per bus · 30s Emergency Buffer · Exact seconds allocation.
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -523,31 +521,20 @@ export default function AdminFleet() {
         </div>
       </div>
 
-      {/* ── Loop Architecture Announcement Banner ── */}
-      <div className="p-3 bg-gradient-to-r from-slate-900 via-gray-900 to-slate-800 rounded-2xl text-white shadow-xs border border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-2.5 text-xs">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-accent/20 border border-accent/40 flex items-center justify-center flex-shrink-0 text-amber-300">
-            <Clock size={16} />
+      {/* ── Optional Emergency Buffer Active Alert ── */}
+      {busesUsingBuffer.length > 0 && (
+        <div className="p-3 bg-amber-50 rounded-2xl border border-amber-300 shadow-xs flex items-center justify-between gap-2.5 text-xs">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={16} className="text-amber-600 flex-shrink-0" />
+            <span className="font-bold text-amber-900">
+              {busesUsingBuffer.length} Bus{busesUsingBuffer.length > 1 ? 'es' : ''} currently utilizing 30s Emergency Buffer
+            </span>
           </div>
-          <div>
-            <div className="font-bold flex items-center gap-2 flex-wrap">
-              <span>Standard 12-Minute Loop Configuration (720 Seconds)</span>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold">
-                Dynamic Fleet Capacity Active
-              </span>
-            </div>
-            <p className="text-[11px] text-gray-300 mt-0.5">
-              450s Total Ad Capacity (420s Normal Bookable + 30s Buffer) · 180s Entertainment · 90s Announcements
-            </p>
-          </div>
+          <span className="px-2.5 py-0.5 rounded-full bg-amber-200 text-amber-900 text-[10px] font-bold">
+            Buffer In Use
+          </span>
         </div>
-        {busesUsingBuffer.length > 0 && (
-          <div className="px-2.5 py-1 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold text-[11px] flex items-center gap-1.5 whitespace-nowrap">
-            <AlertTriangle size={13} />
-            <span>{busesUsingBuffer.length} Bus utilizing Emergency Buffer</span>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* ── Fleet KPI Summary (4-Col Grid, Dynamic Seconds Meter) ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -560,7 +547,7 @@ export default function AdminFleet() {
             {fleetBookableCapacity}s
           </p>
           <p className="text-[11px] text-gray-500 mt-0.5">
-            {activeBusesCount} Buses × 420s/loop ({fleetPhysicalCapacity}s physical)
+            {activeBusesCount} Buses × 420s Bookable (+30s Buffer/bus)
           </p>
         </div>
 
@@ -710,7 +697,7 @@ export default function AdminFleet() {
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-bold text-gray-800 flex items-center gap-1.5">
                     <Clock size={13} className="text-accent" />
-                    Loop Advertising Capacity
+                    Advertising Capacity
                   </span>
                   <span className="font-extrabold text-xs">
                     <span className={metrics.bookedAdTime > 0 ? 'text-accent' : 'text-gray-500'}>
@@ -766,7 +753,7 @@ export default function AdminFleet() {
                     </div>
                   ) : (
                     <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                      <Check size={12} /> Full 420s loop available for booking
+                      <Check size={12} /> Full 420s advertising capacity available
                     </span>
                   )}
 
@@ -851,7 +838,7 @@ export default function AdminFleet() {
                       Advertising Capacity — {managingBus.busName}
                     </h3>
                     <p className="text-[11px] text-gray-300 font-mono">
-                      {managingBus.busNumber} · 12-Min Loop (720s) · 450s Ad Capacity (420s Normal + 30s Buffer)
+                      {managingBus.busNumber} · 420s Bookable Advertising Capacity (+30s Emergency Buffer)
                     </p>
                   </div>
                 </div>
@@ -866,58 +853,44 @@ export default function AdminFleet() {
 
               {/* Modal Body */}
               <div className="p-4 sm:p-5 space-y-4 max-h-[78vh] overflow-y-auto">
-                {/* 12-Minute Loop Architecture Summary */}
+                {/* Advertising Capacity Meter (450s Total: 420s Bookable + 30s Buffer) */}
                 <div className="bg-gray-50 rounded-xl p-3 border border-gray-200 space-y-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-gray-700">Loop Distribution Breakdown (720s Total)</span>
+                    <span className="font-bold text-gray-700">Advertising Capacity Meter</span>
                     <span className="font-extrabold text-accent">
-                      {busMetrics.bookedAdTime}s / 420s Booked
+                      {busMetrics.bookedAdTime}s / 420s Booked ({busMetrics.occupancyPercent}%)
                     </span>
                   </div>
 
-                  {/* 12-Min Loop Proportional Bar */}
+                  {/* Dual Bar: 420s Normal Bookable + 30s Emergency Buffer */}
                   <div className="h-4 rounded-lg bg-gray-200 overflow-hidden flex text-[10px] font-bold text-white shadow-inner">
                     {/* Normal Booked Ads */}
                     <div
                       className="bg-accent h-full flex items-center justify-center truncate px-1 transition-all"
-                      style={{ width: `${(Math.min(busMetrics.bookedAdTime, 420) / 720) * 100}%` }}
+                      style={{ width: `${(Math.min(busMetrics.bookedAdTime, 420) / 450) * 100}%` }}
                       title={`Booked Ads: ${Math.min(busMetrics.bookedAdTime, 420)}s`}
                     >
-                      {busMetrics.bookedAdTime > 30 ? `${busMetrics.bookedAdTime}s Ads` : ''}
+                      {busMetrics.bookedAdTime > 30 ? `${busMetrics.bookedAdTime}s Booked` : ''}
                     </div>
                     {/* Free Bookable Space */}
                     <div
                       className="bg-emerald-100 text-emerald-800 h-full flex items-center justify-center truncate px-1 transition-all"
-                      style={{ width: `${(busMetrics.availableAdTime / 720) * 100}%` }}
+                      style={{ width: `${(busMetrics.availableAdTime / 450) * 100}%` }}
                       title={`Available Bookable Space: ${busMetrics.availableAdTime}s`}
                     >
-                      {busMetrics.availableAdTime > 40 ? `${busMetrics.availableAdTime}s Free` : ''}
+                      {busMetrics.availableAdTime > 40 ? `${busMetrics.availableAdTime}s Available` : ''}
                     </div>
                     {/* 30s Emergency Buffer */}
                     <div
-                      className={`h-full flex items-center justify-center truncate px-1 ${
-                        busMetrics.isBufferInUse ? 'bg-amber-500 text-white animate-pulse' : 'bg-amber-200 text-amber-900'
+                      className={`h-full flex items-center justify-center truncate px-1 transition-all ${
+                        busMetrics.isBufferInUse
+                          ? 'bg-amber-500 text-white animate-pulse'
+                          : 'bg-amber-200 text-amber-900 border-l border-amber-300'
                       }`}
-                      style={{ width: `${(30 / 720) * 100}%` }}
+                      style={{ width: `${(30 / 450) * 100}%` }}
                       title={`Emergency Buffer: ${busMetrics.bufferTimeUsed}/30s in use`}
                     >
-                      30s
-                    </div>
-                    {/* Song / Entertainment 180s */}
-                    <div
-                      className="bg-slate-400 text-white h-full flex items-center justify-center truncate px-1"
-                      style={{ width: `${(180 / 720) * 100}%` }}
-                      title="Song / Entertainment Segment (180s)"
-                    >
-                      Song 180s
-                    </div>
-                    {/* Passenger Announcements 90s */}
-                    <div
-                      className="bg-purple-300 text-purple-900 h-full flex items-center justify-center truncate px-1"
-                      style={{ width: `${(90 / 720) * 100}%` }}
-                      title="Passenger Announcements (90s)"
-                    >
-                      PAS 90s
+                      30s Buffer
                     </div>
                   </div>
 
@@ -932,7 +905,7 @@ export default function AdminFleet() {
                     </span>
                     <span className="flex items-center gap-1 font-semibold text-amber-700">
                       <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
-                      Buffer: {busMetrics.bufferTimeUsed}/30s
+                      Buffer: {busMetrics.isBufferInUse ? `${busMetrics.bufferTimeUsed}s In Use` : '30s Reserved (Free)'}
                     </span>
                   </div>
                 </div>
@@ -948,7 +921,7 @@ export default function AdminFleet() {
 
                   {activeAds.length === 0 ? (
                     <div className="p-4 rounded-xl border border-dashed border-gray-200 text-center text-xs text-gray-400">
-                      No advertisements active on this bus loop. Full 420s available for booking.
+                      No advertisements active on this bus. Full 420s available for booking.
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -1031,7 +1004,7 @@ export default function AdminFleet() {
                       Book Advertisement on this Bus
                     </h4>
                     <span className="text-[11px] font-bold text-emerald-700">
-                      {busMetrics.availableAdTime}s Free in Loop
+                      {busMetrics.availableAdTime}s Available for Booking
                     </span>
                   </div>
 
@@ -1178,7 +1151,7 @@ export default function AdminFleet() {
                     <div className="pt-1.5 border-t border-gray-100 text-[11px] flex items-center justify-between">
                       <span className="text-gray-500">Effective Rate:</span>
                       <span className="font-mono font-bold text-gray-700">
-                        ₹{singleBusPricing.pricePerSecondBusMonth.toFixed(2)}/sec/month ({adDurationSeconds}s loop display)
+                        ₹{singleBusPricing.pricePerSecondBusMonth.toFixed(2)}/sec/month ({adDurationSeconds}s ad)
                       </span>
                     </div>
 
@@ -1205,7 +1178,7 @@ export default function AdminFleet() {
                         <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-300 text-rose-900 text-xs font-bold flex items-start gap-1.5">
                           <ShieldAlert size={15} className="text-rose-600 flex-shrink-0 mt-0.5" />
                           <div>
-                            <p>❌ CAPACITY REJECTED (Max 450s Loop Limit)</p>
+                            <p>❌ CAPACITY REJECTED (Max 450s Total Ad Capacity)</p>
                             <p className="font-normal text-[11px] text-rose-800 mt-0.5">
                               Shortage by {check.shortageSeconds} seconds. Please reduce ad duration or choose another date.
                             </p>
@@ -1439,7 +1412,7 @@ export default function AdminFleet() {
                                 <span className="text-amber-600 font-bold">⚠️ Uses Buffer</span>
                               )}
                               {!check.isAvailable && (
-                                <span className="text-rose-600 font-bold">❌ Loop Full</span>
+                                <span className="text-rose-600 font-bold">❌ Capacity Full</span>
                               )}
                             </div>
                           </div>
