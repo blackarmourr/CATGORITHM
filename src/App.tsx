@@ -6,27 +6,31 @@ import AdminEnquiries from './pages/admin/AdminEnquiries'
 import AdminCampaigns from './pages/admin/AdminCampaigns'
 import AdminFleet from './pages/admin/AdminFleet'
 import AdminPricing from './pages/admin/AdminPricing'
+import PWAInstallBanner from './components/PWAInstallPrompt'
 
 export default function App() {
   return (
-    <Routes>
-      {/* Primary Sales Calculator Pitch Page */}
-      <Route path="/" element={<CalculatorPage />} />
-      <Route path="/calculator" element={<Navigate to="/" replace />} />
-      <Route path="/campaigns" element={<Navigate to="/admin/campaigns" replace />} />
+    <>
+      <Routes>
+        {/* Primary Sales Calculator Pitch Page */}
+        <Route path="/" element={<CalculatorPage />} />
+        <Route path="/calculator" element={<Navigate to="/" replace />} />
+        <Route path="/campaigns" element={<Navigate to="/admin/campaigns" replace />} />
 
-      {/* Direct, frictionless access to Admin, Pipeline, Quotations & Campaigns (No Login Required) */}
-      <Route path="/admin/login" element={<Navigate to="/admin/enquiries" replace />} />
-      <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<AdminDashboard />} />
-        <Route path="enquiries" element={<AdminEnquiries />} />
-        <Route path="campaigns" element={<AdminCampaigns />} />
-        <Route path="fleet" element={<AdminFleet />} />
-        <Route path="pricing" element={<AdminPricing />} />
-      </Route>
+        {/* Direct, frictionless access to Admin, Pipeline, Quotations & Campaigns (No Login Required) */}
+        <Route path="/admin/login" element={<Navigate to="/admin/enquiries" replace />} />
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="enquiries" element={<AdminEnquiries />} />
+          <Route path="campaigns" element={<AdminCampaigns />} />
+          <Route path="fleet" element={<AdminFleet />} />
+          <Route path="pricing" element={<AdminPricing />} />
+        </Route>
 
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <PWAInstallBanner />
+    </>
   )
 }

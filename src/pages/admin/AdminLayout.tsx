@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { PWAHeaderInstallButton } from '../../components/PWAInstallPrompt'
 
 const NAV_ITEMS = [
   { to: '/admin/enquiries?tab=enquiries', label: 'Pipeline Leads', icon: Users, exact: false },
@@ -25,16 +26,16 @@ export default function AdminLayout() {
       <div className="p-5 border-b border-white/10">
         <div className="flex items-center gap-2.5">
           <img
-            src="./catgorithm-logo.png"
-            alt="Catgorithm"
-            className="h-7 w-auto object-contain filter brightness-110"
+            src="./app-icon.png"
+            alt="Catgorithm Bus Ads"
+            className="w-8 h-8 rounded-xl object-cover border border-white/10 shadow-sm"
             onError={(e) => {
               (e.currentTarget as HTMLElement).style.display = 'none';
             }}
           />
           <div>
             <p className="text-white font-bold text-sm">Catgorithm</p>
-            <p className="text-white/40 text-xs">Sales & Ops Hub</p>
+            <p className="text-white/40 text-xs">Bus Advertising</p>
           </div>
         </div>
       </div>
@@ -142,6 +143,7 @@ export default function AdminLayout() {
           <div className="flex-1 min-w-0" />
 
           <div className="flex items-center gap-2 flex-shrink-0">
+            <PWAHeaderInstallButton />
             <span className="text-xs text-secondary-text font-medium hidden sm:block">Kollam Screen Fleet</span>
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           </div>

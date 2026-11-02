@@ -30,3 +30,19 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </HashRouter>
   </React.StrictMode>,
 )
+
+// Register Service Worker for PWA Mobile Installability
+if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
+  window.addEventListener('load', () => {
+    const baseUrl = (import.meta as any).env?.BASE_URL || './';
+    const swUrl = `${baseUrl.endsWith('/') ? baseUrl : baseUrl + '/'}sw.js`;
+    navigator.serviceWorker
+      .register(swUrl)
+      .then((reg) => {
+        console.log('[PWA] Service Worker active, scope:', reg.scope);
+      })
+      .catch((err) => {
+        console.warn('[PWA] Service Worker registration failed:', err);
+      });
+  });
+}

@@ -6,6 +6,7 @@ import DurationSelector from '../components/calculator/DurationSelector'
 import MonthSelector from '../components/calculator/MonthSelector'
 import PricingSummary from '../components/calculator/PricingSummary'
 import QuotationForm from '../components/calculator/QuotationForm'
+import { PWAHeaderInstallButton } from '../components/PWAInstallPrompt'
 import { useCalculatorStore } from '../stores/calculatorStore'
 import { formatINR } from '../lib/pricingEngine'
 import {
@@ -41,17 +42,28 @@ Valid for 30 days. Contact: +91 97463 36175`
       {/* ── PART 1: Clean, Uncluttered Mobile-First Header ── */}
       <header className="sticky top-0 z-40 bg-[#080B12]/95 backdrop-blur-md border-b border-gray-800 text-white shadow-sm">
         <div className="max-w-3xl mx-auto px-2.5 sm:px-4 h-14 flex items-center justify-between gap-1.5">
-          {/* Clean Brand Name */}
+          {/* Clean Brand Name & Official App Icon */}
           <Link
             to="/"
-            className="flex items-center gap-1.5 py-1 text-white hover:text-gray-200 transition-colors flex-shrink-0"
+            className="flex items-center gap-2 py-1 text-white hover:text-gray-200 transition-colors flex-shrink-0"
             aria-label="Catgorithm Home"
           >
+            <img
+              src="./app-icon.png"
+              alt="Catgorithm Bus Ads"
+              className="w-7 h-7 rounded-lg object-cover shadow-sm border border-white/10 flex-shrink-0"
+              onError={(e) => {
+                (e.currentTarget as HTMLElement).style.display = 'none';
+              }}
+            />
             <span className="font-extrabold text-base tracking-tight text-white">Catgorithm</span>
           </Link>
 
           {/* ── Top Navigation Links ── */}
           <nav className="flex items-center gap-1 sm:gap-2">
+            {/* Install PWA Button (Visible when installable) */}
+            <PWAHeaderInstallButton />
+
             {/* Pipeline Button */}
             <Link
               to="/admin/enquiries?tab=enquiries"

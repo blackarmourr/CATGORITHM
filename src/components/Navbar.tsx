@@ -31,9 +31,9 @@ export default function Navbar() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group" aria-label="Catgorithm Home">
             <img
-              src="./catgorithm-logo.png"
-              alt="Catgorithm"
-              className="h-8 w-auto object-contain filter brightness-110"
+              src="./app-icon.png"
+              alt="Catgorithm Bus Ads"
+              className="w-8 h-8 rounded-xl object-cover border border-white/10 shadow-sm"
               onError={(e) => {
                 (e.currentTarget as HTMLElement).style.display = 'none';
               }}
