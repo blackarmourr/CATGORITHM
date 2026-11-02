@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json.schemastore.org/web-manifest-combined.json",
+  "id": "/CATGORITHM/",
+  "name": "Catgorithm Bus Advertising",
+  "short_name": "Catgorithm",
+  "description": "Kollam Bus Screen Advertising Campaign Calculator, Fleet Inventory & Instant Quotation Engine.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#080B12",
+  "theme_color": "#080B12",
+  "categories": ["business", "productivity", "utilities"],
+  "lang": "en-IN",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "./favicon-16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "./favicon-32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "./favicon-64.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "./apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "./pwa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./pwa-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./pwa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./pwa-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Campaign Calculator",
+      "short_name": "Calculator",
+      "description": "Calculate live bus screen advertising packages",
+      "url": "./#/",
+      "icons": [{ "src": "./pwa-icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Enquiries Pipeline",
+      "short_name": "Pipeline",
+      "description": "Manage prospective leads and follow-ups",
+      "url": "./#/admin/enquiries?tab=enquiries",
+      "icons": [{ "src": "./pwa-icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Fleet Inventory",
+      "short_name": "Fleet",
+      "description": "View Kollam bus fleet capacity and routes",
+      "url": "./#/admin/fleet",
+      "icons": [{ "src": "./pwa-icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
