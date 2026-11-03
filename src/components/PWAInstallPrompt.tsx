@@ -153,7 +153,7 @@ export default function PWAInstallBanner() {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               <h4 className="font-extrabold text-xs text-white truncate">Install Catgorithm App</h4>
-              <span className="bg-orange-500/20 text-orange-400 border border-orange-500/30 text-[9px] font-black px-1.5 py-0.2 rounded-full uppercase tracking-wider">
+              <span className="bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[9px] font-black px-1.5 py-0.2 rounded-full uppercase tracking-wider">
                 Fast
               </span>
             </div>
