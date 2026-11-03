@@ -4,7 +4,7 @@
 // fast background caching, and seamless offline fallback.
 // ============================================================
 
-const CACHE_NAME = 'catgorithm-pwa-v1';
+const CACHE_NAME = 'catgorithm-pwa-v2';
 const PRECACHE_ASSETS = [
   './',
   './index.html',
