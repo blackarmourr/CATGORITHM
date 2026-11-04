@@ -22,7 +22,7 @@ export default function CustomDurationSelector() {
   }
 
   const multiplier = (videoDurationSeconds / 10).toFixed(1)
-  const dailyBase = videoDurationSeconds * DAILY_BASE_RATE_PER_SECOND
+  const dailyBase = Math.round(videoDurationSeconds * DAILY_BASE_RATE_PER_SECOND)
 
   return (
     <div className="space-y-3">

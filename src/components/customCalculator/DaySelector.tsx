@@ -82,10 +82,10 @@ export default function DaySelector() {
                   {isSelected && <Check size={11} className="text-white" />}
                 </div>
                 <span className={`text-[10px] font-semibold mt-0.5 tabular-nums ${isSelected ? 'text-white/90' : 'text-accent'}`}>
-                  ₹{m.price10s}
+                  {m.label}
                 </span>
                 <span className={`text-[8px] ${isSelected ? 'text-white/70' : 'text-gray-400'}`}>
-                  per 10s
+                  {m.sublabel}
                 </span>
               </button>
             )
