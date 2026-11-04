@@ -81,7 +81,7 @@ _Offer valid for 30 days. Contact us to reserve your screen inventory._
           businessCategory: 'Bus Screen Advertising',
           campaignStartDate: config.startDate,
           campaignEndDate: config.endDate,
-          notes: `Quote generated in field: ${config.buses} buses, ${config.videoDurationSeconds}s ad, ${config.months} months. Campaign: ${selectedCampaign?.name}.`,
+          notes: '',
         },
         pricingSnapshot: {
           buses: pricing.buses,

@@ -173,7 +173,7 @@ export async function generateQuotationPDF(quotation: Quotation): Promise<void> 
   }
 
   const standardDesc = p.campaignDays
-    ? `Base Tariff (${p.buses} ${p.buses === 1 ? 'Bus' : 'Buses'} x ${p.campaignDays} Days, ${p.videoDurationSeconds}s Ad @ Rs. 5/s/day)`
+    ? `Base Tariff (${p.buses} ${p.buses === 1 ? 'Bus' : 'Buses'} x ${p.campaignDays} Days, ${p.videoDurationSeconds}s Ad)`
     : `Standard Tariff (${p.buses} ${p.buses === 1 ? 'Bus' : 'Buses'} x ${p.months} ${p.months === 1 ? 'Month' : 'Months'}, ${p.videoDurationSeconds}s Ad)`
 
   const netDesc = p.campaignDays
@@ -341,23 +341,7 @@ export async function generateQuotationPDF(quotation: Quotation): Promise<void> 
   // @ts-ignore
   y = (doc as any).lastAutoTable.finalY + 5
 
-  // ── 6. Customer Notes (if provided) ─────────────────────────
-  if (c.notes && c.notes.trim()) {
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(7.5)
-    doc.setTextColor(...TEXT_MUTED)
-    doc.text('CLIENT REQUIREMENTS & NOTES:', MARGIN, y)
-    y += 3.5
-
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(7.5)
-    doc.setTextColor(...TEXT_PRIMARY)
-    const splitNotes = doc.splitTextToSize(c.notes.trim(), CONTENT_W)
-    doc.text(splitNotes, MARGIN, y)
-    y += splitNotes.length * 3.8 + 3
-  }
-
-  // ── 7. Terms & Conditions Box (Without GST) ─────────────────
+  // ── 6. Terms & Conditions Box (Without GST) ─────────────────
   const termsBoxY = Math.max(y, 222)
   const termsBoxH = 22
 

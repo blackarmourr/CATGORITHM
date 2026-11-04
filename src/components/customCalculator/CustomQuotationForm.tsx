@@ -82,7 +82,7 @@ _Offer valid for 30 days. Contact us to reserve your screen slots._
           businessCategory: 'Bus Screen Advertising',
           campaignStartDate: config.startDate,
           campaignEndDate: config.endDate,
-          notes: `Custom Campaign: ${config.buses} buses, ${config.videoDurationSeconds}s ad, ${config.days} days. Rate per bus: ₹${pricing.finalPerBusPrice}.`,
+          notes: '',
         },
         pricingSnapshot: {
           buses: pricing.buses,
@@ -141,7 +141,7 @@ _Offer valid for 30 days. Contact us to reserve your screen slots._
           businessCategory: 'Bus Screen Advertising',
           campaignStartDate: config.startDate,
           campaignEndDate: config.endDate,
-          notes: `Custom Daily Campaign: ${config.buses} buses, ${config.videoDurationSeconds}s ad, ${config.days} days.`,
+          notes: '',
         },
         pricingSnapshot: {
           buses: pricing.buses,
