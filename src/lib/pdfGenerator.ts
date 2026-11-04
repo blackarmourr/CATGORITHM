@@ -139,7 +139,10 @@ export async function generateQuotationPDF(quotation: Quotation): Promise<void> 
   doc.setFont('helvetica', 'normal')
   doc.text(`Campaign Period:`, rightX + 6, y + 23)
   doc.setFont('helvetica', 'bold')
-  doc.text(`${p.months} ${p.months === 1 ? 'Month' : 'Months'}`, rightX + 38, y + 23)
+  const periodText = p.campaignDays
+    ? `${p.campaignDays} ${p.campaignDays === 1 ? 'Day' : 'Days'}`
+    : `${p.months} ${p.months === 1 ? 'Month' : 'Months'}`
+  doc.text(periodText, rightX + 38, y + 23)
 
   // Highlighted Campaign Package Name
   const campaignPackageName = quotation.campaignName || 'Standard Campaign'
@@ -159,7 +162,9 @@ export async function generateQuotationPDF(quotation: Quotation): Promise<void> 
   y += 3
 
   let discountLabel = 'Package Tariff Benefit'
-  if (p.pricingMethod === '1month') {
+  if (p.pricingMethod === 'custom-daily') {
+    discountLabel = `Custom Milestone Benefit (${p.campaignDays || p.months * 30} Days)`
+  } else if (p.pricingMethod === '1month') {
     discountLabel = `Volume Package Benefit (${p.buses} Buses)`
   } else if (p.pricingMethod === '2month') {
     discountLabel = `Two-Month Volume Benefit (${p.buses} Buses)`
@@ -167,10 +172,18 @@ export async function generateQuotationPDF(quotation: Quotation): Promise<void> 
     discountLabel = `Long-Term Duration Benefit (${p.months} Months)`
   }
 
+  const standardDesc = p.campaignDays
+    ? `Base Tariff (${p.buses} ${p.buses === 1 ? 'Bus' : 'Buses'} x ${p.campaignDays} Days, ${p.videoDurationSeconds}s Ad @ Rs. 5/s/day)`
+    : `Standard Tariff (${p.buses} ${p.buses === 1 ? 'Bus' : 'Buses'} x ${p.months} ${p.months === 1 ? 'Month' : 'Months'}, ${p.videoDurationSeconds}s Ad)`
+
+  const netDesc = p.campaignDays
+    ? `Complete ${p.campaignDays}-Day Campaign Across All ${p.buses} Buses`
+    : `Complete ${p.months}-Month Campaign Across All ${p.buses} Buses`
+
   const commercialsData: [string, string, string][] = [
     [
       'Standard Advertising Tariff (Reference Price)',
-      `Standard Tariff (${p.buses} ${p.buses === 1 ? 'Bus' : 'Buses'} x ${p.months} ${p.months === 1 ? 'Month' : 'Months'}, ${p.videoDurationSeconds}s Ad)`,
+      standardDesc,
       formatPDFINR(p.standardPrice),
     ],
     [
@@ -180,7 +193,7 @@ export async function generateQuotationPDF(quotation: Quotation): Promise<void> 
     ],
     [
       'NET CAMPAIGN PACKAGE TOTAL',
-      `Complete ${p.months}-Month Campaign Across All ${p.buses} Buses`,
+      netDesc,
       formatPDFINR(p.packagePrice),
     ],
     [
@@ -246,28 +259,51 @@ export async function generateQuotationPDF(quotation: Quotation): Promise<void> 
   doc.text('EFFECTIVE UNIT ECONOMICS', MARGIN, y)
   y += 3
 
-  const unitEconomicsData: [string, string, string][] = [
-    [
-      'Effective Rate per Bus (Entire Campaign)',
-      `${formatPDFINR(p.packagePrice)} / ${p.buses} Buses`,
-      formatPDFINR(p.pricePerBusCampaign, 2),
-    ],
-    [
-      'Effective Rate per Bus (Per Month)',
-      `${formatPDFINR(p.packagePrice)} / (${p.buses} Buses x ${p.months} Months)`,
-      formatPDFINR(p.pricePerBusMonth, 2),
-    ],
-    [
-      'Effective Rate per Bus (Per Day - 30 Days Basis)',
-      `${formatPDFINR(p.packagePrice)} / (${p.buses} x ${p.months} x 30 Days)`,
-      `${formatPDFINR(p.pricePerBusDay, 2)} / day`,
-    ],
-    [
-      'Effective Cost per Second per Bus (Per Month)',
-      `Monthly Rate / ${p.videoDurationSeconds} Seconds`,
-      `${formatPDFINR(p.pricePerSecondBusMonth ?? (p.packagePrice / (p.buses * p.months * p.videoDurationSeconds)), 2)} / sec`,
-    ],
-  ]
+  const unitEconomicsData: [string, string, string][] = p.campaignDays
+    ? [
+        [
+          'Effective Rate per Bus (Entire Campaign)',
+          `${formatPDFINR(p.packagePrice)} / ${p.buses} Buses`,
+          formatPDFINR(p.pricePerBusCampaign, 2),
+        ],
+        [
+          'Effective Rate per Bus (Per Day)',
+          `${formatPDFINR(p.packagePrice)} / (${p.buses} Buses x ${p.campaignDays} Days)`,
+          `${formatPDFINR(p.pricePerBusDay, 2)} / day`,
+        ],
+        [
+          'Effective Cost per Second per Bus (Per Day)',
+          `Daily Rate / ${p.videoDurationSeconds} Seconds`,
+          `${formatPDFINR(p.pricePerBusDay / p.videoDurationSeconds, 2)} / sec / day`,
+        ],
+        [
+          'Equivalent Monthly Cost per Second per Bus',
+          `30 Days x Daily Rate / ${p.videoDurationSeconds} Seconds`,
+          `${formatPDFINR((p.pricePerBusDay * 30) / p.videoDurationSeconds, 2)} / sec / mo`,
+        ],
+      ]
+    : [
+        [
+          'Effective Rate per Bus (Entire Campaign)',
+          `${formatPDFINR(p.packagePrice)} / ${p.buses} Buses`,
+          formatPDFINR(p.pricePerBusCampaign, 2),
+        ],
+        [
+          'Effective Rate per Bus (Per Month)',
+          `${formatPDFINR(p.packagePrice)} / (${p.buses} Buses x ${p.months} Months)`,
+          formatPDFINR(p.pricePerBusMonth, 2),
+        ],
+        [
+          'Effective Rate per Bus (Per Day - 30 Days Basis)',
+          `${formatPDFINR(p.packagePrice)} / (${p.buses} x ${p.months} x 30 Days)`,
+          `${formatPDFINR(p.pricePerBusDay, 2)} / day`,
+        ],
+        [
+          'Effective Cost per Second per Bus (Per Month)',
+          `Monthly Rate / ${p.videoDurationSeconds} Seconds`,
+          `${formatPDFINR(p.pricePerSecondBusMonth ?? (p.packagePrice / (p.buses * p.months * p.videoDurationSeconds)), 2)} / sec`,
+        ],
+      ]
 
   autoTable(doc, {
     startY: y,

@@ -74,6 +74,8 @@ export interface PricingSnapshot {
   pricePerBusDay: number;
   pricePerSecondBusMonth?: number;
   pricePerSecondBusCampaign?: number;
+  campaignDays?: number;
+  dailyBasePrice?: number;
 }
 
 export interface CustomerDetails {
@@ -112,6 +114,7 @@ export interface Quotation {
   campaignStartDate?: string;
   campaignEndDate?: string;
   billedMonths?: number;
+  campaignDays?: number;
   campaignThemeSnapshot?: CampaignTheme;
   campaignMessagingSnapshot?: CampaignMessaging;
   validUntil: string;

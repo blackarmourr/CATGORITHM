@@ -1,23 +1,20 @@
-import { useState } from 'react'
 import { useCalculatorStore } from '../../stores/calculatorStore'
 import { formatINR, formatINR2 } from '../../lib/pricingEngine'
 import { AnimatedPrice } from '../ui'
+import { Link } from 'react-router-dom'
 import {
-  TrendingDown, ChevronDown, ChevronUp,
-  Sparkles, Check
+  TrendingDown, Sparkles, Check, CalendarRange, ArrowRight
 } from 'lucide-react'
 
 export default function PricingSummary() {
   const pricing = useCalculatorStore((s) => s.pricing)
   const config = useCalculatorStore((s) => s.config)
   const selectedCampaign = useCalculatorStore((s) => s.selectedCampaign)
-  const [breakdownOpen, setBreakdownOpen] = useState(false)
 
   const {
     standardPrice, packagePrice, savings, savingsPercentage,
     pricePerBusCampaign, pricePerBusMonth, pricePerBusDay,
     pricePerSecondBusMonth, pricePerSecondBusCampaign,
-    durationDiscountRate, pricingMethod, oneMonthBasis30s,
   } = pricing
 
   const hasSavings = savings > 0
@@ -101,88 +98,34 @@ export default function PricingSummary() {
         </div>
       </div>
 
-      {/* ── Expandable Transparent Math Breakdown ── */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-xs">
-        <button
-          type="button"
-          onClick={() => setBreakdownOpen(!breakdownOpen)}
-          className="w-full flex items-center justify-between p-3.5 text-xs font-bold text-gray-800 hover:bg-gray-50 transition-colors"
-          aria-expanded={breakdownOpen}
-        >
-          <span className="flex items-center gap-1.5">
-            <Sparkles size={13} className="text-accent" />
-            View Full Price Breakdown
-          </span>
-          {breakdownOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </button>
-
-        {breakdownOpen && (
-          <div className="px-4 pb-4 pt-1 text-xs border-t border-gray-100 space-y-2">
-            <div className="flex justify-between py-1 border-b border-gray-100">
-              <span className="text-gray-500">Standard Advertising Price:</span>
-              <span className="font-semibold text-gray-900 tabular-nums">{formatINR(standardPrice)}</span>
-            </div>
-
-            {pricingMethod === '1month' && (
-              <div className="flex justify-between py-1 border-b border-gray-100">
-                <span className="text-gray-500">1-Month Approved Package Base:</span>
-                <span className="font-semibold text-gray-900 tabular-nums">{formatINR(oneMonthBasis30s)}</span>
-              </div>
-            )}
-
-            {pricingMethod === '2month' && (
-              <div className="flex justify-between py-1 border-b border-gray-100">
-                <span className="text-gray-500">2-Month Approved Package Base:</span>
-                <span className="font-semibold text-gray-900 tabular-nums">
-                  {formatINR(Math.round(packagePrice / (config.videoDurationSeconds / 30)))}
-                </span>
-              </div>
-            )}
-
-            {pricingMethod === 'duration-discount' && (
-              <>
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-500">1-Month Package Base:</span>
-                  <span className="font-semibold text-gray-900 tabular-nums">{formatINR(oneMonthBasis30s)} × {config.months} mo</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-gray-100">
-                  <span className="text-gray-500">Duration Discount ({config.months} Months):</span>
-                  <span className="font-bold text-emerald-600 tabular-nums">−{(durationDiscountRate * 100).toFixed(0)}%</span>
-                </div>
-              </>
-            )}
-
-            {config.videoDurationSeconds !== 30 && (
-              <div className="flex justify-between py-1 border-b border-gray-100">
-                <span className="text-gray-500">Duration Scaling ({config.videoDurationSeconds}s / 30s):</span>
-                <span className="font-semibold text-gray-900 tabular-nums">×{(config.videoDurationSeconds / 30).toFixed(2)}</span>
-              </div>
-            )}
-
-            <div className="flex justify-between py-1 border-b border-gray-100">
-              <span className="text-gray-500">Discount Amount / Package Adjustment:</span>
-              <span className={`font-semibold tabular-nums ${hasSavings ? 'text-emerald-600' : 'text-gray-500'}`}>
-                {hasSavings ? `−${formatINR(savings)}` : '₹0'}
+      {/* ── Custom Campaign Navigation Button (Replaces Full Price Breakdown) ── */}
+      <Link
+        to="/custom-campaign"
+        className="group relative overflow-hidden bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#0F172A] border border-blue-500/40 hover:border-blue-400 p-3.5 sm:p-4 rounded-2xl shadow-sm transition-all hover:shadow-md active:scale-98 flex items-center justify-between text-white"
+        title="Open Custom Campaign Calculator"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0 text-blue-400 group-hover:scale-105 transition-transform">
+            <CalendarRange size={18} />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold text-sm text-white tracking-tight">Custom Campaign Calculator</span>
+              <span className="bg-blue-500/20 text-blue-300 text-[9.5px] font-black px-2 py-0.5 rounded-md border border-blue-500/30 uppercase tracking-wider">
+                1–30 Days
               </span>
             </div>
-
-            <div className="flex justify-between py-1.5 font-bold text-gray-900 bg-gray-50 px-2 rounded-lg">
-              <span>Final Package Price:</span>
-              <span className="text-accent tabular-nums">{formatINR(packagePrice)}</span>
-            </div>
-
-            <div className="flex justify-between py-1 text-emerald-700 font-semibold px-2">
-              <span>Total Direct Client Savings:</span>
-              <span className="tabular-nums">{formatINR(savings)} ({savingsPercentage.toFixed(1)}% off)</span>
-            </div>
-
-            <div className="pt-2 border-t border-gray-100 grid grid-cols-2 gap-2 text-gray-600 text-[11px]">
-              <div>Effective Rate / Bus: <span className="font-bold text-gray-900">{formatINR(pricePerBusCampaign)}</span></div>
-              <div>Effective / Bus / Month: <span className="font-bold text-gray-900">{formatINR(pricePerBusMonth)}</span></div>
-            </div>
+            <p className="text-xs text-gray-400 mt-0.5 truncate">
+              Need custom days (e.g. 14, 18 or 21 days)? Switch to daily milestone pricing.
+            </p>
           </div>
-        )}
-      </div>
+        </div>
+
+        <div className="flex items-center gap-1 text-blue-400 font-bold text-xs pl-2 flex-shrink-0 group-hover:translate-x-1 transition-transform">
+          <span className="hidden sm:inline">Open</span>
+          <ArrowRight size={15} />
+        </div>
+      </Link>
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { getEnquiries, getQuotations, updateEnquiryStatus, updateEnquiry, create
 import { generateQuotationPDF } from '../../lib/pdfGenerator'
 import type { Enquiry, EnquiryStatus, Quotation, PricingSnapshot } from '../../types'
 import { formatINR, calculatePrice } from '../../lib/pricingEngine'
+import { calculateCustomPrice } from '../../lib/customPricingEngine'
 import { Badge, EmptyState } from '../../components/ui'
 import {
   Users, Search, RefreshCw, ChevronDown, X, FileText, Download,
@@ -171,30 +172,62 @@ export default function AdminEnquiries() {
         const buses = ps?.buses || 1
         const months = ps?.months || 1
         const seconds = ps?.videoDurationSeconds || 30
+        const campaignDays = ps?.campaignDays
 
-        const calculated = calculatePrice(buses, months, seconds)
-        const standardPrice = ps?.standardPrice || calculated.standardPrice
-        const basePackagePrice = ps?.packagePrice || calculated.packagePrice
-        const finalPackagePrice = enquiry.negotiatedPrice ?? basePackagePrice
-        const savings = Math.max(0, standardPrice - finalPackagePrice)
-        const savingsPercentage = standardPrice > 0 ? (savings / standardPrice) * 100 : 0
+        let fullPricingSnapshot: PricingSnapshot
 
-        const fullPricingSnapshot: PricingSnapshot = {
-          buses,
-          months,
-          videoDurationSeconds: seconds,
-          standardPrice,
-          packagePrice: finalPackagePrice,
-          savings,
-          savingsPercentage,
-          durationMultiplier: ps?.durationMultiplier || calculated.durationMultiplier,
-          durationDiscountRate: ps?.durationDiscountRate || calculated.durationDiscountRate,
-          pricingMethod: ps?.pricingMethod || calculated.pricingMethod,
-          pricePerBusCampaign: finalPackagePrice / buses,
-          pricePerBusMonth: finalPackagePrice / (buses * months),
-          pricePerBusDay: finalPackagePrice / (buses * months * 30),
-          pricePerSecondBusMonth: finalPackagePrice / (buses * months * seconds),
-          pricePerSecondBusCampaign: finalPackagePrice / (buses * seconds),
+        if (campaignDays) {
+          const customCalc = calculateCustomPrice(buses, campaignDays, seconds)
+          const standardPrice = ps?.standardPrice || customCalc.standardPrice
+          const basePackagePrice = ps?.packagePrice || customCalc.totalPrice
+          const finalPackagePrice = enquiry.negotiatedPrice ?? basePackagePrice
+          const savings = Math.max(0, standardPrice - finalPackagePrice)
+          const savingsPercentage = standardPrice > 0 ? (savings / standardPrice) * 100 : 0
+
+          fullPricingSnapshot = {
+            buses,
+            months: Math.max(1, Math.round(campaignDays / 30)),
+            campaignDays,
+            dailyBasePrice: customCalc.dailyBasePricePerBus,
+            videoDurationSeconds: seconds,
+            standardPrice,
+            packagePrice: finalPackagePrice,
+            savings,
+            savingsPercentage,
+            durationMultiplier: customCalc.durationMultiplier,
+            durationDiscountRate: 0,
+            pricingMethod: 'custom-daily',
+            pricePerBusCampaign: finalPackagePrice / buses,
+            pricePerBusMonth: Math.round((finalPackagePrice / (buses * campaignDays)) * 30),
+            pricePerBusDay: finalPackagePrice / (buses * campaignDays),
+            pricePerSecondBusMonth: ((finalPackagePrice / (buses * campaignDays)) * 30) / seconds,
+            pricePerSecondBusCampaign: (finalPackagePrice / (buses * campaignDays)) / seconds,
+          }
+        } else {
+          const calculated = calculatePrice(buses, months, seconds)
+          const standardPrice = ps?.standardPrice || calculated.standardPrice
+          const basePackagePrice = ps?.packagePrice || calculated.packagePrice
+          const finalPackagePrice = enquiry.negotiatedPrice ?? basePackagePrice
+          const savings = Math.max(0, standardPrice - finalPackagePrice)
+          const savingsPercentage = standardPrice > 0 ? (savings / standardPrice) * 100 : 0
+
+          fullPricingSnapshot = {
+            buses,
+            months,
+            videoDurationSeconds: seconds,
+            standardPrice,
+            packagePrice: finalPackagePrice,
+            savings,
+            savingsPercentage,
+            durationMultiplier: ps?.durationMultiplier || calculated.durationMultiplier,
+            durationDiscountRate: ps?.durationDiscountRate || calculated.durationDiscountRate,
+            pricingMethod: ps?.pricingMethod || calculated.pricingMethod,
+            pricePerBusCampaign: finalPackagePrice / buses,
+            pricePerBusMonth: finalPackagePrice / (buses * months),
+            pricePerBusDay: finalPackagePrice / (buses * months * 30),
+            pricePerSecondBusMonth: finalPackagePrice / (buses * months * seconds),
+            pricePerSecondBusCampaign: finalPackagePrice / (buses * seconds),
+          }
         }
 
         const validUntil = format(addDays(new Date(enquiry.createdAt || new Date()), 30), 'yyyy-MM-dd')
@@ -212,11 +245,12 @@ export default function AdminEnquiries() {
             notes: enquiry.customerDetails.notes || enquiry.adminNotes,
           },
           pricingSnapshot: fullPricingSnapshot,
-          campaignId: enquiry.campaignId,
-          campaignName: enquiry.campaignName || 'Standard Campaign',
+          campaignId: campaignDays ? 'custom-daily' : enquiry.campaignId,
+          campaignName: enquiry.campaignName || (campaignDays ? `Custom Campaign (${campaignDays} Days)` : 'Standard Campaign'),
           campaignStartDate: enquiry.customerDetails.campaignStartDate,
           campaignEndDate: enquiry.customerDetails.campaignEndDate,
-          billedMonths: months,
+          billedMonths: campaignDays ? Math.max(1, Math.round(campaignDays / 30)) : months,
+          campaignDays,
           validUntil,
         })
 
@@ -232,6 +266,7 @@ export default function AdminEnquiries() {
         const buses = quotation.pricingSnapshot.buses || 1
         const months = quotation.pricingSnapshot.months || 1
         const seconds = quotation.pricingSnapshot.videoDurationSeconds || 30
+        const campaignDays = quotation.campaignDays || quotation.pricingSnapshot.campaignDays
         const standardPrice = quotation.pricingSnapshot.standardPrice
         const finalPackagePrice = enquiry.negotiatedPrice
         const savings = Math.max(0, standardPrice - finalPackagePrice)
@@ -245,9 +280,11 @@ export default function AdminEnquiries() {
             savings,
             savingsPercentage,
             pricePerBusCampaign: finalPackagePrice / buses,
-            pricePerBusMonth: finalPackagePrice / (buses * months),
-            pricePerBusDay: finalPackagePrice / (buses * months * 30),
-            pricePerSecondBusMonth: finalPackagePrice / (buses * months * seconds),
+            pricePerBusMonth: campaignDays ? Math.round((finalPackagePrice / (buses * campaignDays)) * 30) : finalPackagePrice / (buses * months),
+            pricePerBusDay: finalPackagePrice / (buses * (campaignDays || (months * 30))),
+            pricePerSecondBusMonth: campaignDays
+              ? ((finalPackagePrice / (buses * campaignDays)) * 30) / seconds
+              : finalPackagePrice / (buses * months * seconds),
           },
         }
       }

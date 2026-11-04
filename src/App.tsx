@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import CalculatorPage from './pages/CalculatorPage'
+import CustomCampaignPage from './pages/CustomCampaignPage'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminEnquiries from './pages/admin/AdminEnquiries'
@@ -15,6 +16,8 @@ export default function App() {
         {/* Primary Sales Calculator Pitch Page */}
         <Route path="/" element={<CalculatorPage />} />
         <Route path="/calculator" element={<Navigate to="/" replace />} />
+        <Route path="/custom-campaign" element={<CustomCampaignPage />} />
+        <Route path="/custom" element={<Navigate to="/custom-campaign" replace />} />
         <Route path="/campaigns" element={<Navigate to="/admin/campaigns" replace />} />
 
         {/* Direct, frictionless access to Admin, Pipeline, Quotations & Campaigns (No Login Required) */}
