@@ -339,10 +339,10 @@ export async function generateQuotationPDF(quotation: Quotation): Promise<void> 
   })
 
   // @ts-ignore
-  y = (doc as any).lastAutoTable.finalY + 5
+  y = (doc as any).lastAutoTable.finalY + 6
 
-  // ── 6. Terms & Conditions Box (Without GST) ─────────────────
-  const termsBoxY = Math.max(y, 222)
+  // ── 6. Terms & Conditions Box (Moved Upwards) ───────────────
+  const termsBoxY = y
   const termsBoxH = 22
 
   doc.setFillColor(...LIGHT_GRAY)
@@ -367,27 +367,27 @@ export async function generateQuotationPDF(quotation: Quotation): Promise<void> 
   ]
   doc.text(terms.join('\n'), MARGIN + 4, termsBoxY + 9, { lineHeightFactor: 1.35 })
 
-  // ── 8. Signature Block ──────────────────────────────────────
-  const sigY = termsBoxY + termsBoxH + 5
+  // ── 7. Signature Block (With Comfortable Spacing) ───────────
+  const sigY = termsBoxY + termsBoxH + 16
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(7.5)
   doc.setTextColor(...BRAND_DARK)
-  doc.text('For Catgorithm Digital Growth', MARGIN + 4, sigY + 4)
+  doc.text('For Catgorithm Digital Growth', MARGIN + 4, sigY)
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
   doc.setTextColor(...TEXT_MUTED)
-  doc.text('Authorized Signatory / Sales Head', MARGIN + 4, sigY + 9)
+  doc.text('Authorized Signatory / Sales Head', MARGIN + 4, sigY + 14)
 
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(7.5)
   doc.setTextColor(...BRAND_DARK)
-  doc.text('Client Acceptance / Signature', PAGE_W - MARGIN - 48, sigY + 4)
+  doc.text('Client Acceptance / Signature', PAGE_W - MARGIN - 52, sigY)
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
   doc.setTextColor(...TEXT_MUTED)
-  doc.text('Date: ____________________', PAGE_W - MARGIN - 48, sigY + 9)
+  doc.text('Date: ____________________', PAGE_W - MARGIN - 52, sigY + 14)
 
   // ── 9. Bottom Footer ────────────────────────────────────────
   doc.setFillColor(...BRAND_DARK)
