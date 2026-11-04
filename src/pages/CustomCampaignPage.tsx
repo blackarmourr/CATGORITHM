@@ -8,7 +8,7 @@ import { PWAHeaderInstallButton } from '../components/PWAInstallPrompt'
 import { useCustomCalculatorStore } from '../stores/customCalculatorStore'
 import { formatINR } from '../lib/customPricingEngine'
 import {
-  RotateCcw, Share2, FileText, Users, Bus, ArrowLeft
+  RotateCcw, Share2, FileText, Users, Bus, ArrowLeft, Sparkles
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -71,6 +71,16 @@ Valid for 30 days. Contact: +91 97463 36175`
           {/* Navigation Links */}
           <nav className="flex items-center gap-1 sm:gap-2">
             <PWAHeaderInstallButton />
+
+            {/* Proposal Studio Button */}
+            <Link
+              to="/proposal"
+              className="h-9 px-2.5 sm:px-3 text-xs font-bold rounded-xl bg-[#d6c26e]/20 hover:bg-[#d6c26e]/30 border border-[#d6c26e]/40 text-[#d6c26e] active:scale-95 flex items-center gap-1.5 transition-all shadow-xs"
+              title="Proposal Maker (PDF)"
+            >
+              <Sparkles size={13} className="text-[#d6c26e]" />
+              <span>Proposal</span>
+            </Link>
 
             <Link
               to="/admin/enquiries?tab=enquiries"

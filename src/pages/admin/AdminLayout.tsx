@@ -1,13 +1,14 @@
 import { Outlet, NavLink, Link, useLocation } from 'react-router-dom'
 import {
   Bus, LayoutDashboard, Users,
-  Tag, ChevronRight, Calculator, ArrowLeft, Layers, FileText
+  Tag, ChevronRight, Calculator, ArrowLeft, Layers, FileText, Sparkles
 } from 'lucide-react'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PWAHeaderInstallButton } from '../../components/PWAInstallPrompt'
 
 const NAV_ITEMS = [
+  { to: '/proposal', label: 'Proposal Studio (PDF)', icon: Sparkles, exact: false },
   { to: '/admin/enquiries?tab=enquiries', label: 'Pipeline Leads', icon: Users, exact: false },
   { to: '/admin/enquiries?tab=quotations', label: 'Sent Quotations', icon: FileText, exact: false },
   { to: '/admin/fleet', label: 'Fleet & Routes', icon: Bus, exact: false },

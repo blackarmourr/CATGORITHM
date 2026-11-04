@@ -10,7 +10,7 @@ import { PWAHeaderInstallButton } from '../components/PWAInstallPrompt'
 import { useCalculatorStore } from '../stores/calculatorStore'
 import { formatINR } from '../lib/pricingEngine'
 import {
-  RotateCcw, Share2, FileText, Users, Bus, Layers
+  RotateCcw, Share2, FileText, Users, Bus, Layers, Sparkles
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -63,6 +63,16 @@ Valid for 30 days. Contact: +91 97463 36175`
           <nav className="flex items-center gap-1 sm:gap-2">
             {/* Install PWA Button (Visible when installable) */}
             <PWAHeaderInstallButton />
+
+            {/* Proposal Studio Button */}
+            <Link
+              to="/proposal"
+              className="h-9 px-2.5 sm:px-3 text-xs font-bold rounded-xl bg-[#d6c26e]/20 hover:bg-[#d6c26e]/30 border border-[#d6c26e]/40 text-[#d6c26e] active:scale-95 flex items-center gap-1.5 transition-all shadow-xs"
+              title="Proposal Maker (PDF)"
+            >
+              <Sparkles size={13} className="text-[#d6c26e]" />
+              <span>Proposal</span>
+            </Link>
 
             {/* Pipeline Button */}
             <Link
@@ -119,35 +129,35 @@ Valid for 30 days. Contact: +91 97463 36175`
       </header>
 
       {/* ── Mobile-Only Sticky Quick Navigation Bar ── */}
-      <div className="bg-white border-b border-gray-200 px-2.5 py-1.5 sm:hidden sticky top-14 z-30 shadow-xs">
+      <div className="bg-white border-b border-gray-200 px-2 py-1.5 sm:hidden sticky top-14 z-30 shadow-xs">
         <div className="flex items-center justify-between gap-1 text-[11px] font-bold">
           <Link
-            to="/admin/enquiries?tab=enquiries"
-            className="flex-1 py-1.5 px-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-800 flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
+            to="/proposal"
+            className="flex-1 py-1.5 px-1 rounded-lg bg-amber-50 border border-amber-200 hover:bg-amber-100 text-amber-900 flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
           >
-            <Users size={12} className="text-accent" />
+            <Sparkles size={11} className="text-amber-600" />
+            <span>Proposal</span>
+          </Link>
+          <Link
+            to="/admin/enquiries?tab=enquiries"
+            className="flex-1 py-1.5 px-1 rounded-lg bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-800 flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
+          >
+            <Users size={11} className="text-accent" />
             <span>Pipeline</span>
           </Link>
           <Link
             to="/admin/enquiries?tab=quotations"
-            className="flex-1 py-1.5 px-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-800 flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
+            className="flex-1 py-1.5 px-1 rounded-lg bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-800 flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
           >
-            <FileText size={12} className="text-amber-500" />
+            <FileText size={11} className="text-amber-500" />
             <span>Quotes</span>
           </Link>
           <Link
             to="/admin/fleet"
-            className="flex-1 py-1.5 px-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-800 flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
+            className="flex-1 py-1.5 px-1 rounded-lg bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-800 flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
           >
-            <Bus size={12} className="text-emerald-600" />
+            <Bus size={11} className="text-emerald-600" />
             <span>Fleet</span>
-          </Link>
-          <Link
-            to="/admin/campaigns"
-            className="flex-1 py-1.5 px-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-800 flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
-          >
-            <Layers size={12} className="text-purple-600" />
-            <span>Campaigns</span>
           </Link>
         </div>
       </div>
