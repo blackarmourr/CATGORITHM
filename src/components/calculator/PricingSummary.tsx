@@ -98,34 +98,18 @@ export default function PricingSummary() {
         </div>
       </div>
 
-      {/* ── Custom Campaign Navigation Button (Replaces Full Price Breakdown) ── */}
-      <Link
-        to="/custom-campaign"
-        className="group relative overflow-hidden bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#0F172A] border border-blue-500/40 hover:border-blue-400 p-3.5 sm:p-4 rounded-2xl shadow-sm transition-all hover:shadow-md active:scale-98 flex items-center justify-between text-white"
-        title="Open Custom Campaign Calculator"
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0 text-blue-400 group-hover:scale-105 transition-transform">
-            <CalendarRange size={18} />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-sm text-white tracking-tight">Custom Campaign Calculator</span>
-              <span className="bg-blue-500/20 text-blue-300 text-[9.5px] font-black px-2 py-0.5 rounded-md border border-blue-500/30 uppercase tracking-wider">
-                1–30 Days
-              </span>
-            </div>
-            <p className="text-xs text-gray-400 mt-0.5 truncate">
-              Need custom days (e.g. 14, 18 or 21 days)? Switch to daily milestone pricing.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1 text-blue-400 font-bold text-xs pl-2 flex-shrink-0 group-hover:translate-x-1 transition-transform">
-          <span className="hidden sm:inline">Open</span>
-          <ArrowRight size={15} />
-        </div>
-      </Link>
+      {/* ── Small Custom Campaign Button ── */}
+      <div className="flex justify-center pt-0.5">
+        <Link
+          to="/custom-campaign"
+          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-gray-700 bg-white hover:bg-gray-50 active:scale-95 border border-gray-200 shadow-2xs hover:border-gray-300 transition-all"
+          title="Open Custom Campaign Calculator"
+        >
+          <CalendarRange size={13} className="text-gray-500" />
+          <span>Custom Campaign Calculator</span>
+          <ArrowRight size={12} className="text-gray-400" />
+        </Link>
+      </div>
     </div>
   )
 }

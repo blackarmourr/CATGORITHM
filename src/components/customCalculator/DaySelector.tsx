@@ -1,6 +1,7 @@
+import { useState, useEffect } from 'react'
 import { useCustomCalculatorStore } from '../../stores/customCalculatorStore'
 import { FIXED_PRICING_MILESTONES, getInterpolated10SecPrice } from '../../lib/customPricingEngine'
-import { Calendar, Plus, Minus, Sparkles, Check, Info } from 'lucide-react'
+import { Calendar, Plus, Minus, Sparkles, Check } from 'lucide-react'
 import { format } from 'date-fns'
 
 export default function DaySelector() {
@@ -10,10 +11,35 @@ export default function DaySelector() {
   const endDate = useCustomCalculatorStore((s) => s.config.endDate)
   const setStartDate = useCustomCalculatorStore((s) => s.setStartDate)
 
-  const INTERMEDIATE_PRESETS = [10, 15, 18, 20, 25]
+  const [inputVal, setInputVal] = useState(String(days))
+
+  useEffect(() => {
+    setInputVal(String(days))
+  }, [days])
+
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value
+    setInputVal(raw)
+    const parsed = parseInt(raw, 10)
+    if (!isNaN(parsed) && parsed > 0) {
+      setDays(Math.min(365, parsed))
+    }
+  }
+
+  function handleBlur() {
+    const parsed = parseInt(inputVal, 10)
+    if (isNaN(parsed) || parsed < 1) {
+      setDays(1)
+      setInputVal('1')
+    } else {
+      const clamped = Math.min(365, parsed)
+      setDays(clamped)
+      setInputVal(String(clamped))
+    }
+  }
 
   function adjustDays(delta: number) {
-    const next = Math.max(1, Math.min(90, days + delta))
+    const next = Math.max(1, Math.min(365, days + delta))
     setDays(next)
   }
 
@@ -45,7 +71,7 @@ export default function DaySelector() {
       {/* 5 Fixed Core Milestones (Primary Action Buttons) */}
       <div>
         <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-          <span>Fixed Pricing Milestones</span>
+          <span>Fixed Milestones</span>
         </p>
         <div className="grid grid-cols-5 gap-1.5">
           {FIXED_PRICING_MILESTONES.map((m) => {
@@ -55,7 +81,7 @@ export default function DaySelector() {
                 key={m.days}
                 type="button"
                 onClick={() => setDays(m.days)}
-                className={`py-2 px-1.5 rounded-xl border text-center transition-all active:scale-[0.98] flex flex-col items-center justify-center ${
+                className={`py-2 px-1 rounded-xl border text-center transition-all active:scale-[0.98] flex flex-col items-center justify-center ${
                   isSelected
                     ? 'bg-accent text-white border-accent shadow-sm shadow-accent/25'
                     : 'bg-white text-gray-800 border-gray-200 hover:border-accent/40 hover:bg-blue-50/20'
@@ -68,7 +94,7 @@ export default function DaySelector() {
                 <span className={`text-[10px] font-semibold mt-0.5 tabular-nums ${isSelected ? 'text-white/90' : 'text-accent'}`}>
                   ₹{m.price10s}
                 </span>
-                <span className={`text-[8.5px] ${isSelected ? 'text-white/70' : 'text-gray-400'}`}>
+                <span className={`text-[8px] ${isSelected ? 'text-white/70' : 'text-gray-400'}`}>
                   per 10s
                 </span>
               </button>
@@ -77,82 +103,60 @@ export default function DaySelector() {
         </div>
       </div>
 
-      {/* Popular Intermediate Presets (10, 15, 18, 20, 25 days) */}
-      <div>
-        <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-          Flexible Interpolated Days
-        </p>
-        <div className="grid grid-cols-5 gap-1.5">
-          {INTERMEDIATE_PRESETS.map((d) => {
-            const isSelected = days === d
-            const price = getInterpolated10SecPrice(d)
-            return (
-              <button
-                key={d}
-                type="button"
-                onClick={() => setDays(d)}
-                className={`py-1.5 px-1 rounded-xl border text-center transition-all active:scale-[0.98] flex flex-col items-center justify-center ${
-                  isSelected
-                    ? 'bg-gray-900 text-white border-gray-900 shadow-sm'
-                    : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'
-                }`}
-              >
-                <span className="text-xs font-bold">{d} Days</span>
-                <span className={`text-[9.5px] font-semibold tabular-nums ${isSelected ? 'text-gray-300' : 'text-gray-500'}`}>
-                  ₹{price} (10s)
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Interactive Slider & Stepper */}
-      <div className="bg-white p-3 rounded-2xl border border-gray-200 space-y-2.5 shadow-xs">
+      {/* Direct Days Entry Input (No slider) */}
+      <div className="bg-white p-3.5 rounded-2xl border border-gray-200 shadow-xs space-y-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-gray-800">
-            <span>Custom Days Slider</span>
-            <span className="text-gray-400 font-normal">(1 to 30 Days):</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => adjustDays(-1)}
-              className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 flex items-center justify-center active:scale-90"
-              title="Decrease 1 day"
-            >
-              <Minus size={13} />
-            </button>
-            <span className="text-sm font-black text-accent w-14 text-center tabular-nums">
-              {days} {days === 1 ? 'Day' : 'Days'}
-            </span>
-            <button
-              type="button"
-              onClick={() => adjustDays(1)}
-              className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 flex items-center justify-center active:scale-90"
-              title="Increase 1 day"
-            >
-              <Plus size={13} />
-            </button>
-          </div>
+          <label htmlFor="custom-days-input" className="text-xs font-bold text-gray-800">
+            Enter Number of Days:
+          </label>
+          <span className="text-[11px] text-gray-500">
+            10s base rate: <span className="font-bold text-accent">₹{p10s}/bus</span>
+          </span>
         </div>
 
-        <input
-          type="range"
-          min="1"
-          max="30"
-          value={Math.min(30, days)}
-          onChange={(e) => setDays(Number(e.target.value))}
-          className="w-full accent-accent h-1.5 bg-gray-200 rounded-lg cursor-pointer"
-        />
+        <div className="flex items-center gap-2">
+          {/* Quick decrement button */}
+          <button
+            type="button"
+            onClick={() => adjustDays(-1)}
+            disabled={days <= 1}
+            className="w-12 h-11 rounded-xl bg-gray-100 hover:bg-gray-200 active:scale-95 disabled:opacity-40 text-gray-800 flex items-center justify-center font-bold text-base transition-all flex-shrink-0"
+            title="Decrease 1 day"
+            aria-label="Decrease 1 day"
+          >
+            <Minus size={16} />
+          </button>
 
-        <div className="flex justify-between text-[10px] text-gray-400 font-semibold px-0.5">
-          <span>1 Day</span>
-          <span>7 Days</span>
-          <span>14 Days</span>
-          <span>21 Days</span>
-          <span>30 Days</span>
+          {/* Direct numeric input */}
+          <div className="relative flex-1">
+            <input
+              id="custom-days-input"
+              type="number"
+              min="1"
+              max="365"
+              value={inputVal}
+              onChange={handleInputChange}
+              onBlur={handleBlur}
+              className="w-full h-11 text-center font-black text-base sm:text-lg text-gray-900 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 transition-all tabular-nums px-3"
+              placeholder="e.g. 18"
+            />
+          </div>
+
+          {/* Quick increment button */}
+          <button
+            type="button"
+            onClick={() => adjustDays(1)}
+            className="w-12 h-11 rounded-xl bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-800 flex items-center justify-center font-bold text-base transition-all flex-shrink-0"
+            title="Increase 1 day"
+            aria-label="Increase 1 day"
+          >
+            <Plus size={16} />
+          </button>
         </div>
+
+        <p className="text-[11px] text-gray-400 text-center">
+          Enter any campaign duration (e.g. 4, 15, 18, 20 days)
+        </p>
       </div>
 
       {/* ── Start Date & Auto End Date Box ── */}
@@ -161,7 +165,7 @@ export default function DaySelector() {
           <div className="w-8 h-8 rounded-xl bg-blue-100 text-accent flex items-center justify-center flex-shrink-0">
             <Calendar size={16} />
           </div>
-          <div>
+          <div className="flex-1 sm:flex-none">
             <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500 block">
               Campaign Start Date
             </label>
@@ -169,7 +173,7 @@ export default function DaySelector() {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="font-bold text-gray-900 bg-white border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-accent"
+              className="w-full sm:w-auto font-bold text-gray-900 bg-white border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-accent"
             />
           </div>
         </div>
@@ -184,7 +188,7 @@ export default function DaySelector() {
             </span>
           </div>
           <span className="text-[11px] font-extrabold text-accent bg-blue-50 px-2 py-0.5 rounded-md">
-            {days} Days Total
+            {days} {days === 1 ? 'Day' : 'Days'} Total
           </span>
         </div>
       </div>

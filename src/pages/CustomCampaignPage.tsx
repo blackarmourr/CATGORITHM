@@ -8,8 +8,7 @@ import { PWAHeaderInstallButton } from '../components/PWAInstallPrompt'
 import { useCustomCalculatorStore } from '../stores/customCalculatorStore'
 import { formatINR } from '../lib/customPricingEngine'
 import {
-  RotateCcw, Share2, FileText, Users, Bus, Layers,
-  CalendarRange, ArrowLeft, Sparkles
+  RotateCcw, Share2, FileText, Users, Bus, ArrowLeft
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -41,27 +40,33 @@ Valid for 30 days. Contact: +91 97463 36175`
       {/* ── Top Brand Header ── */}
       <header className="sticky top-0 z-40 bg-[#080B12]/95 backdrop-blur-md border-b border-gray-800 text-white shadow-sm">
         <div className="max-w-3xl mx-auto px-2.5 sm:px-4 h-14 flex items-center justify-between gap-1.5">
-          {/* Brand Name & App Icon */}
-          <Link
-            to="/"
-            className="flex items-center gap-2 py-1 text-white hover:text-gray-200 transition-colors flex-shrink-0"
-            aria-label="Catgorithm Home"
-          >
-            <img
-              src="./app-icon.png"
-              alt="Catgorithm Bus Ads"
-              className="w-7 h-7 rounded-lg object-cover shadow-sm border border-white/10 flex-shrink-0"
-              onError={(e) => {
-                (e.currentTarget as HTMLElement).style.display = 'none';
-              }}
-            />
-            <div className="flex items-center gap-1.5">
+          {/* Back Button & Brand Name */}
+          <div className="flex items-center gap-2">
+            <Link
+              to="/"
+              className="h-9 w-9 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center justify-center transition-all flex-shrink-0"
+              title="Back to Standard Calculator"
+              aria-label="Back to Standard Calculator"
+            >
+              <ArrowLeft size={16} />
+            </Link>
+
+            <Link
+              to="/"
+              className="flex items-center gap-2 py-1 text-white hover:text-gray-200 transition-colors flex-shrink-0"
+              aria-label="Catgorithm Home"
+            >
+              <img
+                src="./app-icon.png"
+                alt="Catgorithm Bus Ads"
+                className="w-7 h-7 rounded-lg object-cover shadow-sm border border-white/10 flex-shrink-0"
+                onError={(e) => {
+                  (e.currentTarget as HTMLElement).style.display = 'none';
+                }}
+              />
               <span className="font-extrabold text-base tracking-tight text-white">Catgorithm</span>
-              <span className="hidden sm:inline-block bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[9px] font-black px-1.5 py-0.2 rounded-md uppercase tracking-wider">
-                Custom Daily
-              </span>
-            </div>
-          </Link>
+            </Link>
+          </div>
 
           {/* Navigation Links */}
           <nav className="flex items-center gap-1 sm:gap-2">
@@ -114,8 +119,8 @@ Valid for 30 days. Contact: +91 97463 36175`
             to="/"
             className="flex-1 py-1.5 px-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-800 flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
           >
-            <Layers size={12} className="text-accent" />
-            <span>Standard</span>
+            <ArrowLeft size={12} className="text-gray-600" />
+            <span>Back</span>
           </Link>
           <Link
             to="/admin/enquiries?tab=enquiries"
@@ -143,26 +148,19 @@ Valid for 30 days. Contact: +91 97463 36175`
 
       {/* ── Main Mobile-Optimized Body ── */}
       <main className="max-w-2xl mx-auto px-3.5 sm:px-4 pt-3.5 space-y-3.5">
-        {/* Banner: Mode Explanation & Return Link */}
-        <div className="bg-gradient-to-r from-blue-950/40 via-blue-900/30 to-blue-950/40 border border-blue-500/25 p-3 rounded-2xl flex items-center justify-between gap-2.5 text-xs text-blue-950">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-600 flex items-center justify-center flex-shrink-0">
-              <CalendarRange size={16} />
-            </div>
-            <div>
-              <p className="font-extrabold text-blue-950 leading-tight">Custom Per-Day Pricing Mode</p>
-              <p className="text-[11px] text-blue-800/80">
-                Calculated dynamically from 1 to 30 days using milestone interpolation.
-              </p>
-            </div>
-          </div>
+        {/* Simple Clean Back Button */}
+        <div className="flex items-center justify-between">
           <Link
             to="/"
-            className="px-2.5 py-1 text-[11px] font-bold text-accent bg-white rounded-lg border border-accent/30 hover:bg-blue-50 active:scale-95 transition-all flex items-center gap-1 flex-shrink-0 shadow-xs"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-gray-700 bg-white hover:bg-gray-100 active:scale-95 border border-gray-200 transition-all shadow-2xs"
+            title="Back to Standard Calculator"
           >
-            <ArrowLeft size={12} />
-            <span>Standard</span>
+            <ArrowLeft size={14} className="text-gray-500" />
+            <span>Back to Standard Calculator</span>
           </Link>
+          <span className="text-xs font-semibold text-gray-500">
+            Custom Campaign
+          </span>
         </div>
 
         {/* 1. Live Price Pitch Card (Hero First) */}
