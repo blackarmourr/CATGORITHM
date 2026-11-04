@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useCustomCalculatorStore } from '../../stores/customCalculatorStore'
-import { FIXED_PRICING_MILESTONES, getInterpolated10SecPrice } from '../../lib/customPricingEngine'
+import { FIXED_PRICING_MILESTONES } from '../../lib/customPricingEngine'
 import { Calendar, Plus, Minus, Check } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -43,8 +43,6 @@ export default function DaySelector() {
     setDays(next)
   }
 
-  const p10s = getInterpolated10SecPrice(days)
-
   return (
     <div className="space-y-3.5">
       {/* Title & Badge */}
@@ -56,7 +54,7 @@ export default function DaySelector() {
           Campaign Duration (Days)
         </label>
         <span className="text-xs font-bold text-accent bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-full tabular-nums">
-          {days} {days === 1 ? 'Day' : 'Days'} (10s: ₹{p10s})
+          {days} {days === 1 ? 'Day' : 'Days'}
         </span>
       </div>
 
@@ -101,8 +99,8 @@ export default function DaySelector() {
           <label htmlFor="custom-days-input" className="text-xs font-bold text-gray-800">
             Enter Number of Days:
           </label>
-          <span className="text-[11px] text-gray-500">
-            10s base rate: <span className="font-bold text-accent">₹{p10s}/bus</span>
+          <span className="text-[11px] text-gray-500 font-medium">
+            1 to 365 Days
           </span>
         </div>
 
