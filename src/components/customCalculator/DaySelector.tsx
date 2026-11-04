@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useCustomCalculatorStore } from '../../stores/customCalculatorStore'
 import { FIXED_PRICING_MILESTONES, getInterpolated10SecPrice } from '../../lib/customPricingEngine'
-import { Calendar, Plus, Minus, Sparkles, Check } from 'lucide-react'
+import { Calendar, Plus, Minus, Check } from 'lucide-react'
 import { format } from 'date-fns'
 
 export default function DaySelector() {
@@ -44,7 +44,6 @@ export default function DaySelector() {
   }
 
   const p10s = getInterpolated10SecPrice(days)
-  const isMilestone = FIXED_PRICING_MILESTONES.some((m) => m.days === days)
 
   return (
     <div className="space-y-3.5">
@@ -56,16 +55,9 @@ export default function DaySelector() {
           </span>
           Campaign Duration (Days)
         </label>
-        <div className="flex items-center gap-1.5">
-          {isMilestone && (
-            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-              <Sparkles size={10} /> Milestone Rate
-            </span>
-          )}
-          <span className="text-xs font-bold text-accent bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-full tabular-nums">
-            {days} {days === 1 ? 'Day' : 'Days'} (10s: ₹{p10s})
-          </span>
-        </div>
+        <span className="text-xs font-bold text-accent bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-full tabular-nums">
+          {days} {days === 1 ? 'Day' : 'Days'} (10s: ₹{p10s})
+        </span>
       </div>
 
       {/* 5 Fixed Core Milestones (Primary Action Buttons) */}

@@ -1,17 +1,10 @@
-import { useState } from 'react'
 import { useCustomCalculatorStore } from '../../stores/customCalculatorStore'
-import { formatINR, getMilestoneBreakdown } from '../../lib/customPricingEngine'
-import {
-  Sparkles, ChevronDown, ChevronUp,
-  CalendarRange, ShieldCheck
-} from 'lucide-react'
+import { formatINR } from '../../lib/customPricingEngine'
+import { Sparkles, CalendarRange } from 'lucide-react'
 
 export default function CustomPricingSummary() {
   const pricing = useCustomCalculatorStore((s) => s.pricing)
   const config = useCustomCalculatorStore((s) => s.config)
-  const [tableOpen, setTableOpen] = useState(false)
-
-  const milestoneData = getMilestoneBreakdown(config.videoDurationSeconds, config.buses)
 
   return (
     <div className="space-y-3.5">
@@ -79,70 +72,6 @@ export default function CustomPricingSummary() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* ── Collapsible Milestone Rate Reference Table ── */}
-      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-xs">
-        <button
-          type="button"
-          onClick={() => setTableOpen(!tableOpen)}
-          className="w-full flex items-center justify-between p-3.5 text-xs font-bold text-gray-800 hover:bg-gray-50 transition-colors"
-          aria-expanded={tableOpen}
-        >
-          <span className="flex items-center gap-1.5">
-            <ShieldCheck size={14} className="text-accent" />
-            <span>Milestone Tariff Reference ({config.videoDurationSeconds}s Ad)</span>
-          </span>
-          {tableOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-        </button>
-
-        {tableOpen && (
-          <div className="p-3.5 pt-1 border-t border-gray-100 text-xs space-y-2">
-            <p className="text-[11px] text-gray-500">
-              Pricing is calculated using linear interpolation between these 5 fixed milestone reference points (rounded to nearest ₹5):
-            </p>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-gray-50 text-gray-500 border-b border-gray-100">
-                  <tr>
-                    <th className="py-2 px-2.5 font-bold">Milestone</th>
-                    <th className="py-2 px-2.5 font-bold">10s Price</th>
-                    <th className="py-2 px-2.5 font-bold">{config.videoDurationSeconds}s / Bus</th>
-                    <th className="py-2 px-2.5 font-bold">All {config.buses} Buses</th>
-                    <th className="py-2 px-2.5 font-bold text-right">Savings</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 font-semibold">
-                  {milestoneData.map((m) => {
-                    const isCurrent = config.days === m.days
-                    return (
-                      <tr
-                        key={m.days}
-                        className={isCurrent ? 'bg-blue-50/70 text-accent font-bold' : 'hover:bg-gray-50 text-gray-800'}
-                      >
-                        <td className="py-2 px-2.5 flex items-center gap-1">
-                          <span>{m.days} Days</span>
-                          {isCurrent && <span className="text-[10px] bg-accent text-white px-1.5 py-0.2 rounded font-black">Active</span>}
-                        </td>
-                        <td className="py-2 px-2.5 tabular-nums text-gray-600">₹{m.price10s}</td>
-                        <td className="py-2 px-2.5 tabular-nums font-bold">₹{m.perBusPrice}</td>
-                        <td className="py-2 px-2.5 tabular-nums font-extrabold">{formatINR(m.totalPrice)}</td>
-                        <td className="py-2 px-2.5 tabular-nums text-right text-emerald-600 font-bold">
-                          {m.savings > 0 ? `${m.savingsPercentage.toFixed(0)}% OFF` : 'Standard'}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            <p className="text-[10.5px] text-gray-400 italic pt-1">
-              Base tariff: ₹5 per second per day. Durations between milestones (e.g. 15, 18, 20 days) interpolate linearly.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   )
