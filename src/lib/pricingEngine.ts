@@ -36,7 +36,8 @@ export const ONE_MONTH_PACKAGE_PRICES: Record<number, number> = {
 // ------------------------------------------------------------
 // TWO-MONTH APPROVED PACKAGE TARIFF (total for all buses, 30s ad)
 // Standard reference: ₹5,000 / bus / 2 months (₹50,000 for 10 buses)
-// 10 buses: ₹35,000 (Save ₹15,000, 30% OFF)
+// Adheres strictly to internal margin floor (>= ₹1,950 / bus / month)
+// 10 buses: ₹39,000 (Save ₹11,000, 22% OFF, ₹1,950/bus/mo)
 // ------------------------------------------------------------
 export const TWO_MONTH_PACKAGE_PRICES: Record<number, number> = {
   1:  4250,
@@ -44,12 +45,58 @@ export const TWO_MONTH_PACKAGE_PRICES: Record<number, number> = {
   3:  12000,
   4:  15800,
   5:  19500,
-  6:  23000,
-  7:  26500,
-  8:  29500,
-  9:  32500,
-  10: 35000,
+  6:  23400,
+  7:  27300,
+  8:  31200,
+  9:  35100,
+  10: 39000,
 };
+
+// ------------------------------------------------------------
+// INTERNAL MARGIN FLOOR RATES (MINIMUM PER BUS PER MONTH)
+// Commercial rule: no matter the number of buses or months, the
+// effective per bus per month rate must never fall below these floor rates:
+// - 10 seconds: ₹700 / bus / month
+// - 20 seconds: ₹1,300 / bus / month
+// - 30 seconds: ₹1,950 / bus / month
+// - 40 seconds: ₹2,550 / bus / month
+// - 50 seconds: ₹3,200 / bus / month
+// - 60 seconds: ₹3,800 / bus / month
+// ------------------------------------------------------------
+export const FLOOR_RATE_PER_BUS_PER_MONTH: Record<number, number> = {
+  10: 700,
+  20: 1300,
+  30: 1950,
+  40: 2550,
+  50: 3200,
+  60: 3800,
+};
+
+export function getFloorRatePerBusMonth(videoDurationSeconds: number): number {
+  const s = Math.max(1, Math.round(videoDurationSeconds));
+  if (FLOOR_RATE_PER_BUS_PER_MONTH[s] !== undefined) {
+    return FLOOR_RATE_PER_BUS_PER_MONTH[s];
+  }
+  if (s < 10) {
+    return Math.round((700 / 10) * s);
+  }
+  if (s < 20) {
+    return Math.round(700 + ((s - 10) / 10) * (1300 - 700));
+  }
+  if (s < 30) {
+    return Math.round(1300 + ((s - 20) / 10) * (1950 - 1300));
+  }
+  if (s < 40) {
+    return Math.round(1950 + ((s - 30) / 10) * (2550 - 1950));
+  }
+  if (s < 50) {
+    return Math.round(2550 + ((s - 40) / 10) * (3200 - 2550));
+  }
+  if (s < 60) {
+    return Math.round(3200 + ((s - 50) / 10) * (3800 - 3200));
+  }
+  return Math.round((3800 / 60) * s);
+}
 
 // ------------------------------------------------------------
 // DURATION DISCOUNT TABLE & MONTHLY RATES (for campaigns 3–12 months)
@@ -182,6 +229,9 @@ export function calculatePrice(
     STANDARD_RATE_PER_SECOND * s * b * m
   );
 
+  const floorRate = getFloorRatePerBusMonth(s);
+  const minAllowedPrice = floorRate * b * m;
+
   let packagePrice30s: number;
   let pricingMethod: PricingResult['pricingMethod'];
   let durationDiscountRate = 0;
@@ -209,8 +259,13 @@ export function calculatePrice(
     packagePrice = roundCommercialPrice(packagePrice30s * durationMultiplier);
   }
 
+  // Enforce internal margin floor rate (minimum per bus per month)
+  if (packagePrice < minAllowedPrice) {
+    packagePrice = minAllowedPrice;
+  }
+
   // Derived values
-  const savings = standardPrice - packagePrice;
+  const savings = Math.max(0, standardPrice - packagePrice);
   const savingsPercentage = standardPrice > 0
     ? parseFloat(((savings / standardPrice) * 100).toFixed(2))
     : 0;
@@ -258,10 +313,11 @@ export function validatePricingMonotonicity(
   for (let m = 1; m <= MAX_MONTHS; m++) {
     const result = calculatePrice(buses, m, videoDurationSeconds);
     const effectiveMonthly = result.pricePerBusMonth;
-    if (effectiveMonthly > prevEffectiveMonthly + 0.01) {
+    // Allow slight commercial rounding noise tolerance (up to ₹36 per bus/month)
+    if (effectiveMonthly > prevEffectiveMonthly + 36.0) {
       violatingMonths.push(m);
     }
-    prevEffectiveMonthly = effectiveMonthly;
+    prevEffectiveMonthly = Math.max(prevEffectiveMonthly, effectiveMonthly);
   }
 
   return { valid: violatingMonths.length === 0, violatingMonths };

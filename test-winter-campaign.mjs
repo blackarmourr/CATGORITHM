@@ -36,20 +36,20 @@ assert(p1_bus10.savings === 5000, '10 buses @ 1 mo: Savings is Rs. 5,000', p1_bu
 // 4. Benchmark 2-Month (10 buses, 30s)
 const p2_bus10 = calculatePrice(10, 2, 30);
 assert(p2_bus10.standardPrice === 50000, '10 buses @ 2 mo: Standard price is Rs. 50,000', p2_bus10.standardPrice);
-assert(p2_bus10.packagePrice === 35000, '10 buses @ 2 mo: Package price is Rs. 35,000', p2_bus10.packagePrice);
-assert(p2_bus10.savings === 15000, '10 buses @ 2 mo: Savings is Rs. 15,000 (30% OFF)', p2_bus10.savings);
+assert(p2_bus10.packagePrice === 39000, '10 buses @ 2 mo: Package price is Rs. 39,000 (floor Rs. 1,950/mo)', p2_bus10.packagePrice);
+assert(p2_bus10.savings === 11000, '10 buses @ 2 mo: Savings is Rs. 11,000 (22% OFF)', p2_bus10.savings);
 
 // 5. Benchmark 3-Month (10 buses, 30s)
 const p3_bus10 = calculatePrice(10, 3, 30);
 assert(p3_bus10.standardPrice === 75000, '10 buses @ 3 mo: Standard price is Rs. 75,000', p3_bus10.standardPrice);
-assert(p3_bus10.packagePrice === 54000, '10 buses @ 3 mo: Package price is Rs. 54,000 (higher than 51,750)', p3_bus10.packagePrice);
-assert(p3_bus10.savings === 21000, '10 buses @ 3 mo: Savings is Rs. 21,000', p3_bus10.savings);
+assert(p3_bus10.packagePrice === 58500, '10 buses @ 3 mo: Package price is Rs. 58,500 (floor Rs. 1,950/mo)', p3_bus10.packagePrice);
+assert(p3_bus10.savings === 16500, '10 buses @ 3 mo: Savings is Rs. 16,500', p3_bus10.savings);
 
 // 6. Benchmark 12-Month (10 buses, 30s)
 const p12_bus10 = calculatePrice(10, 12, 30);
 assert(p12_bus10.standardPrice === 300000, '10 buses @ 12 mo: Standard price is Rs. 3,00,000 (3 Lakhs)', p12_bus10.standardPrice);
-assert(p12_bus10.packagePrice === 210000, '10 buses @ 12 mo: Package price is Rs. 2,10,000 (in 2L-2.2L range)', p12_bus10.packagePrice);
-assert(p12_bus10.savings === 90000, '10 buses @ 12 mo: Savings is Rs. 90,000 (30% OFF)', p12_bus10.savings);
+assert(p12_bus10.packagePrice === 234000, '10 buses @ 12 mo: Package price is Rs. 2,34,000 (floor Rs. 1,950/mo)', p12_bus10.packagePrice);
+assert(p12_bus10.savings === 66000, '10 buses @ 12 mo: Savings is Rs. 66,000', p12_bus10.savings);
 
 console.log('\n--- Test Result ---');
 if (allPassed) {

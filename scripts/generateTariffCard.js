@@ -12,7 +12,19 @@ const logoBase64 = logoMatch ? logoMatch[1] : '';
 
 // Exact pricing calculation rules from src/lib/pricingEngine.ts
 const ONE_MONTH_PACKAGE_PRICES = { 1: 2250, 2: 4350, 3: 6450, 4: 8500, 5: 10500, 6: 12500, 7: 14500, 8: 16500, 9: 18250, 10: 20000 };
-const TWO_MONTH_PACKAGE_PRICES = { 1: 4250, 2: 8200, 3: 12000, 4: 15800, 5: 19500, 6: 23000, 7: 26500, 8: 29500, 9: 32500, 10: 35000 };
+const TWO_MONTH_PACKAGE_PRICES = { 1: 4250, 2: 8200, 3: 12000, 4: 15800, 5: 19500, 6: 23400, 7: 27300, 8: 31200, 9: 35100, 10: 39000 };
+const FLOOR_RATE_PER_BUS_PER_MONTH = { 10: 700, 20: 1300, 30: 1950, 40: 2550, 50: 3200, 60: 3800 };
+
+function getFloorRatePerBusMonth(s) {
+  if (FLOOR_RATE_PER_BUS_PER_MONTH[s]) return FLOOR_RATE_PER_BUS_PER_MONTH[s];
+  if (s < 10) return Math.round((700 / 10) * s);
+  if (s < 20) return Math.round(700 + ((s - 10) / 10) * (1300 - 700));
+  if (s < 30) return Math.round(1300 + ((s - 20) / 10) * (1950 - 1300));
+  if (s < 40) return Math.round(1950 + ((s - 30) / 10) * (2550 - 1950));
+  if (s < 50) return Math.round(2550 + ((s - 40) / 10) * (3200 - 2550));
+  if (s < 60) return Math.round(3200 + ((s - 50) / 10) * (3800 - 3200));
+  return Math.round((3800 / 60) * s);
+}
 const MONTHLY_DURATION_DISCOUNT_RATES = { 3: 0.100, 4: 0.125, 5: 0.125, 6: 0.125, 7: 0.125, 8: 0.125, 9: 0.125, 10: 0.125, 11: 0.125, 12: 0.125 };
 
 function roundCommercialPrice(amount) {
@@ -33,8 +45,13 @@ function calculatePrice(b, m, s = 30) {
   if (m === 1) packagePrice30s = ONE_MONTH_PACKAGE_PRICES[b];
   else if (m === 2) packagePrice30s = TWO_MONTH_PACKAGE_PRICES[b];
   else packagePrice30s = ONE_MONTH_PACKAGE_PRICES[b] * m * (1 - (MONTHLY_DURATION_DISCOUNT_RATES[m] || 0.125));
+  const floorRate = getFloorRatePerBusMonth(s);
+  const minAllowedPrice = floorRate * b * m;
   let packagePrice = (m === 1 || m === 2) && s === 30 ? packagePrice30s : roundCommercialPrice(packagePrice30s * durationMultiplier);
-  return { b, m, s, standardPrice, packagePrice, perBusMonth: Math.round(packagePrice / (b * m)) };
+  if (packagePrice < minAllowedPrice) {
+    packagePrice = minAllowedPrice;
+  }
+  return { b, m, s, standardPrice, packagePrice, perBusMonth: Math.round(packagePrice / (b * m)), pricePerBusMonth: packagePrice / (b * m) };
 }
 
 function formatINR(amt) {
