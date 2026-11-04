@@ -4,12 +4,12 @@
 // Pixel-accurate replica of Catgorithm's official company template:
 // - Untouched original logo aspect ratio (2.49756 : 1)
 // - Sized-up header banner (37mm logo, 72mm gold accent bar)
-// - Centered Title Heading: 20 pt bold for both lines
+// - Centered Title Heading: 20 pt bold with generous header spacing
 // - Consistent Subheadings: 15 pt bold across all sections
 // - Studio Shodwe gold (#d6c26e) & dark grey (#333132) divider lines
 // - Network highlight sentence seamlessly continuous with intro text
-// - Uniform spacing across both pages with zero empty voids
-// - Even inter-section spacing between deliverables and monitoring
+// - Uniform, even spacing across all sections with zero awkward voids
+// - Page 2 naturally and evenly spaced without forced overstretching
 // - 7 campaign deliverables & 7 monitoring points
 // - Client name in "Our Commitment" in original entered casing
 // - Exact user contact icons (handset, envelope, wireframe globe)
@@ -40,7 +40,7 @@ const GRAY_TEXT: [number, number, number] = [75, 85, 99];      // #4b5563 (Metad
 // Consistent Typography Sizing Requested by User
 const TITLE_FONT_SIZE = 20.0;       // 20 pt bold for both lines of centered title block
 const SUBHEADING_FONT_SIZE = 15.0;  // Consistent 15 pt bold for ALL section subheadings
-const BODY_FONT_SIZE = 13.2;        // 13.2 pt body text matching official template
+const BODY_FONT_SIZE = 13.0;        // 13.0 pt body text matching official template
 const BULLET_FONT_SIZE = 12.5;      // 12.5 pt bullets on Page 1
 
 function formatPDFINR(amount: number): string {
@@ -134,42 +134,48 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   // 2. Header Line (Gold 72mm + continuation dark grey)
   drawHeaderLine(doc, 26.5);
 
-  // 3. Document Title Block (Centered) - 20 pt bold for both lines
-  let y = 35.5;
+  // 3. Document Title Block (Centered)
+  // Generous spacing between header line and main heading
+  let y = 43.0;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(TITLE_FONT_SIZE);
   doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
   doc.text('BUS SCREEN ADVERTISEMENT PROPOSAL FOR', PAGE_W / 2, y, { align: 'center' });
 
-  y += 8.5;
+  y += 9.0;
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(TITLE_FONT_SIZE); // Exact same 20 pt!
+  doc.setFontSize(TITLE_FONT_SIZE); // Exact 20 pt bold
   doc.text(clientNameTitle, PAGE_W / 2, y, { align: 'center' });
 
-  y += 7.2;
+  // Enough spacing between client heading and Prepared by section
+  y += 8.5;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11.0);
   doc.setTextColor(GRAY_TEXT[0], GRAY_TEXT[1], GRAY_TEXT[2]);
   doc.text(`Prepared by: ${preparedBy} | ${proposalDate}`, PAGE_W / 2, y, { align: 'center' });
 
-  // Uniform Section Gap on Page 1
-  const P1_SECTION_GAP = 12.0;
+  // Enough spacing below Prepared by section to the first section
+  y += 15.0;
+
+  // Uniform inter-section gap on Page 1
+  const P1_SECTION_GAP = 13.0;
+  // Comfortable spacing between subheadings and their corresponding paragraphs
+  const SUBHEAD_PARA_GAP = 10.0;
 
   // 4. Section 1: THE OPPORTUNITY
-  y += P1_SECTION_GAP;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(SUBHEADING_FONT_SIZE); // 15 pt
   doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
   doc.text(data.objectiveTitle || 'THE OPPORTUNITY', MARGIN_LEFT, y);
 
-  y += 8.2;
+  y += SUBHEAD_PARA_GAP;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(BODY_FONT_SIZE); // 13.2 pt
+  doc.setFontSize(BODY_FONT_SIZE); // 13.0 pt
   doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
   const oppText = data.objectiveP1 || "Catgorithm offers digital bus screen advertising across Kollam, helping businesses reach local audiences through strategically placed displays inside private buses. Our platform builds brand visibility, recall and awareness through repeated exposure during everyday commutes.";
   doc.text(oppText, MARGIN_LEFT, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.40 });
   const oppLines = doc.splitTextToSize(oppText, PRINTABLE_W);
-  y += oppLines.length * 6.3;
+  y += oppLines.length * 6.2;
 
   // 5. Section 2: OUR ADVERTISING NETWORK
   y += P1_SECTION_GAP;
@@ -178,15 +184,15 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
   doc.text('OUR ADVERTISING NETWORK', MARGIN_LEFT, y);
 
-  y += 8.2;
+  y += SUBHEAD_PARA_GAP;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(BODY_FONT_SIZE); // 13.2 pt
+  doc.setFontSize(BODY_FONT_SIZE); // 13.0 pt
   doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
   // "The higlight of our network are :" is a direct continuation of the previous para!
   const netText = "Our network consists of digital display screens installed inside selected private buses, operating along established routes throughout Kollam. Each screen provides a dedicated space for promotional content, with advertisements scheduled to run as part of a continuous digital display network. The higlight of our network are :";
   doc.text(netText, MARGIN_LEFT, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.40 });
   const netLines = doc.splitTextToSize(netText, PRINTABLE_W);
-  y += netLines.length * 6.3 + 7.0;
+  y += netLines.length * 6.2 + 7.5;
 
   const networkBullets: [string, string][] = [
     ['7 Advertising Routes', 'Coverage across key corridors in Kollam.'],
@@ -219,25 +225,25 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
 
     if (descLines.length === 1) {
       doc.text(fullDescText, MARGIN_LEFT + 6.0 + tw + 1.5, y);
-      y += 7.5;
+      y += 7.4;
     } else {
       doc.text(descLines[0], MARGIN_LEFT + 6.0 + tw + 1.5, y);
       y += 6.0;
       doc.text(descLines[1], MARGIN_LEFT + 6.0 + tw + 1.5, y);
-      y += 7.5;
+      y += 7.4;
     }
   });
 
   // 6. Section 3: WHY CATGORITHM?
-  y += P1_SECTION_GAP - 2.0;
+  y += P1_SECTION_GAP - 1.0;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(SUBHEADING_FONT_SIZE); // 15 pt
   doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
   doc.text('WHY CATGORITHM?', MARGIN_LEFT, y);
 
-  y += 8.2;
+  y += SUBHEAD_PARA_GAP;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(BODY_FONT_SIZE); // 13.2 pt
+  doc.setFontSize(BODY_FONT_SIZE); // 13.0 pt
   doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
   const whyText = "We bring together strategically placed digital displays, engaging video content and flexible advertising plans in one platform. With a focus on convenience, campaign adaptability and performance transparency, we offer businesses a practical alternative to conventional outdoor advertising.";
   doc.text(whyText, MARGIN_LEFT, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.40 });
@@ -253,9 +259,9 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   const isNoPackage = mode === 'none';
 
   if (isNoPackage) {
-    // Mode A: No Package (Evenly distributed sections matching original proposal)
-    const P2_GAP = 12.0;
-    y = 20.0;
+    // Mode A: No Package (Even, consistent spacing across Page 2 without forced overstretching)
+    const P2_GAP = 13.0;
+    y = 24.0;
 
     // 1. Deliverables
     doc.setFont('helvetica', 'bold');
@@ -263,12 +269,12 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
     doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
     doc.text('CAMPAIGN DELIVERABLES', MARGIN_LEFT, y);
 
-    y += 8.2;
+    y += SUBHEAD_PARA_GAP;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(BODY_FONT_SIZE);
     doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
     doc.text('Every campaign is supported by the following:', MARGIN_LEFT, y);
-    y += 7.2;
+    y += 7.0;
 
     const deliverables = [
       'Advertisement playback on the selected bus screens.',
@@ -284,25 +290,25 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
       doc.setFillColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
       doc.circle(MARGIN_LEFT + 2.0, y - 1.2, 0.95, 'F');
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(12.4);
+      doc.setFontSize(12.2);
       doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
       doc.text(d, MARGIN_LEFT + 6.0, y);
-      y += 6.9;
+      y += 6.6;
     });
 
     // 2. Campaign Monitoring (Equal consistent gap)
-    y += P2_GAP - 2.0;
+    y += P2_GAP;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(SUBHEADING_FONT_SIZE); // 15 pt
     doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
     doc.text('CAMPAIGN MONITORING', MARGIN_LEFT, y);
 
-    y += 8.2;
+    y += SUBHEAD_PARA_GAP;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(BODY_FONT_SIZE);
     doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
     doc.text('Our advertiser dashboard provides campaign visibility through:', MARGIN_LEFT, y);
-    y += 7.2;
+    y += 7.0;
 
     const monitoringItems = [
       'Active buses and screens.',
@@ -318,22 +324,22 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
       doc.setFillColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
       doc.circle(MARGIN_LEFT + 2.0, y - 1.2, 0.95, 'F');
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(12.4);
+      doc.setFontSize(12.2);
       doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
       doc.text(m, MARGIN_LEFT + 6.0, y);
-      y += 6.9;
+      y += 6.6;
     });
 
     // 3. Our Commitment (Equal consistent gap)
-    y += P2_GAP - 2.0;
+    y += P2_GAP;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(SUBHEADING_FONT_SIZE); // 15 pt
     doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
     doc.text('OUR COMMITMENT', MARGIN_LEFT, y);
 
-    y += 8.2;
+    y += SUBHEAD_PARA_GAP;
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(12.2);
+    doc.setFontSize(12.0);
     doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
 
     const cP1 = "At Catgorithm, we aim to make advertising more accessible, measurable and effective for businesses.";
@@ -342,15 +348,15 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
 
     doc.text(cP1, MARGIN_LEFT, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.4 });
     const p1Lines = doc.splitTextToSize(cP1, PRINTABLE_W);
-    y += p1Lines.length * 5.8 + 3.0;
+    y += p1Lines.length * 5.6 + 4.0;
 
     doc.text(cP2, MARGIN_LEFT, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.4 });
     const p2Lines = doc.splitTextToSize(cP2, PRINTABLE_W);
-    y += p2Lines.length * 5.8 + 3.0;
+    y += p2Lines.length * 5.6 + 4.0;
 
     doc.text(cP3, MARGIN_LEFT, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.4 });
     const p3Lines = doc.splitTextToSize(cP3, PRINTABLE_W);
-    y += p3Lines.length * 5.8 + 4.5;
+    y += p3Lines.length * 5.6 + 6.0;
 
     // Contact items with official icons
     const contactItems: { type: 'phone' | 'email' | 'website'; text: string }[] = [
@@ -362,7 +368,7 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
     contactItems.forEach(item => {
       drawContactIcons(doc, MARGIN_LEFT + 0.5, y, item.type);
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11.8);
+      doc.setFontSize(11.5);
       doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
       doc.text(item.text, MARGIN_LEFT + 6.2, y);
       y += 6.8;
@@ -370,7 +376,7 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
 
   } else {
     // Mode B: Single or Multiple Package mode (Compact & evenly spaced to fit strictly on 2 pages)
-    const P2_GAP_COMPACT = 6.0;
+    const P2_GAP_COMPACT = 7.5;
     y = 18.0;
 
     // Deliverables
@@ -379,7 +385,7 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
     doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
     doc.text('CAMPAIGN DELIVERABLES', MARGIN_LEFT, y);
 
-    y += 6.2;
+    y += 7.0;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(11.2);
     doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
@@ -413,7 +419,7 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
     doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
     doc.text('CAMPAIGN MONITORING', MARGIN_LEFT, y);
 
-    y += 6.2;
+    y += 7.0;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(11.2);
     doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
@@ -448,7 +454,7 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
       doc.setFontSize(SUBHEADING_FONT_SIZE); // 15 pt
       doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
       doc.text('PROPOSED CAMPAIGN INVESTMENT', MARGIN_LEFT, y);
-      y += 4.5;
+      y += 5.0;
 
       const finalPrice = pkg.customPriceOverride !== undefined ? pkg.customPriceOverride : pkg.calculatedPrice;
 
@@ -493,7 +499,7 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
       doc.setFontSize(SUBHEADING_FONT_SIZE); // 15 pt
       doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
       doc.text('PROPOSED CAMPAIGN OPTIONS', MARGIN_LEFT, y);
-      y += 4.5;
+      y += 5.0;
 
       const headRow = ['Particulars'];
       pkgs.forEach((p, idx) => {
@@ -563,7 +569,7 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
     doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
     doc.text('OUR COMMITMENT', MARGIN_LEFT, y);
 
-    y += 5.5;
+    y += 6.5;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10.5);
     doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
