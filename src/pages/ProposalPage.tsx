@@ -931,10 +931,10 @@ ${pkgDetails}
                     />
                   </div>
 
-                  {/* Signature Gold Header Line (#d6c26e: thick left 65mm, thin continuation to right) */}
+                  {/* Signature Studio Shodwe Header Line (Gold #d6c26e left + Dark Grey #333132 continuation) */}
                   <div className="relative h-[2px] w-full mt-1 mb-4 flex items-center">
                     <div className="h-[2.5px] w-[35%] bg-[#d6c26e]" />
-                    <div className="h-[0.7px] flex-1 bg-[#d6c26e]" />
+                    <div className="h-[0.8px] flex-1 bg-[#333132]" />
                   </div>
 
                   {/* Proposal Heading */}
@@ -1020,82 +1020,107 @@ ${pkgDetails}
 
             {/* ── PREVIEW PAGE 2 ── */}
             {activePreviewPage === 2 && (
-              <div className="flex flex-col h-full justify-between">
-                <div>
-                  {/* Page 2 Running Header */}
-                  <div className="flex items-center justify-between pb-1">
-                    <img
-                      src="./catgorithm-logo.png"
-                      alt="Catgorithm"
-                      className="h-5 w-auto object-contain opacity-80"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLElement).style.display = 'none';
-                      }}
-                    />
-                    <span className="text-[9px] text-gray-400">Transit Proposal | {clientName}</span>
+              <div className="flex flex-col h-full justify-between pt-2">
+                <div className="space-y-4">
+                  {/* Deliverables */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5 pb-0.5">
+                      <h4 className="text-[10px] font-bold text-slate-900 uppercase tracking-wide">
+                        Campaign Deliverables
+                      </h4>
+                      <div className="h-[1.5px] w-6 bg-[#d6c26e]" />
+                    </div>
+                    <div className="grid grid-cols-1 gap-1.5 text-[9.2px] text-gray-700">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#d6c26e] flex-shrink-0" />
+                        <span>Scheduled video advertisement playback on 32-inch commercial displays with onboard audio.</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#d6c26e] flex-shrink-0" />
+                        <span>Rotational broadcast across full operating transit hours (40–50 plays per bus each day).</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#d6c26e] flex-shrink-0" />
+                        <span>Turnkey media ingestion, scheduling, and screen synchronization managed by Catgorithm.</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#d6c26e] flex-shrink-0" />
+                        <span>Dedicated advertiser dashboard credentials for independent real-time campaign audit.</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="h-[1px] w-full bg-[#d6c26e]/70 mb-3" />
 
-                  {/* Deliverables & Monitoring */}
-                  <div className="space-y-2 mb-3">
-                    <h4 className="text-[10px] font-bold text-slate-900 uppercase tracking-wide">
-                      Campaign Deliverables & Live Dashboard
-                    </h4>
-                    <div className="grid grid-cols-2 gap-1.5 text-[9px] text-gray-600">
-                      <div className="flex items-center gap-1">
-                        <Check size={10} className="text-emerald-600" />
-                        <span>32" Commercial HD playback</span>
+                  {/* Live Monitoring Dashboard */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5 pb-0.5">
+                      <h4 className="text-[10px] font-bold text-slate-900 uppercase tracking-wide">
+                        Live Campaign Monitoring (Advertiser Dashboard)
+                      </h4>
+                      <div className="h-[1.5px] w-6 bg-[#d6c26e]" />
+                    </div>
+                    <div className="grid grid-cols-1 gap-1.5 text-[9.2px] text-gray-700">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#d6c26e] flex-shrink-0" />
+                        <span><strong>Active Buses & Screens : </strong> Live tracking of broadcast hardware and fleet assignments.</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Check size={10} className="text-emerald-600" />
-                        <span>Verified daily play logs</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#d6c26e] flex-shrink-0" />
+                        <span><strong>Plays per Screen : </strong> Verified daily play count timestamps and cumulative broadcast logs.</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Check size={10} className="text-emerald-600" />
-                        <span>40–50 plays/bus daily</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#d6c26e] flex-shrink-0" />
+                        <span><strong>Total Daily Screen Time : </strong> Cumulative airtime logs per vehicle throughout operating transit hours.</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Check size={10} className="text-emerald-600" />
-                        <span>Active fleet screen time</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#d6c26e] flex-shrink-0" />
+                        <span><strong>Creative Playback Preview : </strong> Visual preview of running creatives with active campaign dates.</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Proposed Investment Section */}
-                  <div className="mt-3">
-                    <h4 className="text-[10px] font-bold text-slate-900 uppercase tracking-wide mb-1.5">
-                      {packageMode === 'none' ? 'Campaign Flight Strategy' : 'Proposed Campaign Investment'}
-                    </h4>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1.5 pb-0.5">
+                      <h4 className="text-[10px] font-bold text-slate-900 uppercase tracking-wide">
+                        {packageMode === 'none' ? 'Campaign Flight Strategy' : 'Proposed Campaign Investment'}
+                      </h4>
+                      <div className="h-[1.5px] w-6 bg-[#d6c26e]" />
+                    </div>
 
                     {packageMode === 'none' && (
-                      <div className="p-2.5 rounded-lg bg-gray-50 border border-gray-200 text-[9.5px] text-gray-600">
-                        Tailored campaigns available across 1 to 10 buses, 10s to 60s video ads, and customizable campaign durations. Contact us to finalize your flight plan.
+                      <div className="p-3 rounded-xl bg-gray-50 border border-gray-200 text-[9.5px] text-gray-600 leading-relaxed">
+                        Every business has unique campaign objectives and flight requirements. Catgorithm campaigns are fully customizable across fleet size (1 to 10 private buses), advertisement durations (10s to 60s), and campaign periods (from 1 day up to annual commitments). Contact us to finalize your custom package.
                       </div>
                     )}
 
                     {packageMode === 'single' && (
                       <div className="border border-gray-200 rounded-lg overflow-hidden text-[9px]">
-                        <div className="bg-slate-900 text-white font-bold px-2 py-1 flex justify-between">
-                          <span>Particulars</span>
-                          <span>Details</span>
+                        <div className="bg-slate-900 text-white font-bold px-2.5 py-1.5 flex justify-between">
+                          <span>Campaign Particulars</span>
+                          <span>Package Details</span>
                         </div>
-                        <div className="p-1.5 space-y-1 text-gray-700 bg-white">
-                          <div className="flex justify-between border-b border-gray-100 pb-0.5">
-                            <span>Fleet:</span>
+                        <div className="p-2 space-y-1.5 text-gray-700 bg-white">
+                          <div className="flex justify-between border-b border-gray-100 pb-1">
+                            <span>Fleet Allocation:</span>
                             <span className="font-semibold">{singleBuses} Private Buses</span>
                           </div>
-                          <div className="flex justify-between border-b border-gray-100 pb-0.5">
-                            <span>Ad Duration:</span>
+                          <div className="flex justify-between border-b border-gray-100 pb-1">
+                            <span>Video Ad Duration:</span>
                             <span className="font-semibold">{singleSeconds}s Video with Audio</span>
                           </div>
-                          <div className="flex justify-between border-b border-gray-100 pb-0.5">
-                            <span>Period:</span>
+                          <div className="flex justify-between border-b border-gray-100 pb-1">
+                            <span>Campaign Period:</span>
                             <span className="font-semibold">{singleDays} Days</span>
                           </div>
-                          <div className="flex justify-between text-slate-900 font-extrabold pt-0.5">
-                            <span>Investment:</span>
-                            <span className="text-[#a0354e]">
+                          <div className="flex justify-between border-b border-gray-100 pb-1">
+                            <span>Route Coverage:</span>
+                            <span className="font-semibold">{singleRoutes}</span>
+                          </div>
+                          <div className="flex justify-between text-slate-900 font-extrabold pt-1">
+                            <span>Campaign Investment:</span>
+                            <span className="text-[#a0354e] text-xs">
                               {singleCustomPrice ? `₹${parseInt(singleCustomPrice, 10).toLocaleString('en-IN')}` : formatINR(singleCalc.totalPrice)}
+                              <span className="text-[8px] font-normal text-gray-400 ml-1">(+18% GST)</span>
                             </span>
                           </div>
                         </div>
@@ -1104,29 +1129,35 @@ ${pkgDetails}
 
                     {packageMode === 'multiple' && (
                       <div className="border border-gray-200 rounded-lg overflow-hidden text-[8.5px]">
-                        <div className="bg-slate-900 text-white font-bold px-2 py-1 grid grid-cols-4 text-center">
-                          <span className="text-left">Option</span>
+                        <div className="bg-slate-900 text-white font-bold px-2 py-1.5 grid grid-cols-4 text-center">
+                          <span className="text-left">Particulars</span>
                           <span>Starter</span>
-                          <span className="text-amber-300">Growth ⭐</span>
+                          <span className="text-amber-300">Growth*</span>
                           <span>Dominance</span>
                         </div>
-                        <div className="p-1 space-y-1 text-gray-700 bg-white">
-                          <div className="grid grid-cols-4 text-center border-b border-gray-100 pb-0.5">
+                        <div className="p-1.5 space-y-1 text-gray-700 bg-white">
+                          <div className="grid grid-cols-4 text-center border-b border-gray-100 pb-1">
                             <span className="text-left font-semibold">Fleet:</span>
                             <span>{opt1Buses} Buses</span>
-                            <span className="font-semibold bg-amber-50">{opt2Buses} Buses</span>
+                            <span className="font-semibold bg-amber-50/80">{opt2Buses} Buses</span>
                             <span>{opt3Buses} Buses</span>
                           </div>
-                          <div className="grid grid-cols-4 text-center border-b border-gray-100 pb-0.5">
+                          <div className="grid grid-cols-4 text-center border-b border-gray-100 pb-1">
                             <span className="text-left font-semibold">Duration:</span>
                             <span>{opt1Seconds}s</span>
-                            <span className="font-semibold bg-amber-50">{opt2Seconds}s</span>
+                            <span className="font-semibold bg-amber-50/80">{opt2Seconds}s</span>
                             <span>{opt3Seconds}s</span>
                           </div>
-                          <div className="grid grid-cols-4 text-center pt-0.5 font-bold text-slate-900">
-                            <span className="text-left">Total:</span>
+                          <div className="grid grid-cols-4 text-center border-b border-gray-100 pb-1">
+                            <span className="text-left font-semibold">Period:</span>
+                            <span>{opt1Days} Days</span>
+                            <span className="font-semibold bg-amber-50/80">{opt2Days} Days</span>
+                            <span>{opt3Days} Days</span>
+                          </div>
+                          <div className="grid grid-cols-4 text-center pt-1 font-bold text-slate-900">
+                            <span className="text-left">Investment:</span>
                             <span>{opt1PriceOverride ? `₹${parseInt(opt1PriceOverride, 10).toLocaleString('en-IN')}` : formatINR(opt1Calc.totalPrice)}</span>
-                            <span className="text-[#a0354e] bg-amber-50">
+                            <span className="text-[#a0354e] bg-amber-50/80 font-extrabold">
                               {opt2PriceOverride ? `₹${parseInt(opt2PriceOverride, 10).toLocaleString('en-IN')}` : formatINR(opt2Calc.totalPrice)}
                             </span>
                             <span>{opt3PriceOverride ? `₹${parseInt(opt3PriceOverride, 10).toLocaleString('en-IN')}` : formatINR(opt3Calc.totalPrice)}</span>
@@ -1136,21 +1167,21 @@ ${pkgDetails}
                     )}
                   </div>
 
-                  {/* Commitment & Signoff */}
-                  <div className="mt-3 pt-2 text-[9px] text-gray-600">
-                    <p className="font-bold text-slate-900 mb-0.5">OUR COMMITMENT</p>
-                    <p className="line-clamp-2">
-                      Reliable, transparent and high-impact digital transit advertising. We look forward to partnering with {clientName}.
-                    </p>
-                    <div className="mt-2 text-[9px]">
-                      <span className="font-bold text-slate-900 block">CATGORITHM DIGITAL GROWTH</span>
-                      <span className="text-[#d6c26e] italic font-medium">Your Brand. In Motion.</span>
-                      <span className="text-gray-400 block text-[8px] mt-0.5">+91 97463 36175 | teamcatgorithm@gmail.com</span>
+                  {/* Commitment */}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5 pb-0.5">
+                      <h4 className="text-[10px] font-bold text-slate-900 uppercase tracking-wide">
+                        Our Commitment
+                      </h4>
+                      <div className="h-[1.5px] w-6 bg-[#d6c26e]" />
                     </div>
+                    <p className="text-[9.2px] text-gray-600 leading-relaxed">
+                      At Catgorithm, we are committed to providing reliable, measurable, and high-impact digital transit advertising. From seamless scheduling to verified dashboard reporting, we ensure your brand captures unmissable presence along Kollam's busiest corridors. We look forward to partnering with {clientName}.
+                    </p>
                   </div>
                 </div>
 
-                {/* Page 2 Footer */}
+                {/* Page 2 Footer Only */}
                 <div className="pt-2 border-t border-[#d6c26e]/60 flex items-center justify-between text-[9px] text-gray-400">
                   <span>teamcatgorithm@gmail.com</span>
                   <span>www.catgorithm.in</span>
