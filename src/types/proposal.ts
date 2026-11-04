@@ -57,7 +57,7 @@ export interface ProposalData {
 
   // Terms and custom notes
   customNotes?: string;
-  gstNote: string;                // e.g. "Applicable GST (18%) shown separately on invoice."
+  gstNote?: string;
 }
 
 export interface IndustryTemplate {
@@ -74,7 +74,7 @@ export const INDUSTRY_TEMPLATES: Record<ProposalIndustry, IndustryTemplate> = {
     label: 'General / Retail / Corporate',
     badge: 'Universal',
     defaultObjectiveP1:
-      "In today's fast-moving market, building sustained top-of-mind brand visibility is essential to winning consumer preference. Catgorithm transforms everyday commuter journeys into an active, high-impact digital broadcasting channel across Kollam's prime arterial corridors.",
+      "Catgorithm offers digital bus screen advertising across Kollam, helping businesses reach local audiences through strategically placed displays inside private buses. Our platform builds brand visibility, recall and awareness through repeated exposure during everyday commutes.",
     defaultObjectiveP2:
       "By placing high-definition video advertisements directly before seated, attentive passengers during daily travel, our network generates repeated daily impressions, drives strong brand recall, and directs qualified footfall to your physical outlets and digital channels."
   },
@@ -83,7 +83,7 @@ export const INDUSTRY_TEMPLATES: Record<ProposalIndustry, IndustryTemplate> = {
     label: 'Hospitals & Healthcare Institutes',
     badge: 'Healthcare',
     defaultObjectiveP1:
-      "Healthcare decisions depend fundamentally on patient trust, specialist reputation, and immediate local awareness during medical emergencies. Catgorithm connects your hospital directly with families and commuters traveling daily across Kollam's high-traffic transit routes.",
+      "Catgorithm offers digital bus screen advertising across Kollam, helping businesses reach local audiences through strategically placed displays inside private buses. Our platform builds brand visibility, recall and awareness through repeated exposure during everyday commutes.",
     defaultObjectiveP2:
       "Through high-definition commercial screens with clear onboard audio, we highlight your 24/7 emergency response, specialized clinical departments, visiting super-specialist doctors, and advanced medical infrastructure—ensuring your hospital remains the first trusted choice when care is needed."
   },

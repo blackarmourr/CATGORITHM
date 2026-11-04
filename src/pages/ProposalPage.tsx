@@ -31,20 +31,22 @@ function formatINR(val: number): string {
 
 export default function ProposalPage() {
   // ── Form State ──
-  const [clientName, setClientName] = useState('Banaz Furniture');
-  const [industry, setIndustry] = useState<ProposalIndustry>('furniture');
+  const [clientName, setClientName] = useState('Travancore Medicity Hospital');
+  const [industry, setIndustry] = useState<ProposalIndustry>('hospitals');
   const [proposalDate, setProposalDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [preparedBy, setPreparedBy] = useState('Catgorithm');
-  const [packageMode, setPackageMode] = useState<PackageMode>('multiple');
+  const [packageMode, setPackageMode] = useState<PackageMode>('none');
   const [activePreviewPage, setActivePreviewPage] = useState<1 | 2>(1);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [showObjectiveCustomizer, setShowObjectiveCustomizer] = useState(false);
   const [copiedSummary, setCopiedSummary] = useState(false);
 
-  // Editable Objectives (initialized from industry template)
-  const [objectiveTitle, setObjectiveTitle] = useState('THE OBJECTIVE');
-  const [objectiveP1, setObjectiveP1] = useState(INDUSTRY_TEMPLATES.furniture.defaultObjectiveP1);
-  const [objectiveP2, setObjectiveP2] = useState(INDUSTRY_TEMPLATES.furniture.defaultObjectiveP2);
+  // Editable Objectives (initialized from official template)
+  const [objectiveTitle, setObjectiveTitle] = useState('THE OPPORTUNITY');
+  const [objectiveP1, setObjectiveP1] = useState(
+    'Catgorithm offers digital bus screen advertising across Kollam, helping businesses reach local audiences through strategically placed displays inside private buses. Our platform builds brand visibility, recall and awareness through repeated exposure during everyday commutes.'
+  );
+  const [objectiveP2, setObjectiveP2] = useState('');
 
   // ── Single Package State ──
   const [singleBuses, setSingleBuses] = useState(5);
@@ -205,7 +207,6 @@ export default function ProposalPage() {
       packageMode,
       singlePackage: singlePkg,
       multiplePackages: multPkgs,
-      gstNote: 'Applicable GST (18%) shown separately on invoice.',
     };
   }, [
     clientName, industry, formattedDate, preparedBy, objectiveTitle, objectiveP1, objectiveP2,
@@ -239,13 +240,12 @@ export default function ProposalPage() {
 • Fleet: ${p.buses} Private Buses (32" Commercial Displays)
 • Duration: ${p.videoDurationSeconds} Seconds Video Ad with Audio
 • Period: ${p.durationLabel}
-• Estimated Airplay: ${p.monthlyPlaysEstimate}
-• Investment: *${formatINR(price)}* (Exclusive of GST)`;
+• Investment: *${formatINR(price)}*`;
     } else if (packageMode === 'multiple' && currentProposalData.multiplePackages) {
       pkgDetails = `\n📋 *Campaign Options Comparison:*`;
       currentProposalData.multiplePackages.forEach((p, idx) => {
         const price = p.customPriceOverride ?? p.calculatedPrice;
-        pkgDetails += `\n*Option ${idx + 1}: ${p.name}* ${p.isRecommended ? '⭐ (Recommended)' : ''}
+        pkgDetails += `\n*Option ${idx + 1}: ${p.name}*
 • ${p.buses} Buses | ${p.videoDurationSeconds}s Ad | ${p.durationLabel}
 • Investment: *${formatINR(price)}*`;
       });
@@ -950,69 +950,62 @@ ${pkgDetails}
                     </p>
                   </div>
 
-                  {/* The Objective */}
+                  {/* The Opportunity */}
                   <div className="mt-3.5 space-y-1.5">
-                    <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide text-center">
+                    <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide">
                       {objectiveTitle}
                     </h4>
-                    <p className="text-[10px] text-gray-700 leading-relaxed text-justify line-clamp-3">
+                    <p className="text-[10px] text-gray-700 leading-relaxed text-justify">
                       {objectiveP1}
-                    </p>
-                    <p className="text-[10px] text-gray-700 leading-relaxed text-justify line-clamp-3">
-                      {objectiveP2}
                     </p>
                   </div>
 
                   {/* Our Advertising Network */}
                   <div className="mt-3.5 space-y-1">
-                    <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide text-center">
-                      Our Digital Transit Advertising Network
+                    <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide">
+                      Our Advertising Network
                     </h4>
                     <p className="text-[10px] text-gray-700 leading-tight text-justify">
-                      HD commercial screens across high-traffic commuter routes in Kollam:
+                      Our network consists of digital display screens installed inside selected private buses, operating along established routes throughout Kollam. Each screen provides a dedicated space for promotional content, with advertisements scheduled to run as part of a continuous digital display network. The highlight of our network are :
                     </p>
                     <ul className="space-y-1 mt-1 text-[10px] text-gray-700">
                       <li className="flex items-center gap-1.5 text-justify">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />
-                        <span><strong>32-Inch Commercial Displays:</strong> HD screens with onboard audio.</span>
+                        <span><strong>7 Advertising Routes :</strong> Coverage across key corridors in Kollam.</span>
                       </li>
                       <li className="flex items-center gap-1.5 text-justify">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />
-                        <span><strong>7 Prime Corridors:</strong> Broad geographic connectivity across Kollam.</span>
+                        <span><strong>32-inch Commercial Displays :</strong> HD digital screens with audio.</span>
                       </li>
                       <li className="flex items-center gap-1.5 text-justify">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />
-                        <span><strong>40–50 Daily Plays / Bus:</strong> ~1,200+ monthly verified plays per bus.</span>
+                        <span><strong>Flexible Advertisement Duration :</strong> Video advertisements of up to 60 seconds.</span>
                       </li>
                       <li className="flex items-center gap-1.5 text-justify">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />
-                        <span><strong>24/7 Campaign Monitoring:</strong> Dedicated advertiser web dashboard.</span>
+                        <span><strong>40-50 Daily Plays :</strong> Approximate daily advertisement plays per bus.</span>
+                      </li>
+                      <li className="flex items-center gap-1.5 text-justify">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />
+                        <span><strong>24/7 Campaign Monitoring :</strong> Dedicated advertiser dashboard access.</span>
                       </li>
                     </ul>
                   </div>
 
                   {/* Why Catgorithm? */}
-                  <div className="mt-3 space-y-1">
-                    <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide text-center">
+                  <div className="mt-3.5 space-y-1">
+                    <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide">
                       Why Catgorithm?
                     </h4>
-                    <div className="grid grid-cols-2 gap-2 text-[9.5px] text-gray-700 mt-1">
-                      <div className="p-1.5 rounded-md bg-gray-50 border border-gray-100 text-justify">
-                        <span className="font-bold text-gray-800 block text-left">Captive Audience</span>
-                        20–45 min seated dwell time.
-                      </div>
-                      <div className="p-1.5 rounded-md bg-gray-50 border border-gray-100 text-justify">
-                        <span className="font-bold text-gray-800 block text-left">Repeated Daily Reach</span>
-                        Daily commuters travel twice daily.
-                      </div>
-                    </div>
+                    <p className="text-[10px] text-gray-700 leading-relaxed text-justify">
+                      We bring together strategically placed digital displays, engaging video content and flexible advertising plans in one platform. With a focus on convenience, campaign adaptability and performance transparency, we offer businesses a practical alternative to conventional outdoor advertising.
+                    </p>
                   </div>
                 </div>
 
-                {/* Page 1 Footer (Text lowered from line) */}
-                <div className="pt-3.5 border-t border-[#d6c26e]/60 flex items-center justify-between text-[9px] text-gray-500">
+                {/* Page 1 Footer */}
+                <div className="pt-3 border-t border-[#d6c26e]/80 flex items-center justify-between text-[9px] text-gray-600">
                   <span>teamcatgorithm@gmail.com</span>
-                  <span className="text-[8px] italic">* Network reach indicative</span>
                   <span>www.catgorithm.in</span>
                 </div>
               </div>
@@ -1020,71 +1013,90 @@ ${pkgDetails}
 
             {/* ── PREVIEW PAGE 2 ── */}
             {activePreviewPage === 2 && (
-              <div className="flex flex-col h-full justify-between pt-2">
-                <div className="space-y-4">
+              <div className="flex flex-col h-full justify-between pt-1">
+                <div className="space-y-3.5">
                   {/* Deliverables */}
-                  <div className="space-y-1.5">
-                    <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide text-center">
+                  <div className="space-y-1">
+                    <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide">
                       Campaign Deliverables
                     </h4>
-                    <div className="grid grid-cols-1 gap-1.5 text-[9.5px] text-gray-700">
-                      <div className="flex items-center gap-1.5 text-justify">
+                    <p className="text-[9.5px] text-gray-600">Every campaign is supported by the following:</p>
+                    <div className="grid grid-cols-1 gap-1 text-[9.2px] text-gray-700 mt-1">
+                      <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />
-                        <span>Scheduled video advertisement playback on 32-inch commercial displays with onboard audio.</span>
+                        <span>Advertisement playback on the selected bus screens.</span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-justify">
+                      <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />
-                        <span>Rotational broadcast across full operating transit hours (40–50 plays per bus each day).</span>
+                        <span>Repeated advertisement exposure throughout operating hours.</span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-justify">
+                      <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />
-                        <span>Turnkey media ingestion, scheduling, and screen synchronization managed by Catgorithm.</span>
+                        <span>Digital advertisement delivery with audio.</span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-justify">
+                      <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />
-                        <span>Dedicated advertiser dashboard credentials for independent real-time campaign audit.</span>
+                        <span>Campaign activation and scheduling.</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />
+                        <span>Dedicated advertiser dashboard access.</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />
+                        <span>Campaign activity monitoring.</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />
+                        <span>Advertisement preview and campaign status tracking.</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Live Monitoring Dashboard */}
-                  <div className="space-y-1.5">
-                    <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide text-center">
-                      Live Campaign Monitoring (Advertiser Dashboard)
+                  <div className="space-y-1">
+                    <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide">
+                      Campaign Monitoring
                     </h4>
-                    <div className="grid grid-cols-1 gap-1.5 text-[9.5px] text-gray-700">
-                      <div className="flex items-center gap-1.5 text-justify">
+                    <p className="text-[9.5px] text-gray-600">Our advertiser dashboard provides campaign visibility through:</p>
+                    <div className="grid grid-cols-1 gap-1 text-[9.2px] text-gray-700 mt-1">
+                      <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />
-                        <span><strong>Active Buses & Screens : </strong> Live tracking of broadcast hardware and fleet assignments.</span>
+                        <span>Active buses and screens.</span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-justify">
+                      <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />
-                        <span><strong>Plays per Screen : </strong> Verified daily play count timestamps and cumulative broadcast logs.</span>
+                        <span>Advertisement plays per screen.</span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-justify">
+                      <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />
-                        <span><strong>Total Daily Screen Time : </strong> Cumulative airtime logs per vehicle throughout operating transit hours.</span>
+                        <span>Daily screen time.</span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-justify">
+                      <div className="flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />
-                        <span><strong>Creative Playback Preview : </strong> Visual preview of running creatives with active campaign dates.</span>
+                        <span>Running advertisements.</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />
+                        <span>Advertisement preview.</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />
+                        <span>Campaign description and expiry date.</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />
+                        <span>Number of days the advertisement has been played.</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Proposed Investment Section */}
-                  <div className="space-y-1.5">
-                    <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide text-center">
-                      {packageMode === 'none' ? 'Campaign Flight Strategy' : 'Proposed Campaign Investment'}
-                    </h4>
-
-                    {packageMode === 'none' && (
-                      <div className="p-3 rounded-xl bg-gray-50 border border-gray-200 text-[9.5px] text-gray-700 leading-relaxed text-justify">
-                        Every business has unique campaign objectives and flight requirements. Catgorithm campaigns are fully customizable across fleet size (1 to 10 private buses), advertisement durations (10s to 60s), and campaign periods (from 1 day up to annual commitments). Contact us to finalize your custom package.
-                      </div>
-                    )}
-
-                    {packageMode === 'single' && (
+                  {/* Optional Proposed Investment Section (Single or Multiple only) */}
+                  {packageMode === 'single' && (
+                    <div className="space-y-1">
+                      <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide">
+                        Proposed Campaign Investment
+                      </h4>
                       <div className="border border-gray-200 rounded-lg overflow-hidden text-[9px]">
                         <div className="bg-slate-900 text-white font-bold px-2.5 py-1.5 flex justify-between">
                           <span>Campaign Particulars</span>
@@ -1093,7 +1105,7 @@ ${pkgDetails}
                         <div className="p-2 space-y-1.5 text-gray-700 bg-white">
                           <div className="flex justify-between border-b border-gray-100 pb-1">
                             <span>Fleet Allocation:</span>
-                            <span className="font-semibold">{singleBuses} Private Buses</span>
+                            <span className="font-semibold">{singleBuses} Private Buses (Commercial Displays)</span>
                           </div>
                           <div className="flex justify-between border-b border-gray-100 pb-1">
                             <span>Video Ad Duration:</span>
@@ -1103,24 +1115,23 @@ ${pkgDetails}
                             <span>Campaign Period:</span>
                             <span className="font-semibold">{singleDays} Days</span>
                           </div>
-                          <div className="flex justify-between border-b border-gray-100 pb-1">
-                            <span>Route Coverage:</span>
-                            <span className="font-semibold">{singleRoutes}</span>
-                          </div>
                           <div className="flex justify-between text-slate-900 font-extrabold pt-1">
-                            <span>Campaign Investment:</span>
+                            <span>Total Campaign Investment:</span>
                             <span className="text-slate-900 text-xs">
                               {singleCustomPrice ? `₹${parseInt(singleCustomPrice, 10).toLocaleString('en-IN')}` : formatINR(singleCalc.totalPrice)}
-                              <span className="text-[8px] font-normal text-gray-400 ml-1">(+18% GST)</span>
                             </span>
                           </div>
                         </div>
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {packageMode === 'multiple' && (
+                  {packageMode === 'multiple' && (
+                    <div className="space-y-1">
+                      <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide">
+                        Proposed Campaign Investment Options
+                      </h4>
                       <div className="border border-gray-200 rounded-lg overflow-hidden text-[8.5px]">
-                        {/* Clean uniform headers without Option 2 highlight */}
                         <div className="bg-slate-900 text-white font-bold px-2 py-1.5 grid grid-cols-4 text-center">
                           <span className="text-left">Particulars</span>
                           <span>{opt1Name.replace(/\s*\(.*\)/, '') || 'Option 1'}</span>
@@ -1154,22 +1165,33 @@ ${pkgDetails}
                           </div>
                         </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   {/* Commitment */}
                   <div className="space-y-1">
-                    <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide text-center">
+                    <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide">
                       Our Commitment
                     </h4>
-                    <p className="text-[9.5px] text-gray-700 leading-relaxed text-justify">
-                      At Catgorithm, we are committed to providing reliable, measurable, and high-impact digital transit advertising. From seamless scheduling to verified dashboard reporting, we ensure your brand captures unmissable presence along Kollam's busiest corridors. We look forward to partnering with {clientName}.
+                    <p className="text-[9.2px] text-gray-700 leading-relaxed text-justify">
+                      At Catgorithm, we aim to make advertising more accessible, measurable and effective for businesses.
                     </p>
+                    <p className="text-[9.2px] text-gray-700 leading-relaxed text-justify">
+                      From campaign activation to ongoing monitoring, we are committed to providing a reliable advertising experience that helps your brand stay visible where your customers travel every day.
+                    </p>
+                    <p className="text-[9.2px] text-gray-700 leading-relaxed text-justify">
+                      We look forward to building a successful advertising partnership with {clientName}. For any questions or further discussion, please feel free to contact us :
+                    </p>
+                    <div className="text-[9.2px] text-gray-800 space-y-0.5 pt-1">
+                      <div>📞 WhatsApp / Call: +91 9746336175</div>
+                      <div>✉ Email: teamcatgorithm@gmail.com</div>
+                      <div>🌐 Website: www.catgorithm.in</div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Page 2 Footer Only (Text lowered from line) */}
-                <div className="pt-3.5 border-t border-[#d6c26e]/60 flex items-center justify-between text-[9px] text-gray-500">
+                {/* Page 2 Footer */}
+                <div className="pt-3 border-t border-[#d6c26e]/80 flex items-center justify-between text-[9px] text-gray-600">
                   <span>teamcatgorithm@gmail.com</span>
                   <span>www.catgorithm.in</span>
                 </div>

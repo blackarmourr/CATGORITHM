@@ -1,28 +1,34 @@
 // ============================================================
 // PROPOSAL PDF GENERATOR — CATGORITHM DIGITAL GROWTH
 // Strictly 2-Page A4 Executive Proposal Document.
-// Design based on Studio Shodwe template with #d6c26e gold accent,
-// #333132 dark grey continuation line, dual-page footers,
-// 15pt bold centered headings, 13pt justified descriptions,
-// font-colored bullet points, and lowered footer text.
-// ============================================================
+// Pixel-accurate replica of Catgorithm's official company template:
+// - Untouched original logo aspect ratio (2.4976 : 1)
+// - Exact left-aligned section headings without underlines
+// - Centered title header block
+// - Studio Shodwe gold (#d6c26e) & dark grey (#333132) divider lines
+// - 7 campaign deliverables & 7 monitoring points
+// - Our commitment closing with contact channels
+// - Optional clean single/multiple comparative investment tables
+//   (NO Route Coverage, NO Estimated Airplay, NO GST mention anywhere)
+// - Dual-page footers at 275.5mm
+// ==========================================
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { ProposalData } from '../types/proposal';
 import { PROPOSAL_LOGO_BASE64 } from './proposalLogoBase64';
 
-const PAGE_W = 210;
-const MARGIN = 18;
-const PRINTABLE_W = PAGE_W - MARGIN * 2; // 174mm
+const PAGE_W = 210.1;
+const MARGIN_LEFT = 21.2;
+const MARGIN_RIGHT = 21.2;
+const PRINTABLE_W = PAGE_W - MARGIN_LEFT - MARGIN_RIGHT; // 167.7mm
 
-// Brand Color Palette
+// Brand Color Palette from user template
 const GOLD_COLOR: [number, number, number] = [214, 194, 110]; // #d6c26e
 const DARK_GREY: [number, number, number] = [51, 49, 50];     // #333132
-const CHARCOAL: [number, number, number] = [31, 41, 55];       // #1f2937 (Font color)
-const SLATE_DARK: [number, number, number] = [15, 23, 42];     // #0f172a (Primary text)
+const CHARCOAL: [number, number, number] = [31, 41, 55];       // #1f2937 (Text)
+const SLATE_DARK: [number, number, number] = [15, 23, 42];     // #0f172a (Headings)
 const GRAY_TEXT: [number, number, number] = [75, 85, 99];      // #4b5563
-const MUTED_GRAY: [number, number, number] = [107, 114, 128];  // #6b7280
 
 function formatPDFINR(amount: number): string {
   const formatted = Math.abs(amount).toLocaleString('en-IN');
@@ -30,100 +36,58 @@ function formatPDFINR(amount: number): string {
 }
 
 /**
- * Page 1 Header line:
- * Yellow/Gold #d6c26e on the left (60mm, 1mm thickness)
- * Continuing with Dark Grey #333132 (0.3mm thickness) to the right margin
+ * Top divider line:
+ * Yellow/Gold #d6c26e on left (58mm), continuing with thin dark grey #333132
  */
-function drawPage1HeaderLine(pdf: jsPDF, yPos: number): void {
-  const goldWidth = 60;
+function drawHeaderLine(pdf: jsPDF, yPos: number): void {
+  const goldWidth = 58;
   pdf.setFillColor(GOLD_COLOR[0], GOLD_COLOR[1], GOLD_COLOR[2]);
-  pdf.rect(MARGIN, yPos, goldWidth, 1.0, 'F');
+  pdf.rect(MARGIN_LEFT, yPos, goldWidth, 1.8, 'F');
   pdf.setFillColor(DARK_GREY[0], DARK_GREY[1], DARK_GREY[2]);
-  pdf.rect(MARGIN + goldWidth, yPos + 0.35, PRINTABLE_W - goldWidth, 0.3, 'F');
+  pdf.rect(MARGIN_LEFT + goldWidth, yPos + 0.75, PRINTABLE_W - goldWidth, 0.3, 'F');
 }
 
 /**
  * Footer on both pages:
- * Line at 280mm. Text lowered to 289mm (9mm gap below the line).
+ * Gold line at 275.5mm, contact email & website lowered to 283.5mm
  */
 function drawFooter(pdf: jsPDF, email: string = 'teamcatgorithm@gmail.com', website: string = 'www.catgorithm.in'): void {
-  const lineY = 280;
-  const textY = 289;
+  const lineY = 275.5;
+  const textY = 283.5;
 
   pdf.setFillColor(GOLD_COLOR[0], GOLD_COLOR[1], GOLD_COLOR[2]);
-  pdf.rect(MARGIN, lineY, PRINTABLE_W, 0.3, 'F');
+  pdf.rect(MARGIN_LEFT, lineY, PRINTABLE_W, 0.4, 'F');
 
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(9);
-  pdf.setTextColor(GRAY_TEXT[0], GRAY_TEXT[1], GRAY_TEXT[2]);
-  pdf.text(email, MARGIN, textY);
-  pdf.text(website, PAGE_W - MARGIN, textY, { align: 'right' });
+  pdf.setFontSize(9.5);
+  pdf.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
+  pdf.text(email, MARGIN_LEFT, textY);
+  pdf.text(website, PAGE_W - MARGIN_RIGHT, textY, { align: 'right' });
 }
 
 /**
- * Draws a bullet item with bullet dot in font color (CHARCOAL),
- * bold title (13pt), and flowing justified/wrapped description (13pt).
+ * Minimalist vector contact icons
  */
-function drawBulletItem(doc: jsPDF, title: string, desc: string, y: number, lineH: number = 5.2): number {
-  const bulletX = MARGIN + 2;
-  const textX = MARGIN + 6;
-  const maxW = PRINTABLE_W - 6;
+function drawContactIcons(doc: jsPDF, x: number, y: number, type: 'phone' | 'email' | 'website'): void {
+  doc.setDrawColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
+  doc.setFillColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
 
-  // Bullet Dot (same color as font: CHARCOAL)
-  doc.setFillColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
-  doc.circle(bulletX, y - 1, 0.9, 'F');
-
-  if (!title) {
-    // Pure description bullet
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(13);
-    doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
-    doc.text(desc, textX, y, { align: 'justify', maxWidth: maxW, lineHeightFactor: 1.3 });
-    const lines = doc.splitTextToSize(desc, maxW);
-    return y + lines.length * lineH + 2;
+  if (type === 'phone') {
+    doc.setLineWidth(0.4);
+    doc.roundedRect(x, y - 2.8, 2.2, 3.8, 0.6, 0.6, 'S');
+    doc.rect(x + 0.3, y - 2.2, 1.6, 2.4, 'S');
+    doc.circle(x + 1.1, y + 0.4, 0.25, 'F');
+  } else if (type === 'email') {
+    doc.setLineWidth(0.35);
+    doc.rect(x, y - 2.6, 3.8, 2.8, 'S');
+    doc.line(x, y - 2.6, x + 1.9, y - 1.2);
+    doc.line(x + 1.9, y - 1.2, x + 3.8, y - 2.6);
+  } else if (type === 'website') {
+    doc.setLineWidth(0.35);
+    doc.circle(x + 1.8, y - 1.4, 1.7, 'S');
+    doc.line(x + 0.1, y - 1.4, x + 3.5, y - 1.4);
+    doc.ellipse(x + 1.8, y - 1.4, 0.8, 1.7, 'S');
   }
-
-  // Title in Bold
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
-  doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
-  const titleText = title + ' : ';
-  const titleW = doc.getTextWidth(titleText);
-  doc.text(titleText, textX, y);
-
-  // Description in Normal
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(13);
-  doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
-
-  const words = desc.split(' ');
-  let line1 = '';
-  let idx = 0;
-  const remW = maxW - titleW - 2.0; // 2mm gap after title
-
-  while (idx < words.length) {
-    const test = line1 ? line1 + ' ' + words[idx] : words[idx];
-    if (doc.getTextWidth(test) <= remW) {
-      line1 = test;
-      idx++;
-    } else {
-      break;
-    }
-  }
-
-  // Print first line with gap after title
-  doc.text(line1, textX + titleW + 2.0, y);
-
-  const remWords = words.slice(idx).join(' ');
-  if (remWords) {
-    const nextLines = doc.splitTextToSize(remWords, maxW);
-    for (let i = 0; i < nextLines.length; i++) {
-      y += lineH;
-      doc.text(nextLines[i], textX, y);
-    }
-  }
-
-  return y + lineH + 1.8;
 }
 
 export async function generateProposalPDF(data: ProposalData): Promise<void> {
@@ -133,237 +97,232 @@ export async function generateProposalPDF(data: ProposalData): Promise<void> {
     format: 'a4',
   });
 
-  const clientNameDisplay = (data.clientName || 'Valued Client').trim().toUpperCase();
-  const proposalDateDisplay = data.proposalDate || new Date().toLocaleDateString('en-US', {
+  const clientName = (data.clientName || 'Valued Client').trim().toUpperCase();
+  const proposalDate = data.proposalDate || new Date().toLocaleDateString('en-US', {
     month: 'long',
     day: '2-digit',
     year: 'numeric',
   });
+  const preparedBy = data.preparedBy || 'Catgorithm';
+  const mode = data.packageMode || 'none';
 
-  // ============================================================
-  // PAGE 1: Brand Introduction, Network Highlights & Value Prop
-  // Headings: Size 15, Bold, Centered
-  // Descriptions: Size 13, Normal, Justified
-  // NO underline under headings
-  // Bullet dots: Same color as font
-  // ============================================================
-
-  // 1. Logo at Top Left
+  // ==========================================
+  // PAGE 1: EXACT REPLICA OF USER TEMPLATE
+  // ==========================================
+  // 1. Logo at Top Left (Strict original aspect ratio: 2.49756 : 1)
+  const logoW = 32.5;
+  const logoH = logoW / 2.49756; // 13.01mm
   try {
-    doc.addImage(PROPOSAL_LOGO_BASE64, 'PNG', MARGIN, 10, 38, 12);
+    doc.addImage(PROPOSAL_LOGO_BASE64, 'PNG', MARGIN_LEFT, 10.0, logoW, logoH);
   } catch {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(GOLD_COLOR[0], GOLD_COLOR[1], GOLD_COLOR[2]);
-    doc.text('CATGORITHM', MARGIN, 20);
+    doc.text('CATGORITHM', MARGIN_LEFT, 20);
   }
 
-  // 2. Header Line: Yellow #d6c26e + Dark Grey #333132
-  drawPage1HeaderLine(doc, 25);
+  // 2. Header Line (Gold on left, thin dark on right)
+  drawHeaderLine(doc, 26.3);
 
-  // 3. Document Title Block (Center Aligned, Equal Headings)
-  let y = 34;
+  // 3. Document Title Block (Centered)
+  let y = 37.5;
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
+  doc.setFontSize(14.5);
   doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
   doc.text('BUS SCREEN ADVERTISEMENT PROPOSAL FOR', PAGE_W / 2, y, { align: 'center' });
 
-  y += 7;
-  doc.setFontSize(18);
-  doc.text(clientNameDisplay, PAGE_W / 2, y, { align: 'center' });
+  y += 7.2;
+  doc.setFontSize(17.5);
+  doc.text(clientName, PAGE_W / 2, y, { align: 'center' });
 
-  y += 6;
+  y += 6.5;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10.5);
   doc.setTextColor(GRAY_TEXT[0], GRAY_TEXT[1], GRAY_TEXT[2]);
-  doc.text(`Prepared by: ${data.preparedBy || 'Catgorithm'}  |  ${proposalDateDisplay}`, PAGE_W / 2, y, { align: 'center' });
+  doc.text(`Prepared by: ${preparedBy} | ${proposalDate}`, PAGE_W / 2, y, { align: 'center' });
 
-  // 4. Section 1: THE OBJECTIVE (Centered, 15pt, NO underline)
-  y += 11;
+  // 4. Section 1: THE OPPORTUNITY (Left-aligned, Bold, NO underline)
+  y = 73.0;
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
+  doc.setFontSize(13.5);
   doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
-  doc.text(data.objectiveTitle || 'THE OBJECTIVE', PAGE_W / 2, y, { align: 'center' });
+  doc.text(data.objectiveTitle || 'THE OPPORTUNITY', MARGIN_LEFT, y);
 
-  y += 6.5;
+  y += 7.5;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(13);
+  doc.setFontSize(11.5);
   doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
+  const oppText = data.objectiveP1 || "Catgorithm offers digital bus screen advertising across Kollam, helping businesses reach local audiences through strategically placed displays inside private buses. Our platform builds brand visibility, recall and awareness through repeated exposure during everyday commutes.";
+  doc.text(oppText, MARGIN_LEFT, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.35 });
+  const oppLines = doc.splitTextToSize(oppText, PRINTABLE_W);
+  y += oppLines.length * 5.2 + 10.0;
 
-  const p1 = data.objectiveP1 || "In today's fast-moving market, building sustained top-of-mind brand visibility is essential to winning consumer preference. Catgorithm transforms everyday commuter journeys into an active, high-impact digital broadcasting channel across Kollam's prime arterial corridors.";
-  const p2 = data.objectiveP2 || "By placing high-definition video advertisements directly before seated, attentive passengers during daily travel, our network generates repeated daily impressions, drives strong brand recall, and directs qualified footfall to your physical outlets and digital channels.";
-
-  // Justified descriptions
-  doc.text(p1, MARGIN, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.28 });
-  const p1Lines = doc.splitTextToSize(p1, PRINTABLE_W);
-  y += p1Lines.length * 5.3 + 3;
-
-  doc.text(p2, MARGIN, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.28 });
-  const p2Lines = doc.splitTextToSize(p2, PRINTABLE_W);
-  y += p2Lines.length * 5.3 + 7;
-
-  // 5. Section 2: OUR DIGITAL TRANSIT ADVERTISING NETWORK (Centered, 15pt, NO underline)
+  // 5. Section 2: OUR ADVERTISING NETWORK (Left-aligned, Bold, NO underline)
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
+  doc.setFontSize(13.5);
   doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
-  doc.text('OUR DIGITAL TRANSIT ADVERTISING NETWORK', PAGE_W / 2, y, { align: 'center' });
+  doc.text('OUR ADVERTISING NETWORK', MARGIN_LEFT, y);
 
-  y += 6.5;
+  y += 7.5;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(13);
+  doc.setFontSize(11.5);
   doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
-  const netIntro = "Our proprietary infotainment network combines high-definition commercial screens with high-traffic commuter routes across Kollam, creating a high-retention environment for your brand:";
-  doc.text(netIntro, MARGIN, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.28 });
-  const netLines = doc.splitTextToSize(netIntro, PRINTABLE_W);
-  y += netLines.length * 5.3 + 3.5;
+  const netText = "Our network consists of digital display screens installed inside selected private buses, operating along established routes throughout Kollam. Each screen provides a dedicated space for promotional content, with advertisements scheduled to run as part of a continuous digital display network. The highlight of our network are :";
+  doc.text(netText, MARGIN_LEFT, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.35 });
+  const netLines = doc.splitTextToSize(netText, PRINTABLE_W);
+  y += netLines.length * 5.2 + 6.0;
 
-  const highlights: [string, string][] = [
-    ['32-Inch Commercial Displays', 'Ultra HD digital screens with synchronized audio.'],
-    ['7 Prime Transit Corridors', 'Broad geographic coverage connecting Kollam’s prime centers.'],
-    ['40–50 Daily Ad Plays / Bus', 'Rotational broadcast providing 1,200+ monthly plays per bus.'],
-    ['15,000+ Daily Commuter Reach*', 'Captive passenger viewership with extended seated dwell time.'],
-    ['24/7 Campaign Monitoring', 'Dedicated advertiser web portal for transparent real-time verification.']
+  const networkBullets: [string, string][] = [
+    ['7 Advertising Routes', 'Coverage across key corridors in Kollam.'],
+    ['32-inch Commercial Displays', 'HD digital screens with audio.'],
+    ['Flexible Advertisement Duration', 'Video advertisements of up to 60 seconds.'],
+    ['40-50 Daily Plays', 'Approximate daily advertisement plays per bus.'],
+    ['24/7 Campaign Monitoring', 'Dedicated advertiser dashboard access.']
   ];
 
-  highlights.forEach(([title, desc]) => {
-    y = drawBulletItem(doc, title, desc, y, 5.2);
+  networkBullets.forEach(([title, desc]) => {
+    // Bullet Dot
+    doc.setFillColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
+    doc.circle(MARGIN_LEFT + 2.0, y - 1.1, 0.9, 'F');
+
+    // Title in bold
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11.5);
+    doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
+    const titleStr = title + ' : ';
+    doc.text(titleStr, MARGIN_LEFT + 6.0, y);
+    const tw = doc.getTextWidth(titleStr);
+
+    // Desc in normal
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
+    doc.text(desc, MARGIN_LEFT + 6.0 + tw + 1.5, y);
+
+    y += 6.5;
   });
 
-  y += 3.5;
+  y += 6.0;
 
-  // 6. Section 3: WHY CATGORITHM? (Centered, 15pt, NO underline)
+  // 6. Section 3: WHY CATGORITHM? (Left-aligned, Bold, NO underline)
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
+  doc.setFontSize(13.5);
   doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
-  doc.text('WHY CATGORITHM?', PAGE_W / 2, y, { align: 'center' });
+  doc.text('WHY CATGORITHM?', MARGIN_LEFT, y);
 
-  y += 6.5;
-  const whyItems: [string, string][] = [
-    ['Captive Audience Engagement', 'Passengers spend 20–45 minutes in a seated, distraction-free environment.'],
-    ['Repeated Daily Frequency', 'Daily commuters travel the same corridors twice a day, reinforcing brand recall.'],
-    ['Zero Material Costs', '100% digital video execution without recurring banner printing or mounting delays.'],
-    ['Complete Transparency', 'Live web dashboard access lets you independently verify screen health and play logs.']
-  ];
+  y += 7.5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11.5);
+  doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
+  const whyText = "We bring together strategically placed digital displays, engaging video content and flexible advertising plans in one platform. With a focus on convenience, campaign adaptability and performance transparency, we offer businesses a practical alternative to conventional outdoor advertising.";
+  doc.text(whyText, MARGIN_LEFT, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.35 });
 
-  whyItems.forEach(([title, desc]) => {
-    y = drawBulletItem(doc, title, desc, y, 5.2);
-  });
-
-  // Footnote
-  doc.setFont('helvetica', 'italic');
-  doc.setFontSize(8);
-  doc.setTextColor(MUTED_GRAY[0], MUTED_GRAY[1], MUTED_GRAY[2]);
-  doc.text('* Indicative network reach based on passenger capacity, route frequency, and daily operating hours.', MARGIN, 273);
-
-  // Page 1 Footer (Line at 280, text lowered to 289)
+  // Page 1 Footer
   drawFooter(doc, data.contactEmail, data.website);
 
-  // ============================================================
-  // PAGE 2: Deliverables, Dashboard, Packages, Commitment
-  // NO Logo, NO Header line, NO Running Title, NO Signoff block
-  // Headings: Size 15, Bold, Centered
-  // Descriptions: Size 13, Normal, Justified
-  // Bullet dots: Same color as font
-  // NO highlight on Option 2
-  // ONLY Footer at the bottom
-  // ============================================================
+  // ==========================================
+  // PAGE 2: EXACT REPLICA OF USER TEMPLATE
+  // ==========================================
   doc.addPage();
+  y = 20.0;
 
-  y = 26;
-
-  // Section 1: CAMPAIGN DELIVERABLES (Centered, 15pt, NO underline)
+  // Deliverables
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
+  doc.setFontSize(13.5);
   doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
-  doc.text('CAMPAIGN DELIVERABLES', PAGE_W / 2, y, { align: 'center' });
+  doc.text('CAMPAIGN DELIVERABLES', MARGIN_LEFT, y);
 
-  y += 7;
+  y += 7.0;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11.5);
+  doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
+  doc.text('Every campaign is supported by the following:', MARGIN_LEFT, y);
+  y += 6.0;
 
   const deliverables = [
-    'Scheduled video advertisement playback on 32-inch commercial displays with onboard audio.',
-    'Rotational broadcast across full operating transit hours (40–50 plays per bus each day).',
-    'Turnkey media ingestion, scheduling, and screen synchronization managed by Catgorithm.',
-    'Dedicated advertiser dashboard credentials for independent real-time campaign audit.'
+    'Advertisement playback on the selected bus screens.',
+    'Repeated advertisement exposure throughout operating hours.',
+    'Digital advertisement delivery with audio.',
+    'Campaign activation and scheduling.',
+    'Dedicated advertiser dashboard access.',
+    'Campaign activity monitoring.',
+    'Advertisement preview and campaign status tracking.'
   ];
 
+  const dSpacing = mode === 'none' ? 6.0 : 4.8;
   deliverables.forEach(d => {
-    y = drawBulletItem(doc, '', d, y, 5.2);
+    doc.setFillColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
+    doc.circle(MARGIN_LEFT + 2.0, y - 1.1, 0.85, 'F');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11.0);
+    doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
+    doc.text(d, MARGIN_LEFT + 6.0, y);
+    y += dSpacing;
   });
 
-  y += 4;
+  y += (mode === 'none' ? 7.0 : 4.0);
 
-  // Section 2: LIVE CAMPAIGN MONITORING (ADVERTISER DASHBOARD) (Centered, 15pt, NO underline)
+  // Campaign Monitoring
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
+  doc.setFontSize(13.5);
   doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
-  doc.text('LIVE CAMPAIGN MONITORING (ADVERTISER DASHBOARD)', PAGE_W / 2, y, { align: 'center' });
+  doc.text('CAMPAIGN MONITORING', MARGIN_LEFT, y);
 
-  y += 7;
+  y += 7.0;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11.5);
+  doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
+  doc.text('Our advertiser dashboard provides campaign visibility through:', MARGIN_LEFT, y);
+  y += 6.0;
 
-  const monitoringPoints: [string, string][] = [
-    ['Active Buses & Screens', 'Live tracking of broadcast hardware and fleet assignments.'],
-    ['Plays per Screen', 'Verified daily play count timestamps and cumulative broadcast logs.'],
-    ['Total Daily Screen Time', 'Cumulative airtime logs per vehicle throughout operating transit hours.'],
-    ['Creative Playback Preview', 'Visual preview of running creatives with active campaign dates.']
+  const monitoringItems = [
+    'Active buses and screens.',
+    'Advertisement plays per screen.',
+    'Daily screen time.',
+    'Running advertisements.',
+    'Advertisement preview.',
+    'Campaign description and expiry date.',
+    'Number of days the advertisement has been played.'
   ];
 
-  monitoringPoints.forEach(([head, sub]) => {
-    y = drawBulletItem(doc, head, sub, y, 5.2);
+  const mSpacing = mode === 'none' ? 6.0 : 4.8;
+  monitoringItems.forEach(m => {
+    doc.setFillColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
+    doc.circle(MARGIN_LEFT + 2.0, y - 1.1, 0.85, 'F');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11.0);
+    doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
+    doc.text(m, MARGIN_LEFT + 6.0, y);
+    y += mSpacing;
   });
 
-  y += 5;
+  y += (mode === 'none' ? 7.0 : 4.0);
 
-  // Section 3: PROPOSED CAMPAIGN INVESTMENT (Centered, 15pt, NO underline)
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
-  doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
-
-  if (data.packageMode === 'none') {
-    // Mode A: No Package Table (General Proposal)
-    doc.text('CAMPAIGN INVESTMENT & TAILORED FLIGHT PLANS', PAGE_W / 2, y, { align: 'center' });
-    y += 7;
-
-    doc.setFillColor(250, 250, 252);
-    doc.setDrawColor(GOLD_COLOR[0], GOLD_COLOR[1], GOLD_COLOR[2]);
-    doc.roundedRect(MARGIN, y, PRINTABLE_W, 38, 2, 2, 'FD');
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(13);
-    doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
-    const noPkgText1 = "Every business has unique campaign objectives and flight requirements. Catgorithm campaigns are fully customizable across fleet size (1 to 10 private buses), advertisement durations (10s to 60s), and campaign periods (from 1 day up to annual commitments).";
-    const noPkgText2 = "Our media planning team will structure a high-impact route allocation and flight frequency tailored specifically to your promotional calendar. Contact us to finalize your custom package.";
-
-    doc.text(noPkgText1, MARGIN + 6, y + 8, { align: 'justify', maxWidth: PRINTABLE_W - 12, lineHeightFactor: 1.3 });
-    const n1Lines = doc.splitTextToSize(noPkgText1, PRINTABLE_W - 12);
-    const nextY = y + 8 + n1Lines.length * 5.3 + 3;
-
-    doc.text(noPkgText2, MARGIN + 6, nextY, { align: 'justify', maxWidth: PRINTABLE_W - 12, lineHeightFactor: 1.3 });
-    y += 46;
-  } else if (data.packageMode === 'single' && data.singlePackage) {
-    // Mode B: Single Confirmed Package
+  // Optional Package Section (Single or Multiple)
+  if (mode === 'single' && data.singlePackage) {
     const pkg = data.singlePackage;
-    doc.text('PROPOSED CAMPAIGN INVESTMENT', PAGE_W / 2, y, { align: 'center' });
-    y += 5.5;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13.0);
+    doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
+    doc.text('PROPOSED CAMPAIGN INVESTMENT', MARGIN_LEFT, y);
+    y += 4.5;
 
     const finalPrice = pkg.customPriceOverride !== undefined ? pkg.customPriceOverride : pkg.calculatedPrice;
 
-    // NO Monitoring Dashboard row in table
+    // NO Route Coverage, NO Estimated Airplay, NO GST mention!
     autoTable(doc, {
       startY: y,
-      margin: { left: MARGIN, right: MARGIN },
+      margin: { left: MARGIN_LEFT, right: MARGIN_RIGHT },
       head: [['Campaign Particulars', 'Package Details']],
       body: [
         ['Fleet Allocation', `${pkg.buses} Private Buses (Commercial Screen Displays)`],
         ['Video Ad Duration', `${pkg.videoDurationSeconds} Seconds (High-Definition with Audio)`],
         ['Campaign Period', `${pkg.durationLabel || `${pkg.days} Days`}`],
-        ['Route Coverage', `${pkg.routesLabel || 'Selected High-Traffic Transit Corridors'}`],
-        ['Estimated Total Airplay', `${pkg.monthlyPlaysEstimate || `~${(pkg.buses * 45 * (pkg.days || 30)).toLocaleString('en-IN')} Verified Plays`}`],
-        ['Total Campaign Investment', `${formatPDFINR(finalPrice)} (Exclusive of GST)`],
+        ['Total Campaign Investment', formatPDFINR(finalPrice)],
       ],
       styles: {
         font: 'helvetica',
-        fontSize: 10,
-        cellPadding: 3,
+        fontSize: 9.5,
+        cellPadding: 2.8,
         textColor: [31, 41, 55],
         lineColor: [229, 231, 235],
         lineWidth: 0.25,
@@ -372,21 +331,22 @@ export async function generateProposalPDF(data: ProposalData): Promise<void> {
         fillColor: [15, 23, 42],
         textColor: [255, 255, 255],
         fontStyle: 'bold',
-        fontSize: 10.5,
+        fontSize: 10,
       },
       columnStyles: {
         0: { fontStyle: 'bold', halign: 'left', cellWidth: 55 },
         1: { halign: 'left' },
       },
     });
-
     const finalY = (doc as any).lastAutoTable?.finalY;
-    y = (finalY || y + 36) + 8;
-  } else if (data.packageMode === 'multiple' && data.multiplePackages && data.multiplePackages.length > 0) {
-    // Mode C: Multiple Comparative Options (2 to 3 packages)
+    y = (finalY || y + 26) + 6.0;
+  } else if (mode === 'multiple' && data.multiplePackages && data.multiplePackages.length > 0) {
     const pkgs = data.multiplePackages.slice(0, 3);
-    doc.text('PROPOSED CAMPAIGN INVESTMENT OPTIONS', PAGE_W / 2, y, { align: 'center' });
-    y += 5.5;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13.0);
+    doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
+    doc.text('PROPOSED CAMPAIGN INVESTMENT OPTIONS', MARGIN_LEFT, y);
+    y += 4.5;
 
     const headRow = ['Campaign Particulars'];
     pkgs.forEach((p, idx) => {
@@ -396,43 +356,38 @@ export async function generateProposalPDF(data: ProposalData): Promise<void> {
     const fleetRow = ['Fleet Allocation'];
     const durationRow = ['Ad Duration'];
     const periodRow = ['Campaign Period'];
-    const playsRow = ['Estimated Total Plays'];
     const investRow = ['Campaign Investment'];
 
     pkgs.forEach(p => {
       fleetRow.push(`${p.buses} Private Buses`);
       durationRow.push(`${p.videoDurationSeconds} Seconds`);
       periodRow.push(p.durationLabel || `${p.days} Days`);
-      playsRow.push(p.monthlyPlaysEstimate || `~${(p.buses * 45 * (p.days || 30)).toLocaleString('en-IN')} Plays`);
       const pPrice = p.customPriceOverride !== undefined ? p.customPriceOverride : p.calculatedPrice;
       investRow.push(formatPDFINR(pPrice));
     });
 
-    const colWidth = Math.floor((PRINTABLE_W - 45) / pkgs.length);
     const colStyles: Record<number, any> = {
-      0: { fontStyle: 'bold', halign: 'left', cellWidth: 45 },
+      0: { fontStyle: 'bold', halign: 'left', cellWidth: 44 },
     };
     for (let c = 1; c <= pkgs.length; c++) {
-      // NO yellow fill or highlight on Option 2! Uniform clean styling across all options
-      colStyles[c] = { halign: 'center', cellWidth: colWidth };
+      colStyles[c] = { halign: 'center' };
     }
 
-    // NO Monitoring Dashboard row in table
+    // NO Estimated Airplay, NO GST mention, NO Option 2 highlight!
     autoTable(doc, {
       startY: y,
-      margin: { left: MARGIN, right: MARGIN },
+      margin: { left: MARGIN_LEFT, right: MARGIN_RIGHT },
       head: [headRow],
       body: [
         fleetRow,
         durationRow,
         periodRow,
-        playsRow,
         investRow,
       ],
       styles: {
         font: 'helvetica',
-        fontSize: 10,
-        cellPadding: 3,
+        fontSize: 9.5,
+        cellPadding: 2.8,
         textColor: [31, 41, 55],
         lineColor: [229, 231, 235],
         lineWidth: 0.25,
@@ -442,32 +397,59 @@ export async function generateProposalPDF(data: ProposalData): Promise<void> {
         textColor: [255, 255, 255],
         fontStyle: 'bold',
         halign: 'center',
-        fontSize: 10,
+        fontSize: 9.8,
       },
       columnStyles: colStyles,
     });
-
     const finalY = (doc as any).lastAutoTable?.finalY;
-    y = (finalY || y + 36) + 8;
+    y = (finalY || y + 26) + 6.0;
   }
 
-  // Section 4: OUR COMMITMENT (Centered, 15pt, NO underline)
+  // OUR COMMITMENT
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
+  doc.setFontSize(13.5);
   doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
-  doc.text('OUR COMMITMENT', PAGE_W / 2, y, { align: 'center' });
+  doc.text('OUR COMMITMENT', MARGIN_LEFT, y);
 
-  y += 7;
+  y += 7.0;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(13);
+  doc.setFontSize(11.0);
   doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
-  const commitmentText = `At Catgorithm, we are committed to providing reliable, measurable, and high-impact digital transit advertising. From seamless scheduling to verified dashboard reporting, we ensure your brand captures unmissable presence along Kollam's busiest corridors. We look forward to partnering with ${clientNameDisplay}.`;
 
-  doc.text(commitmentText, MARGIN, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.32 });
-  const cLines = doc.splitTextToSize(commitmentText, PRINTABLE_W);
-  y += cLines.length * 5.3;
+  const cP1 = "At Catgorithm, we aim to make advertising more accessible, measurable and effective for businesses.";
+  const cP2 = "From campaign activation to ongoing monitoring, we are committed to providing a reliable advertising experience that helps your brand stay visible where your customers travel every day.";
+  const cP3 = `We look forward to building a successful advertising partnership with ${clientName}. For any questions or further discussion, please feel free to contact us :`;
 
-  // Page 2 Footer (Line at 280, text lowered to 289)
+  const paraGap = mode === 'none' ? 5.0 : 3.0;
+  doc.text(cP1, MARGIN_LEFT, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.3 });
+  const p1l = doc.splitTextToSize(cP1, PRINTABLE_W);
+  y += p1l.length * 4.8 + paraGap;
+
+  doc.text(cP2, MARGIN_LEFT, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.3 });
+  const p2l = doc.splitTextToSize(cP2, PRINTABLE_W);
+  y += p2l.length * 4.8 + paraGap;
+
+  doc.text(cP3, MARGIN_LEFT, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.3 });
+  const p3l = doc.splitTextToSize(cP3, PRINTABLE_W);
+  y += p3l.length * 4.8 + (mode === 'none' ? 6.0 : 3.5);
+
+  // Contact items with clean icons
+  const contactItems: { type: 'phone' | 'email' | 'website'; text: string }[] = [
+    { type: 'phone', text: 'WhatsApp / Call: +91 9746336175' },
+    { type: 'email', text: 'Email: teamcatgorithm@gmail.com' },
+    { type: 'website', text: 'Website: www.catgorithm.in' }
+  ];
+
+  contactItems.forEach(item => {
+    drawContactIcons(doc, MARGIN_LEFT + 0.5, y, item.type);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10.5);
+    doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
+    doc.text(item.text, MARGIN_LEFT + 6.0, y);
+    y += (mode === 'none' ? 5.8 : 4.6);
+  });
+
+  // Page 2 Footer
   drawFooter(doc, data.contactEmail, data.website);
 
   // Trigger download with sanitized filename
