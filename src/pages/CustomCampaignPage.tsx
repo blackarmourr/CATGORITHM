@@ -72,28 +72,30 @@ Valid for 30 days. Contact: +91 97463 36175`
           <nav className="flex items-center gap-1 sm:gap-2">
             <PWAHeaderInstallButton />
 
-            {/* Proposal Studio Button */}
+            {/* Proposal Studio Button (Desktop only) */}
             <Link
               to="/proposal"
-              className="h-9 px-2.5 sm:px-3 text-xs font-bold rounded-xl bg-[#d6c26e]/20 hover:bg-[#d6c26e]/30 border border-[#d6c26e]/40 text-[#d6c26e] active:scale-95 flex items-center gap-1.5 transition-all shadow-xs"
+              className="hidden sm:flex h-9 px-2.5 sm:px-3 text-xs font-bold rounded-xl bg-[#d6c26e]/20 hover:bg-[#d6c26e]/30 border border-[#d6c26e]/40 text-[#d6c26e] active:scale-95 items-center gap-1.5 transition-all shadow-xs"
               title="Proposal Maker (PDF)"
             >
               <Sparkles size={13} className="text-[#d6c26e]" />
               <span>Proposal</span>
             </Link>
 
+            {/* Pipeline Button (Desktop only) */}
             <Link
               to="/admin/enquiries?tab=enquiries"
-              className="h-9 px-2.5 sm:px-3 text-xs font-semibold rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center gap-1.5 transition-all"
+              className="hidden sm:flex h-9 px-2.5 sm:px-3 text-xs font-semibold rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white items-center gap-1.5 transition-all"
               title="View Enquiries Pipeline"
             >
               <Users size={13} className="text-accent" />
               <span>Pipeline</span>
             </Link>
 
+            {/* Quotes Button (Desktop only) */}
             <Link
               to="/admin/enquiries?tab=quotations"
-              className="h-9 px-2.5 sm:px-3 text-xs font-semibold rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white flex items-center gap-1.5 transition-all"
+              className="hidden sm:flex h-9 px-2.5 sm:px-3 text-xs font-semibold rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white items-center gap-1.5 transition-all"
               title="View Sent Quotations"
             >
               <FileText size={13} className="text-amber-400" />
@@ -126,11 +128,11 @@ Valid for 30 days. Contact: +91 97463 36175`
       <div className="bg-white border-b border-gray-200 px-2.5 py-1.5 sm:hidden sticky top-14 z-30 shadow-xs">
         <div className="flex items-center justify-between gap-1 text-[11px] font-bold">
           <Link
-            to="/"
-            className="flex-1 py-1.5 px-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-800 flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
+            to="/proposal"
+            className="flex-1 py-1.5 px-1.5 rounded-lg bg-amber-50 border border-amber-200 hover:bg-amber-100 text-amber-900 flex items-center justify-center gap-1 transition-colors whitespace-nowrap"
           >
-            <ArrowLeft size={12} className="text-gray-600" />
-            <span>Back</span>
+            <Sparkles size={11} className="text-amber-600" />
+            <span>Proposal</span>
           </Link>
           <Link
             to="/admin/enquiries?tab=enquiries"
@@ -158,20 +160,6 @@ Valid for 30 days. Contact: +91 97463 36175`
 
       {/* ── Main Mobile-Optimized Body ── */}
       <main className="max-w-2xl mx-auto px-3.5 sm:px-4 pt-3.5 space-y-3.5">
-        {/* Simple Clean Back Button */}
-        <div className="flex items-center justify-between">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-gray-700 bg-white hover:bg-gray-100 active:scale-95 border border-gray-200 transition-all shadow-2xs"
-            title="Back to Standard Calculator"
-          >
-            <ArrowLeft size={14} className="text-gray-500" />
-            <span>Back to Standard Calculator</span>
-          </Link>
-          <span className="text-xs font-semibold text-gray-500">
-            Custom Campaign
-          </span>
-        </div>
 
         {/* 1. Live Price Pitch Card (Hero First) */}
         <section aria-label="Live Campaign Pricing">

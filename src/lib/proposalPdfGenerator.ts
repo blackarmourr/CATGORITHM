@@ -15,6 +15,7 @@
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+const runAutoTable: any = (autoTable as any).default || autoTable;
 import type { ProposalData } from '../types/proposal';
 import { PROPOSAL_LOGO_BASE64 } from './proposalLogoBase64';
 
@@ -91,7 +92,8 @@ function drawContactIcons(doc: jsPDF, x: number, y: number, type: 'phone' | 'ema
 }
 
 export async function generateProposalPDF(data: ProposalData): Promise<void> {
-  const doc = new jsPDF({
+  const PDFConstructor: any = (jsPDF as any).jsPDF || jsPDF;
+  const doc = new PDFConstructor({
     orientation: 'portrait',
     unit: 'mm',
     format: 'a4',
@@ -309,7 +311,7 @@ export async function generateProposalPDF(data: ProposalData): Promise<void> {
     const finalPrice = pkg.customPriceOverride !== undefined ? pkg.customPriceOverride : pkg.calculatedPrice;
 
     // NO Route Coverage, NO Estimated Airplay, NO GST mention!
-    autoTable(doc, {
+    runAutoTable(doc, {
       startY: y,
       margin: { left: MARGIN_LEFT, right: MARGIN_RIGHT },
       head: [['Campaign Particulars', 'Package Details']],
@@ -341,14 +343,14 @@ export async function generateProposalPDF(data: ProposalData): Promise<void> {
     const finalY = (doc as any).lastAutoTable?.finalY;
     y = (finalY || y + 26) + 6.0;
   } else if (mode === 'multiple' && data.multiplePackages && data.multiplePackages.length > 0) {
-    const pkgs = data.multiplePackages.slice(0, 3);
+    const pkgs = data.multiplePackages;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(13.0);
     doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
-    doc.text('PROPOSED CAMPAIGN INVESTMENT OPTIONS', MARGIN_LEFT, y);
+    doc.text('PROPOSED CAMPAIGN OPTIONS', MARGIN_LEFT, y);
     y += 4.5;
 
-    const headRow = ['Campaign Particulars'];
+    const headRow = ['Particulars'];
     pkgs.forEach((p, idx) => {
       headRow.push(p.name || `Option ${idx + 1}`);
     });
@@ -358,25 +360,32 @@ export async function generateProposalPDF(data: ProposalData): Promise<void> {
     const periodRow = ['Campaign Period'];
     const investRow = ['Campaign Investment'];
 
+    const isMany = pkgs.length >= 4;
     pkgs.forEach(p => {
-      fleetRow.push(`${p.buses} Private Buses`);
-      durationRow.push(`${p.videoDurationSeconds} Seconds`);
+      fleetRow.push(isMany ? `${p.buses} Buses` : `${p.buses} Buses`);
+      durationRow.push(isMany ? `${p.videoDurationSeconds}s` : `${p.videoDurationSeconds} Seconds`);
       periodRow.push(p.durationLabel || `${p.days} Days`);
       const pPrice = p.customPriceOverride !== undefined ? p.customPriceOverride : p.calculatedPrice;
       investRow.push(formatPDFINR(pPrice));
     });
 
+    const particularWidth = pkgs.length >= 5 ? 34 : (pkgs.length === 4 ? 38 : 44);
     const colStyles: Record<number, any> = {
-      0: { fontStyle: 'bold', halign: 'left', cellWidth: 44 },
+      0: { fontStyle: 'bold', halign: 'left', cellWidth: particularWidth },
     };
     for (let c = 1; c <= pkgs.length; c++) {
       colStyles[c] = { halign: 'center' };
     }
 
-    // NO Estimated Airplay, NO GST mention, NO Option 2 highlight!
-    autoTable(doc, {
+    // Dynamic sizing based on number of package columns
+    const tableFontSize = pkgs.length >= 5 ? 7.6 : (pkgs.length === 4 ? 8.4 : 9.5);
+    const cellPad = pkgs.length >= 5 ? 1.6 : (pkgs.length === 4 ? 2.0 : 2.6);
+
+    // Clean uniform table without Option 2 highlight
+    runAutoTable(doc, {
       startY: y,
       margin: { left: MARGIN_LEFT, right: MARGIN_RIGHT },
+      tableWidth: PRINTABLE_W,
       head: [headRow],
       body: [
         fleetRow,
@@ -386,8 +395,8 @@ export async function generateProposalPDF(data: ProposalData): Promise<void> {
       ],
       styles: {
         font: 'helvetica',
-        fontSize: 9.5,
-        cellPadding: 2.8,
+        fontSize: tableFontSize,
+        cellPadding: cellPad,
         textColor: [31, 41, 55],
         lineColor: [229, 231, 235],
         lineWidth: 0.25,
@@ -397,7 +406,7 @@ export async function generateProposalPDF(data: ProposalData): Promise<void> {
         textColor: [255, 255, 255],
         fontStyle: 'bold',
         halign: 'center',
-        fontSize: 9.8,
+        fontSize: tableFontSize + 0.3,
       },
       columnStyles: colStyles,
     });
@@ -456,4 +465,5 @@ export async function generateProposalPDF(data: ProposalData): Promise<void> {
   const cleanName = (data.clientName || 'Client').replace(/[^a-zA-Z0-9_-]/g, '_');
   const filename = `Catgorithm_Proposal_${cleanName}.pdf`;
   doc.save(filename);
+  return doc;
 }

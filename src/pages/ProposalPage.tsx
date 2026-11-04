@@ -49,32 +49,64 @@ export default function ProposalPage() {
   const [objectiveP2, setObjectiveP2] = useState('');
 
   // ── Single Package State ──
-  const [singleBuses, setSingleBuses] = useState(5);
-  const [singleDays, setSingleDays] = useState(30);
-  const [singleSeconds, setSingleSeconds] = useState(30);
+  const [singleBuses, setSingleBuses] = useState<number | ''>(5);
+  const [singleDays, setSingleDays] = useState<number | ''>(30);
+  const [singleSeconds, setSingleSeconds] = useState<number | ''>(30);
   const [singleCustomPrice, setSingleCustomPrice] = useState<string>('');
-  const [singleRoutes, setSingleRoutes] = useState('Selected High-Traffic Corridors');
 
-  // ── Multiple Packages State (3 Comparative Options) ──
-  const [opt1Name, setOpt1Name] = useState('Option 1 (Starter)');
-  const [opt1Buses, setOpt1Buses] = useState(2);
-  const [opt1Days, setOpt1Days] = useState(30);
-  const [opt1Seconds, setOpt1Seconds] = useState(20);
-  const [opt1PriceOverride, setOpt1PriceOverride] = useState<string>('');
+  // ── Multiple Packages Dynamic State ──
+  interface CustomOptionItem {
+    id: string;
+    name: string;
+    buses: number | '';
+    seconds: number | '';
+    days: number | '';
+    priceOverride: string;
+  }
 
-  const [opt2Name, setOpt2Name] = useState('Option 2 (Growth)');
-  const [opt2Buses, setOpt2Buses] = useState(5);
-  const [opt2Days, setOpt2Days] = useState(30);
-  const [opt2Seconds, setOpt2Seconds] = useState(30);
-  const [opt2PriceOverride, setOpt2PriceOverride] = useState<string>('');
+  const [packageList, setPackageList] = useState<CustomOptionItem[]>([
+    { id: '1', name: 'Option 1', buses: 2, seconds: 20, days: 30, priceOverride: '' },
+    { id: '2', name: 'Option 2', buses: 5, seconds: 30, days: 30, priceOverride: '' },
+    { id: '3', name: 'Option 3', buses: 10, seconds: 30, days: 30, priceOverride: '' },
+  ]);
 
-  const [opt3Name, setOpt3Name] = useState('Option 3 (Dominance)');
-  const [opt3Buses, setOpt3Buses] = useState(10);
-  const [opt3Days, setOpt3Days] = useState(30);
-  const [opt3Seconds, setOpt3Seconds] = useState(30);
-  const [opt3PriceOverride, setOpt3PriceOverride] = useState<string>('');
+  // Duration label formatter
+  function formatDurationLabel(days: number): string {
+    if (days === 7) return '1 Week';
+    if (days === 14) return '2 Weeks';
+    if (days === 21) return '3 Weeks';
+    if (days === 28) return '4 Weeks';
+    if (days === 30) return '1 Month';
+    if (days === 60) return '2 Months';
+    if (days === 90) return '3 Months';
+    if (days === 120) return '4 Months';
+    if (days === 180) return '6 Months';
+    if (days === 365) return '1 Year';
+    return `${days} Days`;
+  }
 
-  const [recommendedOption, setRecommendedOption] = useState<1 | 2 | 3>(2);
+  function updatePackageOption(id: string, field: keyof CustomOptionItem, val: any) {
+    setPackageList(prev => prev.map(p => (p.id === id ? { ...p, [field]: val } : p)));
+  }
+
+  function handleAddOption() {
+    setPackageList(prev => [
+      ...prev,
+      {
+        id: String(Date.now()),
+        name: `Option ${prev.length + 1}`,
+        buses: 5,
+        seconds: 30,
+        days: 30,
+        priceOverride: ''
+      }
+    ]);
+  }
+
+  function handleRemoveOption(id: string) {
+    if (packageList.length <= 1) return;
+    setPackageList(prev => prev.filter(p => p.id !== id));
+  }
 
   // ── Handlers ──
   function handleIndustryChange(newInd: ProposalIndustry) {
@@ -96,21 +128,34 @@ export default function ProposalPage() {
   }
 
   // ── Price Calculations ──
+  const sBuses = typeof singleBuses === 'number' && singleBuses > 0 ? singleBuses : 1;
+  const sSeconds = typeof singleSeconds === 'number' && singleSeconds > 0 ? singleSeconds : 30;
+  const sDays = typeof singleDays === 'number' && singleDays > 0 ? singleDays : 30;
+
   const singleCalc = useMemo(() => {
-    return calculateCustomPrice(singleBuses, singleDays, singleSeconds);
-  }, [singleBuses, singleDays, singleSeconds]);
+    return calculateCustomPrice(sBuses, sDays, sSeconds);
+  }, [sBuses, sDays, sSeconds]);
 
-  const opt1Calc = useMemo(() => {
-    return calculateCustomPrice(opt1Buses, opt1Days, opt1Seconds);
-  }, [opt1Buses, opt1Days, opt1Seconds]);
-
-  const opt2Calc = useMemo(() => {
-    return calculateCustomPrice(opt2Buses, opt2Days, opt2Seconds);
-  }, [opt2Buses, opt2Days, opt2Seconds]);
-
-  const opt3Calc = useMemo(() => {
-    return calculateCustomPrice(opt3Buses, opt3Days, opt3Seconds);
-  }, [opt3Buses, opt3Days, opt3Seconds]);
+  const computedPackages = useMemo(() => {
+    return packageList.map(item => {
+      const b = typeof item.buses === 'number' && item.buses > 0 ? item.buses : 1;
+      const s = typeof item.seconds === 'number' && item.seconds > 0 ? item.seconds : 30;
+      const d = typeof item.days === 'number' && item.days > 0 ? item.days : 30;
+      const calc = calculateCustomPrice(b, d, s);
+      const override = item.priceOverride ? parseInt(item.priceOverride, 10) : undefined;
+      const finalPrice = !isNaN(override as any) && override !== undefined ? override : calc.totalPrice;
+      return {
+        ...item,
+        buses: b,
+        seconds: s,
+        days: d,
+        calculatedPrice: calc.totalPrice,
+        customPriceOverride: isNaN(override as any) ? undefined : override,
+        finalPrice,
+        durationLabel: formatDurationLabel(d),
+      };
+    });
+  }, [packageList]);
 
   // Formatted date string for PDF & display
   const formattedDate = useMemo(() => {
@@ -129,12 +174,12 @@ export default function ProposalPage() {
       singlePkg = {
         id: 'single',
         name: 'Selected Campaign Package',
-        buses: singleBuses,
-        videoDurationSeconds: singleSeconds,
-        days: singleDays,
-        durationLabel: singleDays === 30 ? '1 Month (30 Days)' : `${singleDays} Days`,
-        routesLabel: singleRoutes,
-        monthlyPlaysEstimate: `~${(singleBuses * 45 * singleDays).toLocaleString('en-IN')} Total Verified Plays`,
+        buses: sBuses,
+        videoDurationSeconds: sSeconds,
+        days: sDays,
+        durationLabel: formatDurationLabel(sDays),
+        routesLabel: 'Selected High-Traffic Corridors',
+        monthlyPlaysEstimate: `~${(sBuses * 45 * sDays).toLocaleString('en-IN')} Plays`,
         dashboardAccess: 'Full 24/7 Access',
         calculatedPrice: singleCalc.totalPrice,
         customPriceOverride: isNaN(overrideVal as number) ? undefined : overrideVal,
@@ -143,54 +188,19 @@ export default function ProposalPage() {
 
     let multPkgs: ProposalPackageOption[] | undefined = undefined;
     if (packageMode === 'multiple') {
-      const o1Ov = opt1PriceOverride ? parseInt(opt1PriceOverride, 10) : undefined;
-      const o2Ov = opt2PriceOverride ? parseInt(opt2PriceOverride, 10) : undefined;
-      const o3Ov = opt3PriceOverride ? parseInt(opt3PriceOverride, 10) : undefined;
-
-      multPkgs = [
-        {
-          id: 'opt1',
-          name: opt1Name,
-          buses: opt1Buses,
-          videoDurationSeconds: opt1Seconds,
-          days: opt1Days,
-          durationLabel: opt1Days === 30 ? '1 Month (30 Days)' : `${opt1Days} Days`,
-          routesLabel: 'Selected High-Traffic Corridors',
-          monthlyPlaysEstimate: `~${(opt1Buses * 45 * opt1Days).toLocaleString('en-IN')} Plays`,
-          dashboardAccess: 'Full Access',
-          calculatedPrice: opt1Calc.totalPrice,
-          customPriceOverride: isNaN(o1Ov as number) ? undefined : o1Ov,
-          isRecommended: recommendedOption === 1,
-        },
-        {
-          id: 'opt2',
-          name: opt2Name,
-          buses: opt2Buses,
-          videoDurationSeconds: opt2Seconds,
-          days: opt2Days,
-          durationLabel: opt2Days === 30 ? '1 Month (30 Days)' : `${opt2Days} Days`,
-          routesLabel: 'Prime Commercial Corridors',
-          monthlyPlaysEstimate: `~${(opt2Buses * 45 * opt2Days).toLocaleString('en-IN')} Plays`,
-          dashboardAccess: 'Full Access',
-          calculatedPrice: opt2Calc.totalPrice,
-          customPriceOverride: isNaN(o2Ov as number) ? undefined : o2Ov,
-          isRecommended: recommendedOption === 2,
-        },
-        {
-          id: 'opt3',
-          name: opt3Name,
-          buses: opt3Buses,
-          videoDurationSeconds: opt3Seconds,
-          days: opt3Days,
-          durationLabel: opt3Days === 30 ? '1 Month (30 Days)' : `${opt3Days} Days`,
-          routesLabel: 'All 7 Prime Corridors (Full Network)',
-          monthlyPlaysEstimate: `~${(opt3Buses * 45 * opt3Days).toLocaleString('en-IN')} Plays`,
-          dashboardAccess: 'Full Access',
-          calculatedPrice: opt3Calc.totalPrice,
-          customPriceOverride: isNaN(o3Ov as number) ? undefined : o3Ov,
-          isRecommended: recommendedOption === 3,
-        },
-      ];
+      multPkgs = computedPackages.map(p => ({
+        id: p.id,
+        name: p.name,
+        buses: p.buses,
+        videoDurationSeconds: p.seconds,
+        days: p.days,
+        durationLabel: p.durationLabel,
+        routesLabel: 'Selected High-Traffic Corridors',
+        monthlyPlaysEstimate: `~${(p.buses * 45 * p.days).toLocaleString('en-IN')} Plays`,
+        dashboardAccess: 'Full Access',
+        calculatedPrice: p.calculatedPrice,
+        customPriceOverride: p.customPriceOverride,
+      }));
     }
 
     return {
@@ -210,11 +220,8 @@ export default function ProposalPage() {
     };
   }, [
     clientName, industry, formattedDate, preparedBy, objectiveTitle, objectiveP1, objectiveP2,
-    packageMode, singleBuses, singleDays, singleSeconds, singleRoutes, singleCustomPrice, singleCalc.totalPrice,
-    opt1Name, opt1Buses, opt1Days, opt1Seconds, opt1PriceOverride, opt1Calc.totalPrice,
-    opt2Name, opt2Buses, opt2Days, opt2Seconds, opt2PriceOverride, opt2Calc.totalPrice,
-    opt3Name, opt3Buses, opt3Days, opt3Seconds, opt3PriceOverride, opt3Calc.totalPrice,
-    recommendedOption
+    packageMode, sBuses, sDays, sSeconds, singleCustomPrice, singleCalc.totalPrice,
+    computedPackages
   ]);
 
   async function handleDownloadPDF() {
@@ -483,15 +490,12 @@ ${pkgDetails}
 
           {/* 2. Package Mode Selector */}
           <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-gray-200">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Tag size={16} className="text-[#a0354e]" />
-                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Package Showcase Mode</h2>
-              </div>
-              <span className="text-xs text-gray-400">Choose how packages appear</span>
+            <div className="flex items-center gap-2 mb-3">
+              <Tag size={16} className="text-[#a0354e]" />
+              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Package Mode</h2>
             </div>
 
-            {/* 3 Mode Switcher */}
+            {/* 3 Simple Mode Buttons */}
             <div className="grid grid-cols-3 gap-2 p-1 bg-gray-100 rounded-xl">
               <button
                 type="button"
@@ -502,8 +506,7 @@ ${pkgDetails}
                     : 'text-gray-500 hover:text-gray-900'
                 }`}
               >
-                1. No Package
-                <span className="block text-[10px] font-normal text-gray-400">Intro / Strategy Only</span>
+                No Package
               </button>
 
               <button
@@ -515,8 +518,7 @@ ${pkgDetails}
                     : 'text-gray-500 hover:text-gray-900'
                 }`}
               >
-                2. Single Package
-                <span className="block text-[10px] font-normal text-gray-400">Confirmed Requirement</span>
+                Single Package
               </button>
 
               <button
@@ -528,333 +530,194 @@ ${pkgDetails}
                     : 'text-gray-500 hover:text-gray-900'
                 }`}
               >
-                3. Multiple Options
-                <span className="block text-[10px] font-normal text-gray-400">Compare 3 Packages</span>
+                Multiple Packages
               </button>
             </div>
 
-            {/* Mode A Description */}
-            {packageMode === 'none' && (
-              <div className="mt-4 p-3.5 rounded-xl bg-amber-50/70 border border-amber-200/60 text-xs text-amber-900 leading-relaxed">
-                <p className="font-semibold mb-1">Informational Strategy Mode Active</p>
-                <p>
-                  No pricing table will be included in the PDF. The proposal will thoroughly present your 7 routes, 32-inch screens, daily plays, deliverables, and advertiser monitoring dashboard, concluding with a custom flight planning invitation.
-                </p>
-              </div>
-            )}
-
-            {/* Mode B: Single Package Configurator */}
+            {/* Mode B: Single Package Configurator (Keyboard Editable) */}
             {packageMode === 'single' && (
               <div className="mt-4 space-y-3.5 pt-1">
-                <div className="grid grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-[11px] font-bold text-gray-600 mb-1">Number of Buses</label>
-                    <select
-                      value={singleBuses}
-                      onChange={(e) => setSingleBuses(parseInt(e.target.value, 10))}
-                      className="w-full h-9 px-2 text-xs font-bold rounded-lg border border-gray-200 bg-gray-50 focus:bg-white"
-                    >
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((b) => (
-                        <option key={b} value={b}>{b} {b === 1 ? 'Bus' : 'Buses'}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-gray-600 mb-1">Video Duration</label>
-                    <select
-                      value={singleSeconds}
-                      onChange={(e) => setSingleSeconds(parseInt(e.target.value, 10))}
-                      className="w-full h-9 px-2 text-xs font-bold rounded-lg border border-gray-200 bg-gray-50 focus:bg-white"
-                    >
-                      {[10, 15, 20, 25, 30, 40, 50, 60].map((s) => (
-                        <option key={s} value={s}>{s} Seconds</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-gray-600 mb-1">Duration Days</label>
-                    <select
-                      value={singleDays}
-                      onChange={(e) => setSingleDays(parseInt(e.target.value, 10))}
-                      className="w-full h-9 px-2 text-xs font-bold rounded-lg border border-gray-200 bg-gray-50 focus:bg-white"
-                    >
-                      <option value={7}>7 Days (1 Week)</option>
-                      <option value={14}>14 Days (2 Weeks)</option>
-                      <option value={21}>21 Days (3 Weeks)</option>
-                      <option value={30}>30 Days (1 Month)</option>
-                      <option value={45}>45 Days</option>
-                      <option value={60}>60 Days (2 Months)</option>
-                      <option value={90}>90 Days (3 Months)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 items-center pt-1">
-                  <div>
-                    <label className="block text-[11px] font-bold text-gray-600 mb-1">Route Allocation Label</label>
                     <input
-                      type="text"
-                      value={singleRoutes}
-                      onChange={(e) => setSingleRoutes(e.target.value)}
-                      className="w-full h-9 px-2.5 text-xs rounded-lg border border-gray-200 bg-gray-50 focus:bg-white"
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={singleBuses}
+                      onChange={(e) => setSingleBuses(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                      className="w-full h-9 px-2.5 text-xs font-bold rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#d6c26e] outline-hidden"
+                      placeholder="e.g. 5"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-gray-600 mb-1">
-                      Campaign Investment (₹)
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        value={singleCustomPrice}
-                        onChange={(e) => setSingleCustomPrice(e.target.value)}
-                        placeholder={`Auto: ${formatINR(singleCalc.totalPrice)}`}
-                        className="w-full h-9 px-2.5 text-xs font-bold rounded-lg border border-gray-200 bg-gray-50 focus:bg-white text-emerald-700"
-                      />
-                      {singleCustomPrice && (
-                        <button
-                          type="button"
-                          onClick={() => setSingleCustomPrice('')}
-                          className="text-[10px] font-semibold text-gray-400 hover:text-gray-700 whitespace-nowrap"
-                        >
-                          Reset
-                        </button>
-                      )}
-                    </div>
+                    <label className="block text-[11px] font-bold text-gray-600 mb-1">Video Duration (Sec)</label>
+                    <input
+                      type="number"
+                      min={5}
+                      max={120}
+                      step={5}
+                      value={singleSeconds}
+                      onChange={(e) => setSingleSeconds(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                      className="w-full h-9 px-2.5 text-xs font-bold rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#d6c26e] outline-hidden"
+                      placeholder="e.g. 30"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-600 mb-1">Campaign Days</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={365}
+                      value={singleDays}
+                      onChange={(e) => setSingleDays(e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                      className="w-full h-9 px-2.5 text-xs font-bold rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#d6c26e] outline-hidden"
+                      placeholder="e.g. 30"
+                    />
+                    <span className="text-[10px] font-semibold text-emerald-700 mt-1 block">
+                      {formatDurationLabel(typeof singleDays === 'number' && singleDays > 0 ? singleDays : 30)}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                    Custom Investment Override (₹)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={singleCustomPrice}
+                      onChange={(e) => setSingleCustomPrice(e.target.value)}
+                      placeholder={`Auto: ${formatINR(singleCalc.totalPrice)}`}
+                      className="w-full h-9 px-2.5 text-xs font-bold rounded-lg border border-gray-200 bg-gray-50 focus:bg-white text-emerald-700 focus:border-[#d6c26e] outline-hidden"
+                    />
+                    {singleCustomPrice && (
+                      <button
+                        type="button"
+                        onClick={() => setSingleCustomPrice('')}
+                        className="text-[10px] font-semibold text-gray-400 hover:text-gray-700 whitespace-nowrap"
+                      >
+                        Reset
+                      </button>
+                    )}
                   </div>
                 </div>
 
                 <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between text-xs">
-                  <span className="text-gray-600">Calculated Investment:</span>
+                  <span className="text-gray-600 font-medium">Calculated Total Investment:</span>
                   <span className="font-extrabold text-sm text-gray-900">
                     {singleCustomPrice ? `₹${parseInt(singleCustomPrice, 10).toLocaleString('en-IN')}` : formatINR(singleCalc.totalPrice)}
-                    <span className="text-[10px] font-normal text-gray-400 ml-1">(+18% GST)</span>
                   </span>
                 </div>
               </div>
             )}
 
-            {/* Mode C: Multiple Comparative Options Configurator */}
+            {/* Mode C: Multiple Options Configurator (Keyboard Editable, Dynamic Add/Delete) */}
             {packageMode === 'multiple' && (
               <div className="mt-4 space-y-3 pt-1">
                 <div className="flex items-center justify-between text-xs pb-1">
-                  <span className="font-semibold text-gray-700">3 Comparative Campaign Tiers</span>
-                  <span className="text-gray-400 text-[11px]">Click radio to set ⭐ Recommended</span>
+                  <span className="font-bold text-gray-700">Package Options ({packageList.length})</span>
+                  <button
+                    type="button"
+                    onClick={handleAddOption}
+                    className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-bold text-[11px] flex items-center gap-1 transition-all shadow-2xs"
+                  >
+                    <span>+ Add Option</span>
+                  </button>
                 </div>
 
-                {/* Option 1 */}
-                <div className={`p-3 rounded-xl border transition-all ${
-                  recommendedOption === 1 ? 'border-amber-400 bg-amber-50/30' : 'border-gray-200 bg-white'
-                }`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        id="rec-1"
-                        checked={recommendedOption === 1}
-                        onChange={() => setRecommendedOption(1)}
-                        className="text-amber-500 focus:ring-amber-400"
-                      />
-                      <input
-                        type="text"
-                        value={opt1Name}
-                        onChange={(e) => setOpt1Name(e.target.value)}
-                        className="h-7 px-2 text-xs font-bold rounded-md border border-gray-200 bg-white"
-                      />
-                    </div>
-                    <span className="text-xs font-bold text-gray-900">
-                      {opt1PriceOverride ? `₹${parseInt(opt1PriceOverride, 10).toLocaleString('en-IN')}` : formatINR(opt1Calc.totalPrice)}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div>
-                      <span className="text-[10px] text-gray-500 block">Buses:</span>
-                      <select
-                        value={opt1Buses}
-                        onChange={(e) => setOpt1Buses(parseInt(e.target.value, 10))}
-                        className="w-full h-7 px-1.5 text-xs rounded-md border border-gray-200"
-                      >
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(b => (
-                          <option key={b} value={b}>{b} Buses</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] text-gray-500 block">Duration:</span>
-                      <select
-                        value={opt1Seconds}
-                        onChange={(e) => setOpt1Seconds(parseInt(e.target.value, 10))}
-                        className="w-full h-7 px-1.5 text-xs rounded-md border border-gray-200"
-                      >
-                        {[10, 15, 20, 25, 30, 40, 50, 60].map(s => (
-                          <option key={s} value={s}>{s}s Video</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] text-gray-500 block">Period:</span>
-                      <select
-                        value={opt1Days}
-                        onChange={(e) => setOpt1Days(parseInt(e.target.value, 10))}
-                        className="w-full h-7 px-1.5 text-xs rounded-md border border-gray-200"
-                      >
-                        <option value={14}>14 Days</option>
-                        <option value={30}>30 Days (1 Mo)</option>
-                        <option value={60}>60 Days (2 Mo)</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Option 2 (Growth - Default Recommended) */}
-                <div className={`p-3 rounded-xl border transition-all ${
-                  recommendedOption === 2 ? 'border-amber-400 bg-amber-50/40 ring-1 ring-amber-300' : 'border-gray-200 bg-white'
-                }`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        id="rec-2"
-                        checked={recommendedOption === 2}
-                        onChange={() => setRecommendedOption(2)}
-                        className="text-amber-500 focus:ring-amber-400"
-                      />
-                      <input
-                        type="text"
-                        value={opt2Name}
-                        onChange={(e) => setOpt2Name(e.target.value)}
-                        className="h-7 px-2 text-xs font-bold rounded-md border border-gray-200 bg-white"
-                      />
-                      {recommendedOption === 2 && (
-                        <span className="text-[10px] font-bold text-amber-700 bg-amber-200/80 px-1.5 py-0.5 rounded-sm">
-                          ⭐ Recommended
+                {packageList.map((pkg, idx) => {
+                  const computed = computedPackages.find(p => p.id === pkg.id) || {
+                    buses: 1, seconds: 30, days: 30, calculatedPrice: 0, finalPrice: 0, durationLabel: '30 Days'
+                  };
+                  return (
+                    <div key={pkg.id} className="p-3 rounded-xl border border-gray-200 bg-white shadow-2xs space-y-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <input
+                          type="text"
+                          value={pkg.name}
+                          onChange={(e) => updatePackageOption(pkg.id, 'name', e.target.value)}
+                          className="h-8 px-2.5 text-xs font-bold rounded-lg border border-gray-200 bg-gray-50 focus:bg-white flex-1 focus:border-[#d6c26e] outline-hidden"
+                          placeholder={`Option ${idx + 1}`}
+                        />
+                        <span className="text-xs font-extrabold text-slate-900">
+                          {formatINR(computed.finalPrice)}
                         </span>
-                      )}
-                    </div>
-                    <span className="text-xs font-bold text-gray-900">
-                      {opt2PriceOverride ? `₹${parseInt(opt2PriceOverride, 10).toLocaleString('en-IN')}` : formatINR(opt2Calc.totalPrice)}
-                    </span>
-                  </div>
+                        {packageList.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveOption(pkg.id)}
+                            className="h-7 w-7 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg flex items-center justify-center transition-colors"
+                            title="Remove Option"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
 
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div>
-                      <span className="text-[10px] text-gray-500 block">Buses:</span>
-                      <select
-                        value={opt2Buses}
-                        onChange={(e) => setOpt2Buses(parseInt(e.target.value, 10))}
-                        className="w-full h-7 px-1.5 text-xs rounded-md border border-gray-200"
-                      >
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(b => (
-                          <option key={b} value={b}>{b} Buses</option>
-                        ))}
-                      </select>
-                    </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div>
+                          <span className="text-[10px] text-gray-500 font-semibold block mb-0.5">Buses:</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={100}
+                            value={pkg.buses}
+                            onChange={(e) => updatePackageOption(pkg.id, 'buses', e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                            className="w-full h-8 px-2 text-xs font-bold rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#d6c26e] outline-hidden"
+                            placeholder="e.g. 5"
+                          />
+                        </div>
 
-                    <div>
-                      <span className="text-[10px] text-gray-500 block">Duration:</span>
-                      <select
-                        value={opt2Seconds}
-                        onChange={(e) => setOpt2Seconds(parseInt(e.target.value, 10))}
-                        className="w-full h-7 px-1.5 text-xs rounded-md border border-gray-200"
-                      >
-                        {[10, 15, 20, 25, 30, 40, 50, 60].map(s => (
-                          <option key={s} value={s}>{s}s Video</option>
-                        ))}
-                      </select>
-                    </div>
+                        <div>
+                          <span className="text-[10px] text-gray-500 font-semibold block mb-0.5">Ad Seconds:</span>
+                          <input
+                            type="number"
+                            min={5}
+                            max={120}
+                            step={5}
+                            value={pkg.seconds}
+                            onChange={(e) => updatePackageOption(pkg.id, 'seconds', e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                            className="w-full h-8 px-2 text-xs font-bold rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#d6c26e] outline-hidden"
+                            placeholder="e.g. 30"
+                          />
+                        </div>
 
-                    <div>
-                      <span className="text-[10px] text-gray-500 block">Period:</span>
-                      <select
-                        value={opt2Days}
-                        onChange={(e) => setOpt2Days(parseInt(e.target.value, 10))}
-                        className="w-full h-7 px-1.5 text-xs rounded-md border border-gray-200"
-                      >
-                        <option value={30}>30 Days (1 Mo)</option>
-                        <option value={45}>45 Days</option>
-                        <option value={60}>60 Days (2 Mo)</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
+                        <div>
+                          <span className="text-[10px] text-gray-500 font-semibold block mb-0.5">Days:</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={365}
+                            value={pkg.days}
+                            onChange={(e) => updatePackageOption(pkg.id, 'days', e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                            className="w-full h-8 px-2 text-xs font-bold rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#d6c26e] outline-hidden"
+                            placeholder="e.g. 30"
+                          />
+                        </div>
+                      </div>
 
-                {/* Option 3 (Dominance) */}
-                <div className={`p-3 rounded-xl border transition-all ${
-                  recommendedOption === 3 ? 'border-amber-400 bg-amber-50/40 ring-1 ring-amber-300' : 'border-gray-200 bg-white'
-                }`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        id="rec-3"
-                        checked={recommendedOption === 3}
-                        onChange={() => setRecommendedOption(3)}
-                        className="text-amber-500 focus:ring-amber-400"
-                      />
-                      <input
-                        type="text"
-                        value={opt3Name}
-                        onChange={(e) => setOpt3Name(e.target.value)}
-                        className="h-7 px-2 text-xs font-bold rounded-md border border-gray-200 bg-white"
-                      />
-                      {recommendedOption === 3 && (
-                        <span className="text-[10px] font-bold text-amber-700 bg-amber-200/80 px-1.5 py-0.5 rounded-sm">
-                          ⭐ Recommended
+                      <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-gray-100">
+                        <span className="text-emerald-700 font-semibold">
+                          {computed.durationLabel}
                         </span>
-                      )}
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-gray-400 text-[10px]">Price (₹):</span>
+                          <input
+                            type="number"
+                            value={pkg.priceOverride}
+                            onChange={(e) => updatePackageOption(pkg.id, 'priceOverride', e.target.value)}
+                            placeholder={String(computed.calculatedPrice)}
+                            className="w-24 h-7 px-1.5 text-xs font-bold rounded-md border border-gray-200 bg-gray-50 text-right focus:bg-white text-emerald-800 focus:border-[#d6c26e] outline-hidden"
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-xs font-bold text-gray-900">
-                      {opt3PriceOverride ? `₹${parseInt(opt3PriceOverride, 10).toLocaleString('en-IN')}` : formatINR(opt3Calc.totalPrice)}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div>
-                      <span className="text-[10px] text-gray-500 block">Buses:</span>
-                      <select
-                        value={opt3Buses}
-                        onChange={(e) => setOpt3Buses(parseInt(e.target.value, 10))}
-                        className="w-full h-7 px-1.5 text-xs rounded-md border border-gray-200"
-                      >
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(b => (
-                          <option key={b} value={b}>{b} Buses</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] text-gray-500 block">Duration:</span>
-                      <select
-                        value={opt3Seconds}
-                        onChange={(e) => setOpt3Seconds(parseInt(e.target.value, 10))}
-                        className="w-full h-7 px-1.5 text-xs rounded-md border border-gray-200"
-                      >
-                        {[10, 15, 20, 25, 30, 40, 50, 60].map(s => (
-                          <option key={s} value={s}>{s}s Video</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] text-gray-500 block">Period:</span>
-                      <select
-                        value={opt3Days}
-                        onChange={(e) => setOpt3Days(parseInt(e.target.value, 10))}
-                        className="w-full h-7 px-1.5 text-xs rounded-md border border-gray-200"
-                      >
-                        <option value={30}>30 Days (1 Mo)</option>
-                        <option value={60}>60 Days (2 Mo)</option>
-                        <option value={90}>90 Days (3 Mo)</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1131,39 +994,56 @@ ${pkgDetails}
                       <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide">
                         Proposed Campaign Investment Options
                       </h4>
-                      <div className="border border-gray-200 rounded-lg overflow-hidden text-[8.5px]">
-                        <div className="bg-slate-900 text-white font-bold px-2 py-1.5 grid grid-cols-4 text-center">
-                          <span className="text-left">Particulars</span>
-                          <span>{opt1Name.replace(/\s*\(.*\)/, '') || 'Option 1'}</span>
-                          <span>{opt2Name.replace(/\s*\(.*\)/, '') || 'Option 2'}</span>
-                          <span>{opt3Name.replace(/\s*\(.*\)/, '') || 'Option 3'}</span>
-                        </div>
-                        <div className="p-1.5 space-y-1 text-gray-700 bg-white">
-                          <div className="grid grid-cols-4 text-center border-b border-gray-100 pb-1">
-                            <span className="text-left font-semibold">Fleet:</span>
-                            <span>{opt1Buses} Buses</span>
-                            <span>{opt2Buses} Buses</span>
-                            <span>{opt3Buses} Buses</span>
-                          </div>
-                          <div className="grid grid-cols-4 text-center border-b border-gray-100 pb-1">
-                            <span className="text-left font-semibold">Duration:</span>
-                            <span>{opt1Seconds}s</span>
-                            <span>{opt2Seconds}s</span>
-                            <span>{opt3Seconds}s</span>
-                          </div>
-                          <div className="grid grid-cols-4 text-center border-b border-gray-100 pb-1">
-                            <span className="text-left font-semibold">Period:</span>
-                            <span>{opt1Days} Days</span>
-                            <span>{opt2Days} Days</span>
-                            <span>{opt3Days} Days</span>
-                          </div>
-                          <div className="grid grid-cols-4 text-center pt-1 font-bold text-slate-900">
-                            <span className="text-left">Investment:</span>
-                            <span>{opt1PriceOverride ? `₹${parseInt(opt1PriceOverride, 10).toLocaleString('en-IN')}` : formatINR(opt1Calc.totalPrice)}</span>
-                            <span>{opt2PriceOverride ? `₹${parseInt(opt2PriceOverride, 10).toLocaleString('en-IN')}` : formatINR(opt2Calc.totalPrice)}</span>
-                            <span>{opt3PriceOverride ? `₹${parseInt(opt3PriceOverride, 10).toLocaleString('en-IN')}` : formatINR(opt3Calc.totalPrice)}</span>
-                          </div>
-                        </div>
+                      <div className="border border-gray-200 rounded-lg overflow-x-auto text-[8.5px]">
+                        <table className="w-full min-w-[260px] border-collapse text-center">
+                          <thead>
+                            <tr className="bg-slate-900 text-white font-bold">
+                              <th className="text-left px-2 py-1.5 font-bold">Particulars</th>
+                              {computedPackages.map((pkg, idx) => (
+                                <th key={pkg.id} className="px-2 py-1.5 font-bold whitespace-nowrap">
+                                  {pkg.name || `Option ${idx + 1}`}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 text-gray-700 bg-white">
+                            <tr>
+                              <td className="text-left px-2 py-1 font-semibold text-gray-900">Fleet:</td>
+                              {computedPackages.map((pkg) => (
+                                <td key={pkg.id} className="px-2 py-1 whitespace-nowrap">
+                                  {pkg.buses} Buses
+                                </td>
+                              ))}
+                            </tr>
+                            <tr>
+                              <td className="text-left px-2 py-1 font-semibold text-gray-900">Duration:</td>
+                              {computedPackages.map((pkg) => (
+                                <td key={pkg.id} className="px-2 py-1 whitespace-nowrap">
+                                  {pkg.seconds}s
+                                </td>
+                              ))}
+                            </tr>
+                            <tr>
+                              <td className="text-left px-2 py-1 font-semibold text-gray-900">Period:</td>
+                              {computedPackages.map((pkg) => (
+                                <td key={pkg.id} className="px-2 py-1 whitespace-nowrap">
+                                  {pkg.durationLabel}
+                                </td>
+                              ))}
+                            </tr>
+                            <tr className="font-bold text-slate-900 bg-gray-50/60">
+                              <td className="text-left px-2 py-1.5">Investment:</td>
+                              {computedPackages.map((pkg) => {
+                                const price = pkg.customPriceOverride ?? pkg.calculatedPrice;
+                                return (
+                                  <td key={pkg.id} className="px-2 py-1.5 whitespace-nowrap text-[#a0354e]">
+                                    {formatINR(price)}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          </tbody>
+                        </table>
                       </div>
                     </div>
                   )}
