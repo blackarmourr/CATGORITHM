@@ -758,45 +758,9 @@ export async function getQuotations(): Promise<Quotation[]> {
         };
       });
 
-      // Two-way sync: Push any local-only quotations up to Supabase
-      const remoteIdSet = new Set(remoteList.map((r) => r.id));
-      const localOnly = localList.filter((l) => !remoteIdSet.has(l.id));
-      if (localOnly.length > 0) {
-        Promise.all(
-          localOnly.map((q) => {
-            const enriched = {
-              ...q.customerDetails,
-              enquiryId: q.enquiryId,
-              campaignId: q.campaignId,
-              campaignName: q.campaignName,
-              campaignStartDate: q.campaignStartDate,
-              campaignEndDate: q.campaignEndDate,
-              billedMonths: q.billedMonths,
-            };
-            return supabase.from('quotations').upsert({
-              id: q.id,
-              customer_details: enriched,
-              pricing_snapshot: q.pricingSnapshot,
-              valid_until: q.validUntil,
-              created_at: q.createdAt,
-              campaign_id: q.campaignId || null,
-              campaign_name: q.campaignName || null,
-              campaign_start_date: q.campaignStartDate || null,
-              campaign_end_date: q.campaignEndDate || null,
-              billed_months: q.billedMonths || null,
-            });
-          })
-        ).catch((err) => console.warn('Background quotation sync error:', err));
-      }
-
-      const mergedMap = new Map<string, Quotation>();
-      localList.forEach((q) => mergedMap.set(q.id, q));
-      remoteList.forEach((q) => mergedMap.set(q.id, q));
-      const merged = Array.from(mergedMap.values()).sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      saveLocal(LOCAL_QUOTATIONS_KEY, merged);
-      return merged;
+      // Supabase is authoritative: sync remote data directly to local cache
+      saveLocal(LOCAL_QUOTATIONS_KEY, remoteList);
+      return remoteList;
     }
   } catch (err) {
     console.warn('Failed to fetch quotations from Supabase, using local fallback:', err);
@@ -819,6 +783,24 @@ export async function deleteQuotation(id: string): Promise<boolean> {
     }
   } catch (err) {
     console.warn('Supabase delete notice:', err);
+  }
+
+  // 3. Clear quotationId from any enquiries in Supabase and locally
+  try {
+    const enqList = loadLocal<Enquiry[]>(LOCAL_ENQUIRIES_KEY, []);
+    let modified = false;
+    enqList.forEach((e) => {
+      if (e.quotationId === id) {
+        e.quotationId = undefined;
+        modified = true;
+      }
+    });
+    if (modified) {
+      saveLocal(LOCAL_ENQUIRIES_KEY, enqList);
+      await supabase.from('enquiries').update({ quotation_id: null }).eq('quotation_id', id);
+    }
+  } catch (err) {
+    console.warn('Unlink enquiry error:', err);
   }
 
   return true;
@@ -905,43 +887,9 @@ export async function getEnquiries(): Promise<Enquiry[]> {
         };
       });
 
-      // Two-way sync: Push any local-only enquiries up to Supabase
-      const remoteIdSet = new Set(remoteList.map((r) => r.id));
-      const localOnly = localList.filter((l) => !remoteIdSet.has(l.id));
-      if (localOnly.length > 0) {
-        Promise.all(
-          localOnly.map((e) => {
-            const enriched = {
-              ...e.customerDetails,
-              campaignId: e.campaignId,
-              campaignName: e.campaignName,
-            };
-            return supabase.from('enquiries').upsert({
-              id: e.id,
-              status: e.status,
-              customer_details: enriched,
-              pricing_snapshot: e.pricingSnapshot,
-              quotation_id: e.quotationId,
-              admin_notes: e.adminNotes,
-              negotiated_price: e.negotiatedPrice,
-              negotiation_reason: e.negotiationReason,
-              created_at: e.createdAt,
-              updated_at: e.updatedAt,
-              campaign_id: e.campaignId || null,
-              campaign_name: e.campaignName || null,
-            });
-          })
-        ).catch((err) => console.warn('Background enquiry sync error:', err));
-      }
-
-      const mergedMap = new Map<string, Enquiry>();
-      localList.forEach((e) => mergedMap.set(e.id, e));
-      remoteList.forEach((e) => mergedMap.set(e.id, e));
-      const merged = Array.from(mergedMap.values()).sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      saveLocal(LOCAL_ENQUIRIES_KEY, merged);
-      return merged;
+      // Supabase is authoritative: sync remote data directly to local cache
+      saveLocal(LOCAL_ENQUIRIES_KEY, remoteList);
+      return remoteList;
     }
   } catch {
     // fallback
