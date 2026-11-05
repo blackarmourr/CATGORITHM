@@ -11,8 +11,7 @@
 
 import {
   ONE_MONTH_PACKAGE_PRICES,
-  calculatePrice,
-  getFloorRatePerBusMonth,
+  calculatePrice
 } from './pricingEngine';
 
 export const DAILY_BASE_RATE_PER_SECOND = 5; // ₹5 per second per day (10s = ₹50/day, 30s = ₹150/day)
@@ -157,13 +156,6 @@ export function calculateCustomPrice(
     const unconstrainedStd = dailyBasePricePerBus * d * b;
     const maxMonthlyStd = calculatePrice(b, 1, s).standardPrice;
     standardPrice = Math.min(maxMonthlyStd, unconstrainedStd);
-  }
-
-  // Enforce internal margin floor rate (minimum per bus per day = floorRate / 30)
-  const floorRate = getFloorRatePerBusMonth(s);
-  const minAllowedCustomPrice = (floorRate / 30) * b * d;
-  if (totalPrice < minAllowedCustomPrice) {
-    totalPrice = Math.ceil(minAllowedCustomPrice / 5) * 5;
   }
 
   // 4. Effective Unit Economics
