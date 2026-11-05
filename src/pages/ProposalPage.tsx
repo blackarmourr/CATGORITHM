@@ -36,7 +36,7 @@ export default function ProposalPage() {
   const [proposalDate, setProposalDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [preparedBy, setPreparedBy] = useState('Catgorithm');
   const [packageMode, setPackageMode] = useState<PackageMode>('none');
-  const [activePreviewPage, setActivePreviewPage] = useState<1 | 2>(1);
+  const [activePreviewPage, setActivePreviewPage] = useState<1 | 2 | 3>(1);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [showObjectiveCustomizer, setShowObjectiveCustomizer] = useState(false);
   const [copiedSummary, setCopiedSummary] = useState(false);
@@ -499,7 +499,10 @@ ${pkgDetails}
             <div className="grid grid-cols-3 gap-2 p-1 bg-gray-100 rounded-xl">
               <button
                 type="button"
-                onClick={() => setPackageMode('none')}
+                onClick={() => {
+                  setPackageMode('none');
+                  if (activePreviewPage === 3) setActivePreviewPage(2);
+                }}
                 className={`py-2 px-2 text-xs font-bold rounded-lg transition-all ${
                   packageMode === 'none'
                     ? 'bg-white text-gray-900 shadow-xs'
@@ -752,7 +755,7 @@ ${pkgDetails}
               <span className="text-[10px] font-semibold text-gray-400">Studio Shodwe Template</span>
             </div>
 
-            {/* Page 1 / Page 2 Switcher */}
+            {/* Page Switcher */}
             <div className="flex items-center gap-1 bg-gray-200 p-0.5 rounded-lg text-xs font-bold">
               <button
                 type="button"
@@ -772,6 +775,17 @@ ${pkgDetails}
               >
                 Page 2
               </button>
+              {packageMode !== 'none' && (
+                <button
+                  type="button"
+                  onClick={() => setActivePreviewPage(3)}
+                  className={`px-3 py-1 rounded-md transition-all ${
+                    activePreviewPage === 3 ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Page 3
+                </button>
+              )}
             </div>
           </div>
 
@@ -954,7 +968,43 @@ ${pkgDetails}
                     </div>
                   </div>
 
-                  {/* Optional Proposed Investment Section (Single or Multiple only) */}
+                  {/* Our Commitment (Shown on Page 2 ONLY in No Package Mode) */}
+                  {packageMode === 'none' && (
+                    <div className="space-y-1">
+                      <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide">
+                        Our Commitment
+                      </h4>
+                      <p className="text-[9.2px] text-gray-700 leading-relaxed text-justify">
+                        At Catgorithm, we aim to make advertising more accessible, measurable and effective for businesses.
+                      </p>
+                      <p className="text-[9.2px] text-gray-700 leading-relaxed text-justify">
+                        From campaign activation to ongoing monitoring, we are committed to providing a reliable advertising experience that helps your brand stay visible where your customers travel every day.
+                      </p>
+                      <p className="text-[9.2px] text-gray-700 leading-relaxed text-justify">
+                        We look forward to building a successful advertising partnership with {clientName}. For any questions or further discussion, please feel free to contact us :
+                      </p>
+                      <div className="text-[9.2px] text-gray-800 space-y-0.5 pt-1">
+                        <div>📞 WhatsApp / Call: +91 9746336175</div>
+                        <div>✉ Email: teamcatgorithm@gmail.com</div>
+                        <div>🌐 Website: www.catgorithm.in</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Page 2 Footer */}
+                <div className="pt-3 border-t border-[#d6c26e]/80 flex items-center justify-between text-[9px] text-gray-600">
+                  <span>teamcatgorithm@gmail.com</span>
+                  <span>www.catgorithm.in</span>
+                </div>
+              </div>
+            )}
+
+            {/* ── PREVIEW PAGE 3 (Package Modes Only) ── */}
+            {activePreviewPage === 3 && packageMode !== 'none' && (
+              <div className="flex flex-col h-full justify-between pt-1">
+                <div className="space-y-3.5">
+                  {/* Proposed Investment Section (Single) */}
                   {packageMode === 'single' && (
                     <div className="space-y-1">
                       <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide">
@@ -989,10 +1039,11 @@ ${pkgDetails}
                     </div>
                   )}
 
+                  {/* Proposed Investment Options (Multiple) */}
                   {packageMode === 'multiple' && (
                     <div className="space-y-1">
                       <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide">
-                        Proposed Campaign Investment Options
+                        Proposed Campaign Options
                       </h4>
                       <div className="border border-gray-200 rounded-lg overflow-x-auto text-[8.5px]">
                         <table className="w-full min-w-[260px] border-collapse text-center">
@@ -1048,7 +1099,7 @@ ${pkgDetails}
                     </div>
                   )}
 
-                  {/* Commitment */}
+                  {/* Our Commitment on Page 3 */}
                   <div className="space-y-1">
                     <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide">
                       Our Commitment
@@ -1070,7 +1121,7 @@ ${pkgDetails}
                   </div>
                 </div>
 
-                {/* Page 2 Footer */}
+                {/* Page 3 Footer */}
                 <div className="pt-3 border-t border-[#d6c26e]/80 flex items-center justify-between text-[9px] text-gray-600">
                   <span>teamcatgorithm@gmail.com</span>
                   <span>www.catgorithm.in</span>
@@ -1087,7 +1138,13 @@ ${pkgDetails}
             className="w-full h-11 rounded-xl bg-[#d6c26e] text-slate-900 hover:bg-[#e0cf87] active:scale-98 font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
           >
             <Download size={15} />
-            <span>{isGeneratingPdf ? 'Generating PDF...' : 'Download Full 2-Page Proposal PDF'}</span>
+            <span>
+              {isGeneratingPdf
+                ? 'Generating PDF...'
+                : packageMode === 'none'
+                ? 'Download Full 2-Page Proposal PDF'
+                : 'Download Full 3-Page Proposal PDF'}
+            </span>
           </button>
         </div>
 
