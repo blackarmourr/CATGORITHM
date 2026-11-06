@@ -126,8 +126,8 @@ _Offer valid for 30 days. Contact us to reserve your screen slots._
   // Save deal into pipeline
   async function handleSaveDeal(e: React.FormEvent) {
     e.preventDefault()
-    if (!clientName.trim() && !clientPhone.trim()) {
-      toast.error('Please enter at least client name or phone number')
+    if (!clientName.trim()) {
+      toast.error('Please enter client or business name')
       return
     }
     setSavingLead(true)
@@ -268,7 +268,7 @@ _Offer valid for 30 days. Contact us to reserve your screen slots._
             <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="tel"
-              placeholder="Phone Number (e.g. 9876543210)"
+              placeholder="Phone Number (optional)"
               value={clientPhone}
               onChange={(e) => setClientPhone(e.target.value)}
               className="w-full pl-9 pr-3 py-2 text-xs font-semibold rounded-xl border border-gray-200 focus:outline-none focus:border-accent bg-gray-50/50 focus:bg-white"
@@ -349,10 +349,12 @@ _Offer valid for 30 days. Contact us to reserve your screen slots._
               </div>
 
               <div>
-                <label className="font-bold text-gray-700 block mb-1">Phone Number</label>
+                <label className="font-bold text-gray-700 block mb-1">
+                  Phone Number <span className="text-gray-400 font-normal">(Optional)</span>
+                </label>
                 <input
                   type="tel"
-                  placeholder="e.g. 9746336175"
+                  placeholder="e.g. 9746336175 (Optional)"
                   value={clientPhone}
                   onChange={(e) => setClientPhone(e.target.value)}
                   className="w-full p-2.5 rounded-xl border border-gray-300 font-semibold focus:outline-none focus:border-accent"

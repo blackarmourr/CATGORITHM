@@ -122,8 +122,8 @@ _Offer valid for 30 days. Contact us to reserve your screen inventory._
   // Save enquiry into internal dashboard
   async function handleSaveDeal(e: React.FormEvent) {
     e.preventDefault()
-    if (!clientName.trim() && !clientPhone.trim()) {
-      toast.error('Please enter at least client name or phone number')
+    if (!clientName.trim()) {
+      toast.error('Please enter customer / company name')
       return
     }
     setSavingLead(true)
@@ -345,11 +345,12 @@ _Offer valid for 30 days. Contact us to reserve your screen inventory._
                 />
               </div>
               <div>
-                <label className="text-[11px] font-bold text-gray-700 block mb-1">Phone Number</label>
+                <label className="text-[11px] font-bold text-gray-700 block mb-1">
+                  Phone Number <span className="text-gray-400 font-normal">(Optional)</span>
+                </label>
                 <input
                   type="tel"
-                  required
-                  placeholder="+91 98765 43210"
+                  placeholder="+91 98765 43210 (Optional)"
                   value={clientPhone}
                   onChange={(e) => setClientPhone(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-gray-300 focus:outline-none focus:border-accent"
