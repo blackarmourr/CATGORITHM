@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useCustomCalculatorStore } from '../../stores/customCalculatorStore'
-import { DAILY_BASE_RATE_PER_SECOND } from '../../lib/customPricingEngine'
+import { getDailyPricePerBus, MIN_AD_DURATION_SECONDS } from '../../lib/customPricingEngine'
 import { Clock, Plus, Minus } from 'lucide-react'
 
 export default function CustomDurationSelector() {
@@ -8,7 +8,7 @@ export default function CustomDurationSelector() {
   const setVideoDurationSeconds = useCustomCalculatorStore((s) => s.setVideoDurationSeconds)
   const [customMode, setCustomMode] = useState(false)
 
-  const PRESETS = [10, 15, 20, 30, 40, 50, 60]
+  const PRESETS = [10, 20, 30, 40, 50, 60]
   const isCustom = !PRESETS.includes(videoDurationSeconds)
 
   function handlePreset(s: number) {
@@ -17,12 +17,11 @@ export default function CustomDurationSelector() {
   }
 
   function adjustDuration(delta: number) {
-    const next = Math.max(5, Math.min(300, videoDurationSeconds + delta))
+    const next = Math.max(MIN_AD_DURATION_SECONDS, Math.min(300, videoDurationSeconds + delta))
     setVideoDurationSeconds(next)
   }
 
-  const multiplier = (videoDurationSeconds / 10).toFixed(1)
-  const dailyBase = Math.round(videoDurationSeconds * DAILY_BASE_RATE_PER_SECOND)
+  const dailyBase = getDailyPricePerBus(videoDurationSeconds)
 
   return (
     <div className="space-y-3">
@@ -35,25 +34,26 @@ export default function CustomDurationSelector() {
           Video Ad Duration
         </label>
         <div className="flex items-center gap-1.5">
-          <span className="text-[11px] font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-            ₹{dailyBase}/day base
+          <span className="text-[11px] font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-full tabular-nums">
+            ₹{dailyBase}/day per bus
           </span>
           <span className="text-xs font-bold text-accent bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-full tabular-nums">
-            {videoDurationSeconds}s ({multiplier}× 10s Base)
+            {videoDurationSeconds} Seconds
           </span>
         </div>
       </div>
 
-      {/* Preset duration buttons (Grid with 10s, 15s, 20s, 30s, 40s, 50s, 60s, + Custom) */}
-      <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
+      {/* Preset duration buttons (Grid with 10s, 20s, 30s, 40s, 50s, 60s, + Custom) */}
+      <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
         {PRESETS.map((s) => {
           const isSelected = videoDurationSeconds === s && !customMode
+          const sRate = getDailyPricePerBus(s)
           return (
             <button
               key={s}
               type="button"
               onClick={() => handlePreset(s)}
-              className={`h-11 rounded-xl border font-bold text-sm transition-all flex flex-col items-center justify-center active:scale-95 ${
+              className={`h-12 rounded-xl border font-bold text-sm transition-all flex flex-col items-center justify-center active:scale-95 ${
                 isSelected
                   ? 'bg-accent text-white border-accent shadow-sm shadow-accent/25'
                   : 'bg-white text-gray-700 border-gray-200 hover:border-accent/40'
@@ -61,7 +61,7 @@ export default function CustomDurationSelector() {
             >
               <span>{s}s</span>
               <span className={`text-[9px] font-normal ${isSelected ? 'text-white/80' : 'text-gray-400'}`}>
-                {s === 10 ? 'Base' : `${(s / 10).toFixed(1)}×`}
+                ₹{sRate}/d
               </span>
             </button>
           )
@@ -71,7 +71,7 @@ export default function CustomDurationSelector() {
         <button
           type="button"
           onClick={() => setCustomMode(!customMode)}
-          className={`h-11 rounded-xl border font-bold text-xs transition-all flex flex-col items-center justify-center active:scale-95 ${
+          className={`h-12 rounded-xl border font-bold text-xs transition-all flex flex-col items-center justify-center active:scale-95 ${
             customMode || isCustom
               ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
               : 'bg-white text-gray-700 border-gray-200 hover:border-violet-300'
@@ -113,10 +113,10 @@ export default function CustomDurationSelector() {
             </button>
             <input
               type="number"
-              min="5"
+              min="10"
               max="300"
               value={videoDurationSeconds}
-              onChange={(e) => setVideoDurationSeconds(Number(e.target.value))}
+              onChange={(e) => setVideoDurationSeconds(Math.max(MIN_AD_DURATION_SECONDS, Number(e.target.value)))}
               className="w-16 h-8 text-xs font-bold text-center border border-violet-200 rounded-lg bg-white focus:outline-none focus:border-violet-500"
             />
           </div>

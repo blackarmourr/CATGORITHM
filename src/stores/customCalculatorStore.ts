@@ -64,7 +64,7 @@ export const useCustomCalculatorStore = create<CustomCalculatorStore>((set, get)
   },
 
   setVideoDurationSeconds: (seconds) => {
-    const cleanS = Math.max(1, Math.round(seconds));
+    const cleanS = Math.max(10, Math.round(seconds));
     const { config } = get();
     const pricing = calculateCustomPrice(config.buses, config.days, cleanS);
     set({ config: { ...config, videoDurationSeconds: cleanS }, pricing });

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useCustomCalculatorStore } from '../../stores/customCalculatorStore'
-import { FIXED_PRICING_MILESTONES } from '../../lib/customPricingEngine'
+import { FIXED_PRICING_MILESTONES, calculateCustomPrice } from '../../lib/customPricingEngine'
 import { Calendar, Plus, Minus, Check } from 'lucide-react'
 import { format } from 'date-fns'
 
 export default function DaySelector() {
   const days = useCustomCalculatorStore((s) => s.config.days)
+  const videoDurationSeconds = useCustomCalculatorStore((s) => s.config.videoDurationSeconds)
   const setDays = useCustomCalculatorStore((s) => s.setDays)
   const startDate = useCustomCalculatorStore((s) => s.config.startDate)
   const endDate = useCustomCalculatorStore((s) => s.config.endDate)
@@ -66,6 +67,7 @@ export default function DaySelector() {
         <div className="grid grid-cols-5 gap-1.5">
           {FIXED_PRICING_MILESTONES.map((m) => {
             const isSelected = days === m.days
+            const mPerBus = calculateCustomPrice(1, m.days, videoDurationSeconds).finalPerBusPrice
             return (
               <button
                 key={m.days}
@@ -82,10 +84,10 @@ export default function DaySelector() {
                   {isSelected && <Check size={11} className="text-white" />}
                 </div>
                 <span className={`text-[10px] font-semibold mt-0.5 tabular-nums ${isSelected ? 'text-white/90' : 'text-accent'}`}>
-                  ₹{m.price10s}
+                  ₹{mPerBus.toLocaleString('en-IN')}
                 </span>
                 <span className={`text-[8px] ${isSelected ? 'text-white/70' : 'text-gray-400'}`}>
-                  per 10s
+                  per bus
                 </span>
               </button>
             )

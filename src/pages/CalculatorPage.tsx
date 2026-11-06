@@ -5,6 +5,7 @@ import BusSelector from '../components/calculator/BusSelector'
 import DurationSelector from '../components/calculator/DurationSelector'
 import MonthSelector from '../components/calculator/MonthSelector'
 import PricingSummary from '../components/calculator/PricingSummary'
+import FestivalAndManualPricingControls from '../components/calculator/FestivalAndManualPricingControls'
 import QuotationForm from '../components/calculator/QuotationForm'
 import { PWAHeaderInstallButton } from '../components/PWAInstallPrompt'
 import { useCalculatorStore } from '../stores/calculatorStore'
@@ -169,7 +170,12 @@ Valid for 30 days. Contact: +91 97463 36175`
           <PricingSummary />
         </section>
 
-        {/* 2. Campaign Selection & Dates (Clean Dropdown Below Live Price) */}
+        {/* 2. Festival Season Pricing Toggle & Negotiation Overrides */}
+        <section aria-label="Festival Season & Manual Pricing">
+          <FestivalAndManualPricingControls />
+        </section>
+
+        {/* 3. Campaign Selection & Dates (Clean Dropdown Below Live Price) */}
         <section aria-label="Campaign Selection">
           <CampaignSelector />
         </section>

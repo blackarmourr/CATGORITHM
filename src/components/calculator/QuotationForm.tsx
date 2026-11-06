@@ -35,8 +35,9 @@ ${clientName ? `Prepared for: *${clientName}*\n` : ''}*Campaign:* ${selectedCamp
 • Billed Duration: ${config.months} ${config.months === 1 ? 'Month' : 'Months'}
 
 *Commercials:*
-• Standard Rate: ${formatINR(pricing.standardPrice)}
-• *Special Package Price: ${formatINR(pricing.packagePrice)}*
+• Actual Tariff (Original): ${formatINR(pricing.actualPrice)}
+• Normal Selling Price: ${formatINR(pricing.normalPrice)}
+${pricing.isFestivalActive && pricing.isEligibleForFestival ? `• *Festival Offer Price: ${formatINR(pricing.festivalPrice)} (${pricing.festivalOfferName || 'Special Offer'})*\n` : ''}${pricing.isManualPriceActive ? `• *Negotiated Override: ${formatINR(pricing.manualPriceOverride!)}*\n` : ''}${pricing.isManualDiscountActive ? `• *Additional Manual Discount: -${formatINR(pricing.manualDiscount)}*\n` : ''}• *Final Campaign Investment: ${formatINR(pricing.finalPrice)}*
 ${pricing.savings > 0 ? `• *Direct Client Savings: ${formatINR(pricing.savings)} (${pricing.savingsPercentage.toFixed(0)}% OFF)*\n` : ''}
 *Effective Unit Economics:*
 • Rate per Bus: ${formatINR(pricing.pricePerBusMonth)} / month

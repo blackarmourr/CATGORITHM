@@ -1,71 +1,136 @@
 // ============================================================
 // CATGORITHM CUSTOM CAMPAIGN — PER-DAY ADVERTISING PRICING ENGINE
-// Base Rate: ₹5 per second per day (10s = ₹50/day, 20s = ₹100/day, 30s = ₹150/day)
-// Fixed Milestones for 10-second ad:
-//   1 Day: ₹50 | 7 Days: ₹350 | 14 Days: ₹500 | 21 Days: ₹625 | 30 Days: ₹750
-// Linear interpolation for intermediate days, rounded to nearest ₹5.
-// Proportional scaling for video durations (10s, 15s, 20s, 30s, 40s, 50s, 60s, etc.).
-// Synchronized with Standard Monthly Package (₹20,000 for 10 buses / 30s ad).
-// Maximum 30-day tariff kept below ₹25,000 for 10 buses (₹2,500 for 1 bus).
+// Independent per-day campaign pricing system.
+//
+// 1. Daily Pricing Table (Per Bus):
+//    10s: ₹100 | 20s: ₹140 | 30s: ₹175 | 40s: ₹215 | 50s: ₹250 | 60s: ₹290
+//    Minimum advertisement duration: 10 seconds.
+//
+// 2. Campaign Duration Pricing (30-second advertisement reference):
+//    1 Day:  ₹175
+//    2 Days: ₹350
+//    3 Days: ₹525
+//    4 Days: ₹700
+//    5 Days: ₹875
+//    6 Days: ₹1,050
+//    7 Days: ₹1,050 (charge 6 days, 1 day free)
+//    14 Days: ₹1,500
+//    21 Days: ₹1,875
+//    30 Days: ₹2,250
+//
+// 3. Proportional Scaling & Rounding:
+//    - For any duration s: scale by (dailyPrice(s) / 175).
+//    - For b buses: totalPrice = pricePerBus * b.
+//    - All final prices rounded to nearest multiple of ₹5 (no decimals).
 // ============================================================
 
-import {
-  ONE_MONTH_PACKAGE_PRICES,
-  calculatePrice
-} from './pricingEngine';
+export const MIN_AD_DURATION_SECONDS = 10;
+export const DAILY_BASE_RATE_PER_SECOND = 175 / 30; // ₹5.833/sec (backward compatibility)
 
-export const DAILY_BASE_RATE_PER_SECOND = 5; // ₹5 per second per day (10s = ₹50/day, 30s = ₹150/day)
+export const DAILY_PRICING_TABLE_PER_BUS: Record<number, number> = {
+  10: 100,
+  20: 140,
+  30: 175,
+  40: 215,
+  50: 250,
+  60: 290,
+};
 
 export interface PricingMilestone {
   days: number;
+  price30s: number;
   price10s: number;
+  label: string;
 }
 
 export const FIXED_PRICING_MILESTONES: PricingMilestone[] = [
-  { days: 1,  price10s: 50 },
-  { days: 7,  price10s: 350 },
-  { days: 14, price10s: 500 },
-  { days: 21, price10s: 625 },
-  { days: 30, price10s: 750 },
+  { days: 1,  price30s: 175,  price10s: 100, label: '1 Day' },
+  { days: 7,  price30s: 1050, price10s: 600, label: '7 Days (1d Free)' },
+  { days: 14, price30s: 1500, price10s: 855, label: '14 Days' },
+  { days: 21, price30s: 1875, price10s: 1070, label: '21 Days' },
+  { days: 30, price30s: 2250, price10s: 1285, label: '30 Days' },
 ];
 
 /**
- * Calculates the interpolated 10-second advertisement price for a given number of days.
- * Applies linear interpolation between the two nearest milestones and rounds to nearest ₹5.
+ * Returns the daily rate per bus for any advertisement duration.
+ * Clamped to a minimum of 10 seconds.
  */
-export function getInterpolated10SecPrice(days: number): number {
-  const d = Math.max(1, Math.round(days));
-
-  // Check exact milestone
-  const exact = FIXED_PRICING_MILESTONES.find((m) => m.days === d);
-  if (exact) return exact.price10s;
-
-  let lower: PricingMilestone;
-  let upper: PricingMilestone;
-
-  if (d < 7) {
-    lower = FIXED_PRICING_MILESTONES[0]; // 1 day, ₹50
-    upper = FIXED_PRICING_MILESTONES[1]; // 7 days, ₹350
-  } else if (d < 14) {
-    lower = FIXED_PRICING_MILESTONES[1]; // 7 days, ₹350
-    upper = FIXED_PRICING_MILESTONES[2]; // 14 days, ₹500
-  } else if (d < 21) {
-    lower = FIXED_PRICING_MILESTONES[2]; // 14 days, ₹500
-    upper = FIXED_PRICING_MILESTONES[3]; // 21 days, ₹625
-  } else if (d <= 30) {
-    lower = FIXED_PRICING_MILESTONES[3]; // 21 days, ₹625
-    upper = FIXED_PRICING_MILESTONES[4]; // 30 days, ₹750
-  } else {
-    // Beyond 30 days: each 30-day block stays ₹750 for 10s plus remainder interpolated
-    const blocks30 = Math.floor(d / 30);
-    const remDays = d % 30;
-    const remPrice = remDays > 0 ? getInterpolated10SecPrice(remDays) : 0;
-    return blocks30 * 750 + remPrice;
+export function getDailyPricePerBus(seconds: number): number {
+  const s = Math.max(MIN_AD_DURATION_SECONDS, Math.round(seconds));
+  if (DAILY_PRICING_TABLE_PER_BUS[s] !== undefined) {
+    return DAILY_PRICING_TABLE_PER_BUS[s];
   }
 
-  // Linear interpolation formula:
-  const rawPrice = lower.price10s + ((d - lower.days) / (upper.days - lower.days)) * (upper.price10s - lower.price10s);
-  return Math.round(rawPrice / 5) * 5;
+  // Linear interpolation between defined duration tiers
+  if (s < 20) {
+    return 100 + ((s - 10) / 10) * (140 - 100);
+  }
+  if (s < 30) {
+    return 140 + ((s - 20) / 10) * (175 - 140);
+  }
+  if (s < 40) {
+    return 175 + ((s - 30) / 10) * (215 - 175);
+  }
+  if (s < 50) {
+    return 215 + ((s - 40) / 10) * (250 - 215);
+  }
+  if (s < 60) {
+    return 250 + ((s - 50) / 10) * (290 - 250);
+  }
+
+  // Beyond 60s: +₹4/sec (40 per 10s increment)
+  return 290 + (s - 60) * 4;
+}
+
+/**
+ * Calculates the reference 30-second campaign price per bus for any number of days.
+ * Strictly respects fixed milestones:
+ * - 1 to 6 days: days * ₹175
+ * - 7 days: ₹1,050 (1 day free)
+ * - 8 to 13 days: interpolated between 7d (₹1,050) and 14d (₹1,500)
+ * - 14 days: ₹1,500
+ * - 15 to 20 days: interpolated between 14d (₹1,500) and 21d (₹1,875)
+ * - 21 days: ₹1,875
+ * - 22 to 29 days: interpolated between 21d (₹1,875) and 30d (₹2,250)
+ * - 30 days: ₹2,250
+ * - Beyond 30 days: 30-day blocks @ ₹2,250 + remainder
+ */
+export function get30sCustomPerBusPrice(days: number): number {
+  const d = Math.max(1, Math.round(days));
+
+  if (d <= 6) {
+    return d * 175;
+  }
+  if (d === 7) {
+    return 1050; // Charge only 6 days, 1 day free
+  }
+  if (d < 14) {
+    const raw = 1050 + ((d - 7) / (14 - 7)) * (1500 - 1050);
+    return Math.round(raw / 5) * 5;
+  }
+  if (d === 14) {
+    return 1500;
+  }
+  if (d < 21) {
+    const raw = 1500 + ((d - 14) / (21 - 14)) * (1875 - 1500);
+    return Math.round(raw / 5) * 5;
+  }
+  if (d === 21) {
+    return 1875;
+  }
+  if (d < 30) {
+    const raw = 1875 + ((d - 21) / (30 - 21)) * (2250 - 1875);
+    return Math.round(raw / 5) * 5;
+  }
+  if (d === 30) {
+    return 2250;
+  }
+
+  // Beyond 30 days
+  const blocks30 = Math.floor(d / 30);
+  const remDays = d % 30;
+  const remPrice = remDays > 0 ? get30sCustomPerBusPrice(remDays) : 0;
+  return blocks30 * 2250 + remPrice;
 }
 
 export interface CustomPricingResult {
@@ -75,16 +140,17 @@ export interface CustomPricingResult {
   videoDurationSeconds: number;
 
   // Commercials
-  dailyBasePricePerBus: number; // Duration * ₹5 (₹50 for 10s, ₹150 for 30s)
-  standardPrice: number;        // Comparison tariff (capped at ₹25,000 for 1 month / 10 buses)
+  dailyBasePricePerBus: number; // Daily price for selected duration
+  standardPrice: number;        // Undiscounted comparison price (daily rate * days * buses)
   finalPerBusPrice: number;     // totalPrice / buses
-  totalPrice: number;           // Total campaign offer price
+  totalPrice: number;           // Total campaign price rounded to nearest ₹5
+  packagePrice: number;         // Alias to totalPrice for backward compatibility
   savings: number;              // standardPrice - totalPrice
   savingsPercentage: number;    // (savings / standardPrice) * 100
 
   // Multipliers & Base metrics
-  durationMultiplier: number;   // videoDurationSeconds / 10
-  interpolated10SecPrice: number;
+  durationMultiplier: number;   // dailyRate / 175
+  interpolated10SecPrice: number; // for backward compatibility
 
   // Effective Unit Economics
   pricePerBusCampaign: number;  // finalPerBusPrice
@@ -94,10 +160,7 @@ export interface CustomPricingResult {
 
 /**
  * Main calculation function for the Custom Per-Day Campaign Pricing.
- * - Base rate: ₹50 for 10s, ₹150 for 30s per bus per day.
- * - Previous milestone pricing for upto 1 month (1, 7, 14, 21, 30 days).
- * - Total price for 30 days stays below ₹25,000 (synced to ₹20,000 for 10 buses).
- * - Standard undiscounted price capped at ₹25,000 for 1 month (10 buses) and ₹50,000 for 2 months.
+ * Completely independent from Main Calculator.
  */
 export function calculateCustomPrice(
   buses: number,
@@ -106,62 +169,26 @@ export function calculateCustomPrice(
 ): CustomPricingResult {
   const b = Math.max(1, Math.min(10, Math.round(buses)));
   const d = Math.max(1, Math.round(days));
-  const s = Math.max(1, Math.round(videoDurationSeconds));
+  const s = Math.max(MIN_AD_DURATION_SECONDS, Math.round(videoDurationSeconds)); // Min 10s
 
-  // 1. Daily Base Price per bus: Video Duration × ₹5 (₹50 for 10s, ₹150 for 30s)
-  const dailyBasePricePerBus = s * DAILY_BASE_RATE_PER_SECOND;
+  // 1. Daily rate for selected duration
+  const dailyBasePricePerBus = getDailyPricePerBus(s);
+  const durationMultiplier = dailyBasePricePerBus / 175;
 
-  // 2. Video Duration Scaling (relative to 10s base milestone)
-  const durationMultiplier = s / 10;
-  const interpolated10SecPrice = getInterpolated10SecPrice(d);
+  // 2. 30s base price per bus for given days
+  const price30s = get30sCustomPerBusPrice(d);
 
-  // 3. Package Price Calculation
-  let totalPrice: number;
-  let standardPrice: number;
+  // 3. Proportional price per bus and total price
+  const rawPricePerBus = price30s * durationMultiplier;
+  const finalPerBusPrice = Math.round(rawPricePerBus / 5) * 5;
+  const totalPrice = Math.round((finalPerBusPrice * b) / 5) * 5;
 
-  if (d % 30 === 0 && d <= 360) {
-    // Exact month milestones (30 days = 1 month, 60 days = 2 months, etc.)
-    const months = Math.floor(d / 30);
-    const stdMonthCalc = calculatePrice(b, months, s);
-    totalPrice = stdMonthCalc.packagePrice;
-    standardPrice = stdMonthCalc.standardPrice;
-  } else if (d > 30) {
-    // Intermediate days between monthly milestones (e.g. 45 days, 75 days)
-    const lowerMonth = Math.floor(d / 30);
-    const upperMonth = lowerMonth + 1;
-    const lowerDays = lowerMonth * 30;
-    const upperDays = upperMonth * 30;
-
-    const lowerCalc = calculatePrice(b, Math.min(12, lowerMonth), s);
-    const upperCalc = calculatePrice(b, Math.min(12, upperMonth), s);
-
-    const fraction = (d - lowerDays) / (upperDays - lowerDays);
-    const rawTotal = lowerCalc.packagePrice + fraction * (upperCalc.packagePrice - lowerCalc.packagePrice);
-    totalPrice = Math.round(rawTotal / 5) * 5;
-
-    const rawStd = lowerCalc.standardPrice + fraction * (upperCalc.standardPrice - lowerCalc.standardPrice);
-    standardPrice = Math.round(rawStd);
-  } else {
-    // Days 1..29 below 1 month: follow previous milestone & interpolation pricing
-    const fleetRatio = (ONE_MONTH_PACKAGE_PRICES[b] ?? (2250 * b)) / (ONE_MONTH_PACKAGE_PRICES[1] * b);
-    if (d === 30) {
-      totalPrice = calculatePrice(b, 1, s).packagePrice;
-    } else {
-      const rawTotal = interpolated10SecPrice * durationMultiplier * b * fleetRatio;
-      totalPrice = Math.round(rawTotal / 5) * 5;
-    }
-
-    // Standard comparison price for upto 1 month:
-    // Daily base rate: (s * 5) * d * b, capped at the approved 30-day standard tariff (₹25,000 for 10 buses)
-    const unconstrainedStd = dailyBasePricePerBus * d * b;
-    const maxMonthlyStd = calculatePrice(b, 1, s).standardPrice;
-    standardPrice = Math.min(maxMonthlyStd, unconstrainedStd);
-  }
-
-  // 4. Effective Unit Economics
-  const finalPerBusPrice = Math.round(totalPrice / b);
+  // 4. Undiscounted standard comparison price (daily rate without duration discounts)
+  const standardPrice = Math.round((dailyBasePricePerBus * d * b) / 5) * 5;
   const savings = Math.max(0, standardPrice - totalPrice);
   const savingsPercentage = standardPrice > 0 ? (savings / standardPrice) * 100 : 0;
+
+  // 5. Unit Economics
   const pricePerBusCampaign = finalPerBusPrice;
   const pricePerBusDay = totalPrice / (b * d);
   const pricePerSecondBusDay = pricePerBusDay / s;
@@ -174,10 +201,11 @@ export function calculateCustomPrice(
     standardPrice,
     finalPerBusPrice,
     totalPrice,
+    packagePrice: totalPrice,
     savings,
     savingsPercentage,
     durationMultiplier,
-    interpolated10SecPrice,
+    interpolated10SecPrice: Math.round((price30s * (100 / 175)) / 5) * 5,
     pricePerBusCampaign,
     pricePerBusDay,
     pricePerSecondBusDay,

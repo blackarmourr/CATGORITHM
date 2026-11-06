@@ -23,9 +23,16 @@ interface CalculatorStore {
   selectedCampaign: Campaign
   pricing: PricingResult
   isCustomEndDate: boolean
+  isFestivalPricing: boolean
+  manualPriceOverride: number | null
+  manualDiscount: number
+
   setCampaign: (campaign: Campaign) => void
   setConfig: (updates: Partial<CampaignConfig>) => void
   setIsCustomEndDate: (val: boolean) => void
+  setFestivalPricing: (val: boolean) => void
+  setManualPriceOverride: (val: number | null) => void
+  setManualDiscount: (val: number) => void
   reset: () => void
 }
 
@@ -44,11 +51,23 @@ const DEFAULT_CONFIG: CampaignConfig = {
   endDate: initialEndDate,
 }
 
-export const useCalculatorStore = create<CalculatorStore>((set) => ({
+export const useCalculatorStore = create<CalculatorStore>((set, get) => ({
   config: DEFAULT_CONFIG,
   selectedCampaign: initialCampaign,
-  pricing: calculatePrice(DEFAULT_CONFIG.buses, DEFAULT_CONFIG.months, DEFAULT_CONFIG.videoDurationSeconds),
   isCustomEndDate: false,
+  isFestivalPricing: false,
+  manualPriceOverride: null,
+  manualDiscount: 0,
+  pricing: calculatePrice(
+    DEFAULT_CONFIG.buses,
+    DEFAULT_CONFIG.months,
+    DEFAULT_CONFIG.videoDurationSeconds,
+    {
+      isFestivalPricing: false,
+      manualPriceOverride: null,
+      manualDiscount: 0,
+    }
+  ),
 
   setCampaign: (campaign: Campaign) =>
     set((state) => {
@@ -66,7 +85,16 @@ export const useCalculatorStore = create<CalculatorStore>((set) => ({
         selectedCampaign: campaign,
         config: newConfig,
         isCustomEndDate: false,
-        pricing: calculatePrice(newConfig.buses, newConfig.months, newConfig.videoDurationSeconds),
+        pricing: calculatePrice(
+          newConfig.buses,
+          newConfig.months,
+          newConfig.videoDurationSeconds,
+          {
+            isFestivalPricing: state.isFestivalPricing,
+            manualPriceOverride: state.manualPriceOverride,
+            manualDiscount: state.manualDiscount,
+          }
+        ),
       }
     }),
 
@@ -88,7 +116,16 @@ export const useCalculatorStore = create<CalculatorStore>((set) => ({
       return {
         config: newConfig,
         isCustomEndDate: customEnd,
-        pricing: calculatePrice(newConfig.buses, newConfig.months, newConfig.videoDurationSeconds),
+        pricing: calculatePrice(
+          newConfig.buses,
+          newConfig.months,
+          newConfig.videoDurationSeconds,
+          {
+            isFestivalPricing: state.isFestivalPricing,
+            manualPriceOverride: state.manualPriceOverride,
+            manualDiscount: state.manualDiscount,
+          }
+        ),
       }
     }),
 
@@ -96,7 +133,6 @@ export const useCalculatorStore = create<CalculatorStore>((set) => ({
     set((state) => {
       const newConfig = { ...state.config }
       if (!val) {
-        // Reset end date to auto calculated date
         newConfig.endDate = computeAutoEndDate(newConfig.startDate, newConfig.months)
       }
       return {
@@ -105,11 +141,68 @@ export const useCalculatorStore = create<CalculatorStore>((set) => ({
       }
     }),
 
+  setFestivalPricing: (val) =>
+    set((state) => ({
+      isFestivalPricing: val,
+      pricing: calculatePrice(
+        state.config.buses,
+        state.config.months,
+        state.config.videoDurationSeconds,
+        {
+          isFestivalPricing: val,
+          manualPriceOverride: state.manualPriceOverride,
+          manualDiscount: state.manualDiscount,
+        }
+      ),
+    })),
+
+  setManualPriceOverride: (val) =>
+    set((state) => ({
+      manualPriceOverride: val,
+      pricing: calculatePrice(
+        state.config.buses,
+        state.config.months,
+        state.config.videoDurationSeconds,
+        {
+          isFestivalPricing: state.isFestivalPricing,
+          manualPriceOverride: val,
+          manualDiscount: state.manualDiscount,
+        }
+      ),
+    })),
+
+  setManualDiscount: (val) =>
+    set((state) => ({
+      manualDiscount: val,
+      pricing: calculatePrice(
+        state.config.buses,
+        state.config.months,
+        state.config.videoDurationSeconds,
+        {
+          isFestivalPricing: state.isFestivalPricing,
+          manualPriceOverride: state.manualPriceOverride,
+          manualDiscount: val,
+        }
+      ),
+    })),
+
   reset: () =>
     set({
       config: DEFAULT_CONFIG,
       selectedCampaign: initialCampaign,
       isCustomEndDate: false,
-      pricing: calculatePrice(DEFAULT_CONFIG.buses, DEFAULT_CONFIG.months, DEFAULT_CONFIG.videoDurationSeconds),
+      isFestivalPricing: false,
+      manualPriceOverride: null,
+      manualDiscount: 0,
+      pricing: calculatePrice(
+        DEFAULT_CONFIG.buses,
+        DEFAULT_CONFIG.months,
+        DEFAULT_CONFIG.videoDurationSeconds,
+        {
+          isFestivalPricing: false,
+          manualPriceOverride: null,
+          manualDiscount: 0,
+        }
+      ),
     }),
 }))
