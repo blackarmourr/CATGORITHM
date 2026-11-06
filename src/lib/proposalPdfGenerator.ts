@@ -9,9 +9,9 @@
 //   * Title: 20 pt bold
 //   * Subheadings: 16 pt bold
 //   * Descriptions & Intros & "Prepared by": 14.5 pt normal
-//   * Bullet Points: 12.8 pt normal
+//   * Bullet Points: 14.5 pt normal (strictly matching description font size across all pages)
 //   * Contact section: 14.5 pt normal (strictly matching description font size)
-// - Generous spacing between the end of description of one subheading and the start of the next
+// - Consistent slightly reduced spacing between the end of description/bullets of one subheading and the start of the next
 // - Distinct, comfortable paragraph spacing between Paragraph 2 and Paragraph 3 in "Our Commitment"
 // - Studio Shodwe gold (#d6c26e) & dark grey (#333132) divider lines
 // - 7 campaign deliverables & 7 monitoring points
@@ -20,8 +20,7 @@
 // - Single/Multiple comparative investment tables (NO Route Coverage, NO Estimated Airplay, NO GST mentions)
 // - Intelligent Page Flow:
 //   * Mode 'none': Strictly 2 pages (Deliverables, Monitoring, Commitment on Page 2)
-//   * Mode 'single' & 'multiple' (up to 4 options): Table sits on Page 2, Commitment on Page 3
-//   * Mode 'multiple' (> 4 options): Deliverables & Monitoring on Page 2, Table & Commitment on Page 3
+//   * Mode 'single' & 'multiple' (all option counts): Deliverables, Monitoring & Table on Page 2, Commitment on Page 3
 // - Dual/Triple page footers at 275.5mm
 // ============================================================
 
@@ -47,7 +46,10 @@ const SLATE_DARK: [number, number, number] = [15, 23, 42];     // #0f172a (Headi
 const TITLE_FONT_SIZE = 20.0;       // 20 pt bold for centered title block
 const SUBHEADING_FONT_SIZE = 16.0;  // 16 pt bold for ALL section subheadings (Pages 1, 2 & 3)
 const BODY_FONT_SIZE = 14.5;        // 14.5 pt normal for ALL descriptions/intros/Prepared by/Contacts (Pages 1, 2 & 3)
-const BULLET_FONT_SIZE = 12.8;      // 12.8 pt normal for ALL bullet points (Pages 1 & 2)
+const BULLET_FONT_SIZE = 14.5;      // Exactly 14.5 pt normal (strictly matching description font size across Pages 1 & 2)
+
+// Consistent inter-section spacing between end of description/bullets of one subheading and start of the next
+const SUBHEADING_SECTION_GAP = 14.0; // Consistently slightly reduced across all pages
 
 function formatPDFINR(amount: number): string {
   const formatted = Math.abs(amount).toLocaleString('en-IN');
@@ -257,7 +259,7 @@ function renderPackageTable(
       investRow.push(formatPDFINR(pPrice));
     });
 
-    const particularWidth = pkgs.length >= 5 ? 34 : (pkgs.length === 4 ? 38 : 44);
+    const particularWidth = pkgs.length >= 6 ? 32 : (pkgs.length === 5 ? 34 : (pkgs.length === 4 ? 38 : 44));
     const colStyles: Record<number, any> = {
       0: { fontStyle: 'bold', halign: 'left', cellWidth: particularWidth },
     };
@@ -265,8 +267,8 @@ function renderPackageTable(
       colStyles[c] = { halign: 'center' };
     }
 
-    const tableFontSize = pkgs.length >= 5 ? 8.2 : (pkgs.length === 4 ? 9.0 : 10.0);
-    const cellPad = pkgs.length >= 5 ? 2.0 : 2.8;
+    const tableFontSize = pkgs.length >= 6 ? 7.6 : (pkgs.length === 5 ? 8.2 : (pkgs.length === 4 ? 9.0 : 10.0));
+    const cellPad = pkgs.length >= 6 ? 1.6 : (pkgs.length >= 5 ? 2.0 : 2.8);
 
     runAutoTable(doc, {
       startY: y,
@@ -375,8 +377,8 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   const oppText = data.objectiveP1 || "Catgorithm offers digital bus screen advertising across Kollam, helping businesses reach local audiences through strategically placed displays inside private buses. Our platform builds brand visibility, recall and awareness through repeated exposure during everyday commutes.";
   doc.text(oppText, MARGIN_LEFT, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.42 });
   const oppLines = doc.splitTextToSize(oppText, PRINTABLE_W);
-  // Spacing between the end of the description of THE OPPORTUNITY and starting of OUR ADVERTISING NETWORK
-  y += (oppLines.length - 1) * 7.25 + 17.5;
+  // Consistent slightly reduced spacing between end of description and starting of next subheading
+  y += (oppLines.length - 1) * 7.25 + SUBHEADING_SECTION_GAP;
 
   // 5. Section 2: OUR ADVERTISING NETWORK
   doc.setFont('helvetica', 'bold');
@@ -392,8 +394,8 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   doc.text(netText, MARGIN_LEFT, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.42 });
   const netLines = doc.splitTextToSize(netText, PRINTABLE_W);
   
-  // Advance to end of paragraph text + ADD COMFORTABLE SPACING BEFORE BULLETS
-  y += (netLines.length - 1) * 7.25 + 12.0;
+  // Advance to end of paragraph text + spacing before bullets
+  y += (netLines.length - 1) * 7.25 + 11.0;
 
   const networkBullets: [string, string][] = [
     ['7 Advertising Routes', 'Coverage across key corridors in Kollam.'],
@@ -404,20 +406,21 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   ];
 
   networkBullets.forEach(([title, desc], idx) => {
-    // Bullet Dot
+    // Bullet Dot optically centered with 14.5 pt text
     doc.setFillColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
-    doc.circle(MARGIN_LEFT + 2.0, y - 1.2, 0.95, 'F');
+    doc.circle(MARGIN_LEFT + 2.0, y - 1.5, 0.95, 'F');
 
-    // Title in bold
+    // Title in bold (14.5 pt, strictly matching description font size)
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(BULLET_FONT_SIZE); // 12.8 pt
+    doc.setFontSize(BULLET_FONT_SIZE); // 14.5 pt
     doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
     const titleStr = title + ' : ';
     doc.text(titleStr, MARGIN_LEFT + 6.0, y);
     const tw = doc.getTextWidth(titleStr);
 
-    // Desc in normal
+    // Desc in normal (14.5 pt, strictly matching description font size)
     doc.setFont('helvetica', 'normal');
+    doc.setFontSize(BULLET_FONT_SIZE); // 14.5 pt
     doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
 
     const fullDescText = desc;
@@ -427,19 +430,20 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
     if (descLines.length === 1) {
       doc.text(fullDescText, MARGIN_LEFT + 6.0 + tw + 1.5, y);
     } else {
-      doc.text(descLines[0], MARGIN_LEFT + 6.0 + tw + 1.5, y);
-      y += 5.8;
-      doc.text(descLines[1], MARGIN_LEFT + 6.0 + tw + 1.5, y);
+      descLines.forEach((line: string, lIdx: number) => {
+        if (lIdx > 0) y += 6.5;
+        doc.text(line, MARGIN_LEFT + 6.0 + tw + 1.5, y);
+      });
     }
 
     if (idx < networkBullets.length - 1) {
-      y += 8.8;
+      y += 8.2;
     }
   });
 
   // 6. Section 3: WHY CATGORITHM?
-  // Spacing between the end of bullet points and starting of WHY CATGORITHM?
-  y += 17.5;
+  // Consistent slightly reduced spacing between end of bullets and starting of WHY CATGORITHM?
+  y += SUBHEADING_SECTION_GAP;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(SUBHEADING_FONT_SIZE); // 16 pt bold
   doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
@@ -456,20 +460,14 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   drawFooter(doc, data.contactEmail, data.website);
 
   // ==========================================
-  // PAGE 2: DELIVERABLES, MONITORING & TABLE / COMMITMENT
+  // PAGE 2: DELIVERABLES, MONITORING & PROPOSED CAMPAIGN OPTIONS
   // ==========================================
   doc.addPage();
 
   const hasPackages = mode === 'single' || (mode === 'multiple' && data.multiplePackages && data.multiplePackages.length > 0);
-  const packageCount = mode === 'single' ? 1 : (data.multiplePackages?.length || 0);
 
-  // User rule: Table fits on Page 2 for up to 4 options (including Single & Three Package).
-  // If more than 4 options are selected, Table moves to Page 3.
-  const tableOnPage2 = hasPackages && packageCount <= 4;
-  const tableOnPage3 = hasPackages && packageCount > 4;
-
-  // Bullet step: slightly tighter (6.6mm) when table or commitment shares Page 2, more spacious (7.8mm) otherwise
-  const P2_BULLET_STEP = tableOnPage3 ? 7.8 : 6.6;
+  // Bullet step: comfortable 6.8mm spacing between 14.5 pt bullet items
+  const P2_BULLET_STEP = 6.8;
   y = 22.0;
 
   // 1. CAMPAIGN DELIVERABLES
@@ -496,10 +494,11 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   ];
 
   deliverables.forEach((d, idx) => {
+    // Bullet Dot optically centered with 14.5 pt text
     doc.setFillColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
-    doc.circle(MARGIN_LEFT + 2.0, y - 1.2, 0.95, 'F');
+    doc.circle(MARGIN_LEFT + 2.0, y - 1.5, 0.95, 'F');
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(BULLET_FONT_SIZE); // Exact same 12.8 pt as Page 1!
+    doc.setFontSize(BULLET_FONT_SIZE); // Exactly 14.5 pt (matching description font size!)
     doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
     doc.text(d, MARGIN_LEFT + 6.0, y);
     if (idx < deliverables.length - 1) {
@@ -508,8 +507,8 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   });
 
   // 2. CAMPAIGN MONITORING
-  // Increased spacing between end of Deliverables and CAMPAIGN MONITORING
-  y += 16.5;
+  // Consistent slightly reduced spacing between end of Deliverables and CAMPAIGN MONITORING
+  y += SUBHEADING_SECTION_GAP;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(SUBHEADING_FONT_SIZE); // Exact 16 pt bold
   doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
@@ -533,10 +532,11 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   ];
 
   monitoringItems.forEach((m, idx) => {
+    // Bullet Dot optically centered with 14.5 pt text
     doc.setFillColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
-    doc.circle(MARGIN_LEFT + 2.0, y - 1.2, 0.95, 'F');
+    doc.circle(MARGIN_LEFT + 2.0, y - 1.5, 0.95, 'F');
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(BULLET_FONT_SIZE); // Exact same 12.8 pt as Page 1!
+    doc.setFontSize(BULLET_FONT_SIZE); // Exactly 14.5 pt (matching description font size!)
     doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
     doc.text(m, MARGIN_LEFT + 6.0, y);
     if (idx < monitoringItems.length - 1) {
@@ -545,37 +545,28 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   });
 
   // ==========================================================
-  // PAGE 2 & PAGE 3 ROUTING ACCORDING TO PACKAGE OPTIONS COUNT
+  // PAGE 2 & PAGE 3 ROUTING:
+  // - Mode 'none': Strictly 2 pages (Deliverables, Monitoring, Commitment on Page 2)
+  // - Single or Multiple Packages (no matter how many options):
+  //   * Proposed campaign options table sits on Page 2 itself
+  //   * OUR COMMITMENT is placed on the next page (Page 3)
   // ==========================================================
   if (!hasPackages) {
     // Mode A: No Package -> Everything fits comfortably on 2 pages
-    // Increased spacing before OUR COMMITMENT
-    y += 16.0;
+    y += SUBHEADING_SECTION_GAP;
     renderCommitment(doc, y, clientNameEntered, data.contactEmail, data.website);
     drawFooter(doc, data.contactEmail, data.website);
 
-  } else if (tableOnPage2) {
-    // Mode B: Table fits on Page 2 for up to 4 options (Single / 2 / 3 / 4 Options)
-    // Increased spacing before table subheading
-    y += 16.5;
+  } else {
+    // Mode B: Single Package or Multiple Packages (all option counts)
+    // Table is placed on Page 2 itself!
+    y += SUBHEADING_SECTION_GAP;
     renderPackageTable(doc, mode, data, y);
     drawFooter(doc, data.contactEmail, data.website);
 
     // PAGE 3: OUR COMMITMENT (Spacious, uncrowded layout with 14.5 pt contacts)
     doc.addPage();
     renderCommitment(doc, 26.0, clientNameEntered, data.contactEmail, data.website);
-    drawFooter(doc, data.contactEmail, data.website);
-
-  } else {
-    // Mode C: More than 4 options -> Table moves to Page 3 along with Commitment
-    drawFooter(doc, data.contactEmail, data.website);
-
-    // PAGE 3: TABLE + OUR COMMITMENT
-    doc.addPage();
-    const tableEndY = renderPackageTable(doc, mode, data, 24.0);
-    // Increased spacing between end of table and OUR COMMITMENT
-    const commitmentStartY = tableEndY + 16.5;
-    renderCommitment(doc, commitmentStartY, clientNameEntered, data.contactEmail, data.website);
     drawFooter(doc, data.contactEmail, data.website);
   }
 
