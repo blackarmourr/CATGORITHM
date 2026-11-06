@@ -27,7 +27,8 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 const runAutoTable: any = (autoTable as any).default || autoTable;
-import type { ProposalData } from '../types/proposal';
+import type { ProposalData, ProposalPackageOption } from '../types/proposal';
+import { calculateCustomPrice } from './customPricingEngine.ts';
 import { PROPOSAL_LOGO_BASE64 } from './proposalLogoBase64.ts';
 import { ICON_PHONE_BASE64, ICON_MAIL_BASE64, ICON_GLOBE_BASE64 } from './proposalIconsBase64.ts';
 
@@ -176,6 +177,35 @@ function renderCommitment(
 }
 
 /**
+ * Resolves commercial pricing metrics (Actual standard tariff, discount rate, final price)
+ * for any single or multiple comparative option in the proposal table.
+ */
+function getPackagePricingMetrics(pkg: ProposalPackageOption) {
+  const b = pkg.buses || 1;
+  const d = pkg.days || 30;
+  const s = pkg.videoDurationSeconds || 30;
+  const calc = calculateCustomPrice(b, d, s);
+
+  const finalPrice = pkg.customPriceOverride !== undefined
+    ? pkg.customPriceOverride
+    : (pkg.calculatedPrice !== undefined ? pkg.calculatedPrice : calc.totalPrice);
+
+  const standardPrice = pkg.standardPrice !== undefined ? pkg.standardPrice : calc.standardPrice;
+  const savings = Math.max(0, standardPrice - finalPrice);
+  const discountRate = pkg.discountRate !== undefined
+    ? pkg.discountRate
+    : (standardPrice > 0 ? Math.round((savings / standardPrice) * 100) : 0);
+
+  return {
+    finalPrice,
+    standardPrice,
+    discountRate,
+    savings,
+    dailyPlays: pkg.dailyPlaysPerBus || '40–50 Plays / Day',
+  };
+}
+
+/**
  * Renders the proposed campaign investment table (Single or Multiple options).
  * Returns the final bottom Y coordinate of the rendered table.
  */
@@ -189,13 +219,13 @@ function renderPackageTable(
 
   if (mode === 'single' && data.singlePackage) {
     const pkg = data.singlePackage;
+    const metrics = getPackagePricingMetrics(pkg);
+
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(SUBHEADING_FONT_SIZE); // Exact 16 pt bold
     doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
     doc.text('PROPOSED CAMPAIGN INVESTMENT', MARGIN_LEFT, y);
     y += 7.5;
-
-    const finalPrice = pkg.customPriceOverride !== undefined ? pkg.customPriceOverride : pkg.calculatedPrice;
 
     runAutoTable(doc, {
       startY: y,
@@ -206,13 +236,16 @@ function renderPackageTable(
         ['Fleet Allocation', `${pkg.buses} Private Buses`],
         ['Ad Duration', `${pkg.videoDurationSeconds} Seconds`],
         ['Campaign Period', `${pkg.durationLabel || `${pkg.days} Days`}`],
-        ['Campaign Investment', formatPDFINR(finalPrice)],
+        ['Daily Plays', '40–50 Plays / Day'],
+        ['Actual Price', formatPDFINR(metrics.standardPrice)],
+        ['Discount Rate', metrics.discountRate > 0 ? `${metrics.discountRate}% Off` : '0%'],
+        ['Campaign Investment', formatPDFINR(metrics.finalPrice)],
       ],
       theme: 'grid',
       styles: {
         font: 'helvetica',
-        fontSize: 10.5,
-        cellPadding: 3.0,
+        fontSize: 10.0,
+        cellPadding: 2.6,
         textColor: [31, 41, 55],
         lineColor: [229, 231, 235],
         lineWidth: 0.25,
@@ -222,15 +255,28 @@ function renderPackageTable(
         textColor: [255, 255, 255],
         fontStyle: 'bold',
         halign: 'left',
-        fontSize: 11.0,
+        fontSize: 10.5,
       },
       columnStyles: {
         0: { fontStyle: 'bold', cellWidth: 54 },
         1: { halign: 'left' },
       },
+      didParseCell: (cellData: any) => {
+        if (cellData.section === 'body') {
+          if (cellData.row.index === 6) { // Campaign Investment row
+            cellData.cell.styles.fontStyle = 'bold';
+            cellData.cell.styles.textColor = [15, 23, 42];
+          } else if (cellData.row.index === 5) { // Discount Rate row
+            cellData.cell.styles.textColor = [22, 101, 52]; // vibrant emerald green
+            cellData.cell.styles.fontStyle = 'bold';
+          } else if (cellData.row.index === 4) { // Actual Price row
+            cellData.cell.styles.textColor = [100, 116, 139]; // subtle slate-500
+          }
+        }
+      },
     });
     const finalY = (doc as any).lastAutoTable?.finalY;
-    return finalY || y + 34;
+    return finalY || y + 42;
 
   } else if (mode === 'multiple' && data.multiplePackages && data.multiplePackages.length > 0) {
     const pkgs = data.multiplePackages;
@@ -249,14 +295,20 @@ function renderPackageTable(
     const fleetRow = ['Fleet Allocation'];
     const durationRow = ['Ad Duration'];
     const periodRow = ['Campaign Period'];
+    const playsRow = ['Daily Plays'];
+    const actualPriceRow = ['Actual Price'];
+    const discountRow = ['Discount Rate'];
     const investRow = ['Campaign Investment'];
 
     pkgs.forEach(p => {
+      const metrics = getPackagePricingMetrics(p);
       fleetRow.push(`${p.buses} Buses`);
       durationRow.push(isMany ? `${p.videoDurationSeconds}s` : `${p.videoDurationSeconds} Seconds`);
       periodRow.push(p.durationLabel || `${p.days} Days`);
-      const pPrice = p.customPriceOverride !== undefined ? p.customPriceOverride : p.calculatedPrice;
-      investRow.push(formatPDFINR(pPrice));
+      playsRow.push(isMany ? '40–50 / Day' : '40–50 Plays / Day');
+      actualPriceRow.push(formatPDFINR(metrics.standardPrice));
+      discountRow.push(metrics.discountRate > 0 ? `${metrics.discountRate}% Off` : '0%');
+      investRow.push(formatPDFINR(metrics.finalPrice));
     });
 
     const particularWidth = pkgs.length >= 6 ? 32 : (pkgs.length === 5 ? 34 : (pkgs.length === 4 ? 38 : 44));
@@ -267,8 +319,8 @@ function renderPackageTable(
       colStyles[c] = { halign: 'center' };
     }
 
-    const tableFontSize = pkgs.length >= 6 ? 7.6 : (pkgs.length === 5 ? 8.2 : (pkgs.length === 4 ? 9.0 : 10.0));
-    const cellPad = pkgs.length >= 6 ? 1.6 : (pkgs.length >= 5 ? 2.0 : 2.8);
+    const tableFontSize = pkgs.length >= 6 ? 7.2 : (pkgs.length === 5 ? 7.8 : (pkgs.length === 4 ? 8.8 : 9.5));
+    const cellPad = pkgs.length >= 6 ? 1.4 : (pkgs.length >= 5 ? 1.8 : 2.4);
 
     runAutoTable(doc, {
       startY: y,
@@ -279,6 +331,9 @@ function renderPackageTable(
         fleetRow,
         durationRow,
         periodRow,
+        playsRow,
+        actualPriceRow,
+        discountRow,
         investRow,
       ],
       styles: {
@@ -297,9 +352,22 @@ function renderPackageTable(
         fontSize: tableFontSize + 0.5,
       },
       columnStyles: colStyles,
+      didParseCell: (cellData: any) => {
+        if (cellData.section === 'body') {
+          if (cellData.row.index === 6) { // Campaign Investment row
+            cellData.cell.styles.fontStyle = 'bold';
+            cellData.cell.styles.textColor = [15, 23, 42];
+          } else if (cellData.row.index === 5) { // Discount Rate row
+            cellData.cell.styles.textColor = [22, 101, 52]; // vibrant emerald green
+            cellData.cell.styles.fontStyle = 'bold';
+          } else if (cellData.row.index === 4) { // Actual Price row
+            cellData.cell.styles.textColor = [100, 116, 139]; // subtle slate-500
+          }
+        }
+      },
     });
     const finalY = (doc as any).lastAutoTable?.finalY;
-    return finalY || y + 34;
+    return finalY || y + 42;
   }
 
   return y;

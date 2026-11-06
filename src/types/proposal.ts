@@ -32,6 +32,10 @@ export interface ProposalPackageOption {
   calculatedPrice: number;        // auto-calculated
   customPriceOverride?: number;   // manual override if negotiated
   isRecommended?: boolean;
+  standardPrice?: number;         // Actual undiscounted standard tariff
+  discountRate?: number;          // Discount percentage e.g. 20
+  savings?: number;               // Discount amount in INR
+  dailyPlaysPerBus?: string;      // e.g. "40–50 Plays / Day"
 }
 
 export interface ProposalData {

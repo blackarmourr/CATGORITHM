@@ -136,6 +136,16 @@ export default function ProposalPage() {
     return calculateCustomPrice(sBuses, sDays, sSeconds);
   }, [sBuses, sDays, sSeconds]);
 
+  const singleFinalPrice = useMemo(() => {
+    const override = singleCustomPrice ? parseInt(singleCustomPrice, 10) : undefined;
+    return !isNaN(override as any) && override !== undefined ? override : singleCalc.totalPrice;
+  }, [singleCustomPrice, singleCalc]);
+
+  const singleDiscountRate = useMemo(() => {
+    const savings = Math.max(0, singleCalc.standardPrice - singleFinalPrice);
+    return singleCalc.standardPrice > 0 ? Math.round((savings / singleCalc.standardPrice) * 100) : 0;
+  }, [singleCalc, singleFinalPrice]);
+
   const computedPackages = useMemo(() => {
     return packageList.map(item => {
       const b = typeof item.buses === 'number' && item.buses > 0 ? item.buses : 1;
@@ -144,11 +154,18 @@ export default function ProposalPage() {
       const calc = calculateCustomPrice(b, d, s);
       const override = item.priceOverride ? parseInt(item.priceOverride, 10) : undefined;
       const finalPrice = !isNaN(override as any) && override !== undefined ? override : calc.totalPrice;
+      const standardPrice = calc.standardPrice;
+      const savings = Math.max(0, standardPrice - finalPrice);
+      const discountRate = standardPrice > 0 ? Math.round((savings / standardPrice) * 100) : 0;
       return {
         ...item,
         buses: b,
         seconds: s,
         days: d,
+        standardPrice,
+        discountRate,
+        savings,
+        dailyPlaysPerBus: '40–50 Plays / Day',
         calculatedPrice: calc.totalPrice,
         customPriceOverride: isNaN(override as any) ? undefined : override,
         finalPrice,
@@ -171,6 +188,10 @@ export default function ProposalPage() {
     let singlePkg: ProposalPackageOption | undefined = undefined;
     if (packageMode === 'single') {
       const overrideVal = singleCustomPrice ? parseInt(singleCustomPrice, 10) : undefined;
+      const finalPrice = !isNaN(overrideVal as number) && overrideVal !== undefined ? overrideVal : singleCalc.totalPrice;
+      const standardPrice = singleCalc.standardPrice;
+      const savings = Math.max(0, standardPrice - finalPrice);
+      const discountRate = standardPrice > 0 ? Math.round((savings / standardPrice) * 100) : 0;
       singlePkg = {
         id: 'single',
         name: 'Selected Campaign Package',
@@ -181,6 +202,10 @@ export default function ProposalPage() {
         routesLabel: 'Selected High-Traffic Corridors',
         monthlyPlaysEstimate: `~${(sBuses * 45 * sDays).toLocaleString('en-IN')} Plays`,
         dashboardAccess: 'Full 24/7 Access',
+        standardPrice,
+        discountRate,
+        savings,
+        dailyPlaysPerBus: '40–50 Plays / Day',
         calculatedPrice: singleCalc.totalPrice,
         customPriceOverride: isNaN(overrideVal as number) ? undefined : overrideVal,
       };
@@ -198,6 +223,10 @@ export default function ProposalPage() {
         routesLabel: 'Selected High-Traffic Corridors',
         monthlyPlaysEstimate: `~${(p.buses * 45 * p.days).toLocaleString('en-IN')} Plays`,
         dashboardAccess: 'Full Access',
+        standardPrice: p.standardPrice,
+        discountRate: p.discountRate,
+        savings: p.savings,
+        dailyPlaysPerBus: '40–50 Plays / Day',
         calculatedPrice: p.calculatedPrice,
         customPriceOverride: p.customPriceOverride,
       }));
@@ -609,11 +638,19 @@ ${pkgDetails}
                   </div>
                 </div>
 
-                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between text-xs">
-                  <span className="text-gray-600 font-medium">Calculated Total Investment:</span>
-                  <span className="font-extrabold text-sm text-gray-900">
-                    {singleCustomPrice ? `₹${parseInt(singleCustomPrice, 10).toLocaleString('en-IN')}` : formatINR(singleCalc.totalPrice)}
-                  </span>
+                <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-1.5 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600 font-medium">Campaign Investment:</span>
+                    <span className="font-extrabold text-sm text-gray-900">
+                      {formatINR(singleFinalPrice)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1 border-t border-gray-200/60">
+                    <span>Actual Tariff: <span className="line-through">{formatINR(singleCalc.standardPrice)}</span></span>
+                    <span className="text-emerald-700 font-bold">
+                      {singleDiscountRate > 0 ? `${singleDiscountRate}% Off` : '0%'}
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
@@ -634,7 +671,7 @@ ${pkgDetails}
 
                 {packageList.map((pkg, idx) => {
                   const computed = computedPackages.find(p => p.id === pkg.id) || {
-                    buses: 1, seconds: 30, days: 30, calculatedPrice: 0, finalPrice: 0, durationLabel: '30 Days'
+                    buses: 1, seconds: 30, days: 30, calculatedPrice: 0, finalPrice: 0, durationLabel: '30 Days', standardPrice: 0, discountRate: 0, savings: 0, dailyPlaysPerBus: '40–50 Plays / Day'
                   };
                   return (
                     <div key={pkg.id} className="p-3 rounded-xl border border-gray-200 bg-white shadow-2xs space-y-2.5">
@@ -704,9 +741,14 @@ ${pkgDetails}
                       </div>
 
                       <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-gray-100">
-                        <span className="text-emerald-700 font-semibold">
-                          {computed.durationLabel}
-                        </span>
+                        <div className="space-y-0.5">
+                          <span className="text-emerald-700 font-semibold block">
+                            {computed.durationLabel} • 40–50 Plays/Day
+                          </span>
+                          <span className="text-[10px] text-gray-400 block">
+                            Actual: {formatINR(computed.standardPrice || 0)} {computed.discountRate ? `(${computed.discountRate}% Off)` : ''}
+                          </span>
+                        </div>
                         <div className="flex items-center gap-1.5">
                           <span className="text-gray-400 text-[10px]">Price (₹):</span>
                           <input
@@ -990,21 +1032,8 @@ ${pkgDetails}
                       </div>
                     </div>
                   )}
-                </div>
 
-                {/* Page 2 Footer */}
-                <div className="pt-3 border-t border-[#d6c26e]/80 flex items-center justify-between text-[9px] text-gray-600">
-                  <span>teamcatgorithm@gmail.com</span>
-                  <span>www.catgorithm.in</span>
-                </div>
-              </div>
-            )}
-
-            {/* ── PREVIEW PAGE 3 (Package Modes Only) ── */}
-            {activePreviewPage === 3 && packageMode !== 'none' && (
-              <div className="flex flex-col h-full justify-between pt-1">
-                <div className="space-y-3.5">
-                  {/* Proposed Investment Section (Single) */}
+                  {/* Proposed Investment Section (Single) on Page 2 */}
                   {packageMode === 'single' && (
                     <div className="space-y-1">
                       <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide">
@@ -1018,20 +1047,32 @@ ${pkgDetails}
                         <div className="p-2 space-y-1.5 text-gray-700 bg-white">
                           <div className="flex justify-between border-b border-gray-100 pb-1">
                             <span>Fleet Allocation:</span>
-                            <span className="font-semibold">{singleBuses} Private Buses (Commercial Displays)</span>
+                            <span className="font-semibold">{singleBuses} Private Buses</span>
                           </div>
                           <div className="flex justify-between border-b border-gray-100 pb-1">
                             <span>Video Ad Duration:</span>
-                            <span className="font-semibold">{singleSeconds}s Video with Audio</span>
+                            <span className="font-semibold">{singleSeconds} Seconds</span>
                           </div>
                           <div className="flex justify-between border-b border-gray-100 pb-1">
                             <span>Campaign Period:</span>
-                            <span className="font-semibold">{singleDays} Days</span>
+                            <span className="font-semibold">{formatDurationLabel(typeof singleDays === 'number' && singleDays > 0 ? singleDays : 30)}</span>
+                          </div>
+                          <div className="flex justify-between border-b border-gray-100 pb-1">
+                            <span>Daily Plays:</span>
+                            <span className="font-semibold">40–50 Plays / Day</span>
+                          </div>
+                          <div className="flex justify-between border-b border-gray-100 pb-1 text-gray-500">
+                            <span>Actual Price:</span>
+                            <span className="line-through">{formatINR(singleCalc.standardPrice)}</span>
+                          </div>
+                          <div className="flex justify-between border-b border-gray-100 pb-1 text-emerald-700 font-bold">
+                            <span>Discount Rate:</span>
+                            <span>{singleDiscountRate > 0 ? `${singleDiscountRate}% Off` : '0%'}</span>
                           </div>
                           <div className="flex justify-between text-slate-900 font-extrabold pt-1">
                             <span>Total Campaign Investment:</span>
-                            <span className="text-slate-900 text-xs">
-                              {singleCustomPrice ? `₹${parseInt(singleCustomPrice, 10).toLocaleString('en-IN')}` : formatINR(singleCalc.totalPrice)}
+                            <span className="text-slate-900 text-xs font-black">
+                              {formatINR(singleFinalPrice)}
                             </span>
                           </div>
                         </div>
@@ -1039,7 +1080,7 @@ ${pkgDetails}
                     </div>
                   )}
 
-                  {/* Proposed Investment Options (Multiple) */}
+                  {/* Proposed Investment Options (Multiple) on Page 2 */}
                   {packageMode === 'multiple' && (
                     <div className="space-y-1">
                       <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide">
@@ -1082,12 +1123,36 @@ ${pkgDetails}
                                 </td>
                               ))}
                             </tr>
+                            <tr>
+                              <td className="text-left px-2 py-1 font-semibold text-gray-900">Daily Plays:</td>
+                              {computedPackages.map((pkg) => (
+                                <td key={pkg.id} className="px-2 py-1 whitespace-nowrap">
+                                  40–50 / Day
+                                </td>
+                              ))}
+                            </tr>
+                            <tr className="text-gray-500">
+                              <td className="text-left px-2 py-1 font-semibold">Actual Price:</td>
+                              {computedPackages.map((pkg) => (
+                                <td key={pkg.id} className="px-2 py-1 whitespace-nowrap line-through text-gray-400">
+                                  {formatINR(pkg.standardPrice)}
+                                </td>
+                              ))}
+                            </tr>
+                            <tr className="text-emerald-700 font-bold bg-emerald-50/40">
+                              <td className="text-left px-2 py-1 font-bold">Discount Rate:</td>
+                              {computedPackages.map((pkg) => (
+                                <td key={pkg.id} className="px-2 py-1 whitespace-nowrap">
+                                  {pkg.discountRate > 0 ? `${pkg.discountRate}% Off` : '0%'}
+                                </td>
+                              ))}
+                            </tr>
                             <tr className="font-bold text-slate-900 bg-gray-50/60">
-                              <td className="text-left px-2 py-1.5">Investment:</td>
+                              <td className="text-left px-2 py-1.5 font-extrabold">Investment:</td>
                               {computedPackages.map((pkg) => {
                                 const price = pkg.customPriceOverride ?? pkg.calculatedPrice;
                                 return (
-                                  <td key={pkg.id} className="px-2 py-1.5 whitespace-nowrap text-[#a0354e]">
+                                  <td key={pkg.id} className="px-2 py-1.5 whitespace-nowrap text-[#a0354e] font-extrabold">
                                     {formatINR(price)}
                                   </td>
                                 );
@@ -1098,7 +1163,20 @@ ${pkgDetails}
                       </div>
                     </div>
                   )}
+                </div>
 
+                {/* Page 2 Footer */}
+                <div className="pt-3 border-t border-[#d6c26e]/80 flex items-center justify-between text-[9px] text-gray-600">
+                  <span>teamcatgorithm@gmail.com</span>
+                  <span>www.catgorithm.in</span>
+                </div>
+              </div>
+            )}
+
+            {/* ── PREVIEW PAGE 3 (Package Modes Only: Our Commitment) ── */}
+            {activePreviewPage === 3 && packageMode !== 'none' && (
+              <div className="flex flex-col h-full justify-between pt-1">
+                <div className="space-y-3.5">
                   {/* Our Commitment on Page 3 */}
                   <div className="space-y-1">
                     <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wide">
