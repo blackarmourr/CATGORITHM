@@ -1,6 +1,8 @@
 // ============================================================
 // CATGORITHM CUSTOM CAMPAIGN — PER-DAY ADVERTISING PRICING ENGINE
-// Independent per-day campaign pricing system.
+// Independent per-day campaign pricing system for short campaigns (< 30 days)
+// and seamlessly synchronized with the Main Calculator for all month-scale
+// durations (30 days = 1 Month, 60 days = 2 Months, 90 days = 3 Months, etc.).
 //
 // 1. Daily Pricing Table (Per Bus):
 //    10s: ₹100 | 20s: ₹140 | 30s: ₹175 | 40s: ₹215 | 50s: ₹250 | 60s: ₹290
@@ -23,6 +25,8 @@
 //    - For b buses: totalPrice = pricePerBus * b.
 //    - All final prices rounded to nearest multiple of ₹5 (no decimals).
 // ============================================================
+
+import { calculatePrice, roundToNearest5 } from './pricingEngine.ts';
 
 export const MIN_AD_DURATION_SECONDS = 10;
 export const DAILY_BASE_RATE_PER_SECOND = 175 / 30; // ₹5.833/sec (backward compatibility)
@@ -126,11 +130,19 @@ export function get30sCustomPerBusPrice(days: number): number {
     return 2250;
   }
 
-  // Beyond 30 days
-  const blocks30 = Math.floor(d / 30);
-  const remDays = d % 30;
-  const remPrice = remDays > 0 ? get30sCustomPerBusPrice(remDays) : 0;
-  return blocks30 * 2250 + remPrice;
+  // Beyond 30 days: Synchronized with 1-bus 30s rate from Main Calculator
+  const m1 = Math.min(12, Math.floor(d / 30));
+  const remDays = d - m1 * 30;
+  if (remDays === 0) {
+    return calculatePrice(1, m1, 30, { isFestivalPricing: false }).normalPrice;
+  }
+  if (m1 < 12) {
+    const p1 = calculatePrice(1, m1, 30, { isFestivalPricing: false }).normalPrice;
+    const p2 = calculatePrice(1, m1 + 1, 30, { isFestivalPricing: false }).normalPrice;
+    return roundToNearest5(p1 + (remDays / 30) * (p2 - p1));
+  }
+  const p12 = calculatePrice(1, 12, 30, { isFestivalPricing: false }).normalPrice;
+  return roundToNearest5(p12 + ((d - 360) / 30) * (p12 / 12));
 }
 
 /**
@@ -173,11 +185,19 @@ export function get30sCustomStandardPerBusPrice(days: number): number {
     return 2500; // Standard 1-month tariff
   }
 
-  // Beyond 30 days: ₹2,500 per month block + remainder
-  const blocks30 = Math.floor(d / 30);
-  const remDays = d % 30;
-  const remPrice = remDays > 0 ? get30sCustomStandardPerBusPrice(remDays) : 0;
-  return blocks30 * 2500 + remPrice;
+  // Beyond 30 days: Synchronized with 1-bus 30s actual tariff from Main Calculator (₹2,500/mo)
+  const m1 = Math.min(12, Math.floor(d / 30));
+  const remDays = d - m1 * 30;
+  if (remDays === 0) {
+    return calculatePrice(1, m1, 30, { isFestivalPricing: false }).actualPrice;
+  }
+  if (m1 < 12) {
+    const p1 = calculatePrice(1, m1, 30, { isFestivalPricing: false }).actualPrice;
+    const p2 = calculatePrice(1, m1 + 1, 30, { isFestivalPricing: false }).actualPrice;
+    return roundToNearest5(p1 + (remDays / 30) * (p2 - p1));
+  }
+  const p12 = calculatePrice(1, 12, 30, { isFestivalPricing: false }).actualPrice;
+  return roundToNearest5(p12 + ((d - 360) / 30) * (p12 / 12));
 }
 
 /**
@@ -234,7 +254,9 @@ export interface CustomPricingResult {
 
 /**
  * Main calculation function for the Custom Per-Day Campaign Pricing.
- * Completely independent from Main Calculator.
+ * For short campaigns (d < 30 days): Uses custom per-day pricing with fleet multipliers.
+ * For month-scale campaigns (d >= 30 days): Synchronizes 100% with the Main Calculator's
+ * normal selling prices and standard actual tariffs across all bus counts, durations, and months.
  */
 export function calculateCustomPrice(
   buses: number,
@@ -245,27 +267,59 @@ export function calculateCustomPrice(
   const d = Math.max(1, Math.round(days));
   const s = Math.max(MIN_AD_DURATION_SECONDS, Math.round(videoDurationSeconds)); // Min 10s
 
-  // 1. Daily rate for selected duration
   const dailyBasePricePerBus = getDailyPricePerBus(s);
-  const durationMultiplier = dailyBasePricePerBus / 175;
 
-  // 2. 30s base price per bus for given days
-  const price30s = get30sCustomPerBusPrice(d);
+  let totalPrice: number;
+  let standardPrice: number;
+  let durationMultiplier: number;
 
-  // 3. Total campaign price with fleet bulk discount
-  const fleetMultiplier = CUSTOM_FLEET_MULTIPLIER[b] ?? b;
-  const rawTotalPrice = price30s * fleetMultiplier * durationMultiplier;
-  const totalPrice = Math.round(rawTotalPrice / 5) * 5;
-  const finalPerBusPrice = Math.round((totalPrice / b) / 5) * 5;
+  if (d >= 30) {
+    // -------------------------------------------------------------
+    // Synchronize 100% with Main Calculator for all month-scale campaigns (d >= 30)
+    // 30 days = 1 Month, 60 days = 2 Months, 90 days = 3 Months, 180 days = 6 Months, etc.
+    // -------------------------------------------------------------
+    durationMultiplier = s / 30;
+    const m1 = Math.min(12, Math.floor(d / 30));
+    const remDays = d - m1 * 30;
 
-  // 4. Undiscounted standard comparison price (benchmarked to ₹2,500/mo tariff ceiling)
-  const standardPrice30s = get30sCustomStandardPerBusPrice(d);
-  const rawStandardPerBus = standardPrice30s * durationMultiplier;
-  const standardPrice = Math.round((rawStandardPerBus * b) / 5) * 5;
+    if (remDays === 0) {
+      const res = calculatePrice(b, m1, s, { isFestivalPricing: false });
+      totalPrice = res.normalPrice;
+      standardPrice = res.actualPrice;
+    } else if (m1 < 12) {
+      const m2 = m1 + 1;
+      const res1 = calculatePrice(b, m1, s, { isFestivalPricing: false });
+      const res2 = calculatePrice(b, m2, s, { isFestivalPricing: false });
+      const alpha = remDays / 30;
+      totalPrice = roundToNearest5(res1.normalPrice + alpha * (res2.normalPrice - res1.normalPrice));
+      standardPrice = roundToNearest5(res1.actualPrice + alpha * (res2.actualPrice - res1.actualPrice));
+    } else {
+      // Beyond 12 months (d > 360)
+      const res12 = calculatePrice(b, 12, s, { isFestivalPricing: false });
+      const extraDays = d - 360;
+      const monthlyNormal = res12.normalPrice / 12;
+      const monthlyActual = res12.actualPrice / 12;
+      totalPrice = roundToNearest5(res12.normalPrice + (extraDays / 30) * monthlyNormal);
+      standardPrice = roundToNearest5(res12.actualPrice + (extraDays / 30) * monthlyActual);
+    }
+  } else {
+    // Custom per-day short campaigns (1 to 29 days)
+    durationMultiplier = dailyBasePricePerBus / 175;
+    const price30s = get30sCustomPerBusPrice(d);
+    const fleetMultiplier = CUSTOM_FLEET_MULTIPLIER[b] ?? b;
+    const rawTotalPrice = price30s * fleetMultiplier * durationMultiplier;
+    totalPrice = roundToNearest5(rawTotalPrice);
+
+    const standardPrice30s = get30sCustomStandardPerBusPrice(d);
+    const rawStandardPerBus = standardPrice30s * durationMultiplier;
+    standardPrice = roundToNearest5(rawStandardPerBus * b);
+  }
+
+  const finalPerBusPrice = roundToNearest5(totalPrice / b);
   const savings = Math.max(0, standardPrice - totalPrice);
   const savingsPercentage = standardPrice > 0 ? (savings / standardPrice) * 100 : 0;
 
-  // 5. Unit Economics
+  // Unit Economics
   const pricePerBusCampaign = finalPerBusPrice;
   const pricePerBusDay = totalPrice / (b * d);
   const pricePerSecondBusDay = pricePerBusDay / s;
@@ -282,7 +336,7 @@ export function calculateCustomPrice(
     savings,
     savingsPercentage,
     durationMultiplier,
-    interpolated10SecPrice: Math.round((price30s * (100 / 175)) / 5) * 5,
+    interpolated10SecPrice: roundToNearest5(get30sCustomPerBusPrice(d) * (100 / 175)),
     pricePerBusCampaign,
     pricePerBusDay,
     pricePerSecondBusDay,

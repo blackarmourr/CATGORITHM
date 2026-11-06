@@ -79,6 +79,59 @@ const c30_10b = calculateCustomPrice(10, 30, 30);
 assert(c30_10b.totalPrice === 20000, '30 Days @ 10 buses: Exactly ₹20,000 (Matches standard calculator ₹20,000, not ₹22,500)', c30_10b.totalPrice);
 assert(c30_10b.standardPrice === 25000, '30 Days @ 10 buses: Standard tariff is ₹25,000', c30_10b.standardPrice);
 
+// Multi-month synchronization across both calculators (2, 3, 6, 12 Months)
+console.log('\n--- 2b. CUSTOM CALCULATOR: MULTI-MONTH SYNCHRONIZATION WITH MAIN CALCULATOR ---');
+// 60 Days (2 Months)
+const c60_10b = calculateCustomPrice(10, 60, 30);
+assert(c60_10b.totalPrice === 37500, '60 Days (2m) @ 10 buses, 30s: ₹37,500 (Matches Main Calculator)', c60_10b.totalPrice);
+assert(c60_10b.standardPrice === 50000, '60 Days (2m) @ 10 buses, 30s: Actual tariff is ₹50,000', c60_10b.standardPrice);
+
+const c60_1b = calculateCustomPrice(1, 60, 30);
+assert(c60_1b.totalPrice === 4250, '60 Days (2m) @ 1 bus, 30s: ₹4,250 (Matches Main Calculator)', c60_1b.totalPrice);
+
+const c60_5b = calculateCustomPrice(5, 60, 30);
+assert(c60_5b.totalPrice === 19500, '60 Days (2m) @ 5 buses, 30s: ₹19,500 (Matches Main Calculator)', c60_5b.totalPrice);
+
+// 90 Days (3 Months)
+const c90_10b = calculateCustomPrice(10, 90, 30);
+assert(c90_10b.totalPrice === 55500, '90 Days (3m) @ 10 buses, 30s: ₹55,500 (Matches Main Calculator)', c90_10b.totalPrice);
+assert(c90_10b.standardPrice === 75000, '90 Days (3m) @ 10 buses, 30s: Actual tariff is ₹75,000', c90_10b.standardPrice);
+
+const c90_1b = calculateCustomPrice(1, 90, 30);
+assert(c90_1b.totalPrice === 5550, '90 Days (3m) @ 1 bus, 30s: ₹5,550 (Matches Main Calculator)', c90_1b.totalPrice);
+
+const c90_5b = calculateCustomPrice(5, 90, 30);
+assert(c90_5b.totalPrice === 27750, '90 Days (3m) @ 5 buses, 30s: ₹27,750 (Matches Main Calculator)', c90_5b.totalPrice);
+
+// 180 Days (6 Months)
+const c180_10b = calculateCustomPrice(10, 180, 30);
+assert(c180_10b.totalPrice === 110000, '180 Days (6m) @ 10 buses, 30s: ₹1,10,000 (Matches Main Calculator)', c180_10b.totalPrice);
+assert(c180_10b.standardPrice === 150000, '180 Days (6m) @ 10 buses, 30s: Actual tariff is ₹1,50,000', c180_10b.standardPrice);
+
+const c180_1b = calculateCustomPrice(1, 180, 30);
+assert(c180_1b.totalPrice === 11000, '180 Days (6m) @ 1 bus, 30s: ₹11,000 (Matches Main Calculator)', c180_1b.totalPrice);
+
+// 360 Days (12 Months)
+const c360_10b = calculateCustomPrice(10, 360, 30);
+assert(c360_10b.totalPrice === 216000, '360 Days (12m) @ 10 buses, 30s: ₹2,16,000 (Matches Main Calculator)', c360_10b.totalPrice);
+assert(c360_10b.standardPrice === 300000, '360 Days (12m) @ 10 buses, 30s: Actual tariff is ₹3,00,000', c360_10b.standardPrice);
+
+const c360_1b = calculateCustomPrice(1, 360, 30);
+assert(c360_1b.totalPrice === 21600, '360 Days (12m) @ 1 bus, 30s: ₹21,600 (Matches Main Calculator)', c360_1b.totalPrice);
+
+const c360_5b = calculateCustomPrice(5, 360, 30);
+assert(c360_5b.totalPrice === 108000, '360 Days (12m) @ 5 buses, 30s: ₹1,08,000 (Matches Main Calculator)', c360_5b.totalPrice);
+
+// Duration variations sync (10s, 20s, 60s)
+const c60_10b_10s = calculateCustomPrice(10, 60, 10);
+assert(c60_10b_10s.totalPrice === 12500, '60 Days (2m) @ 10 buses, 10s: ₹12,500 (Matches Main Calculator)', c60_10b_10s.totalPrice);
+
+const c90_10b_20s = calculateCustomPrice(10, 90, 20);
+assert(c90_10b_20s.totalPrice === 37000, '90 Days (3m) @ 10 buses, 20s: ₹37,000 (Matches Main Calculator)', c90_10b_20s.totalPrice);
+
+const c180_5b_60s = calculateCustomPrice(5, 180, 60);
+assert(c180_5b_60s.totalPrice === 110000, '180 Days (6m) @ 5 buses, 60s: ₹1,10,000 (Matches Main Calculator)', c180_5b_60s.totalPrice);
+
 // -------------------------------------------------------------
 // 3. MAIN CALCULATOR – NORMAL PRICING (10 Buses, 30s)
 // -------------------------------------------------------------
