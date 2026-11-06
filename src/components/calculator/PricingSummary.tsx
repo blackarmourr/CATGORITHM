@@ -3,21 +3,19 @@ import { formatINR } from '../../lib/pricingEngine'
 import { AnimatedPrice } from '../ui'
 import { Link } from 'react-router-dom'
 import {
-  TrendingDown, Sparkles, CalendarRange, ArrowRight, Tag, Sliders, Check
+  TrendingDown, Sparkles, CalendarRange, ArrowRight, Sliders, Check
 } from 'lucide-react'
 
 export default function PricingSummary() {
   const pricing = useCalculatorStore((s) => s.pricing)
   const config = useCalculatorStore((s) => s.config)
   const selectedCampaign = useCalculatorStore((s) => s.selectedCampaign)
+  const isFestivalPricing = useCalculatorStore((s) => s.isFestivalPricing)
+  const setFestivalPricing = useCalculatorStore((s) => s.setFestivalPricing)
 
   const {
     actualPrice,
     normalPrice,
-    festivalPrice,
-    isEligibleForFestival,
-    isFestivalActive,
-    festivalOfferName,
     manualPriceOverride,
     manualDiscount,
     isManualPriceActive,
@@ -33,7 +31,6 @@ export default function PricingSummary() {
   } = pricing
 
   const hasSavings = savings > 0
-  const showFestival = isFestivalActive && isEligibleForFestival
 
   return (
     <div className="space-y-3">
@@ -44,38 +41,56 @@ export default function PricingSummary() {
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-slate-800/40 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 space-y-3.5">
-          {/* Header pill & Specs */}
-          <div className="flex flex-wrap items-center justify-between gap-1.5">
+          {/* Header row: Left pill + Right specs & Small Unobtrusive Toggle Switch */}
+          <div className="flex items-center justify-between gap-2">
             <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border flex items-center gap-1 text-accent/90 bg-accent/10 border-accent/20">
               <Sparkles size={11} className="text-accent" />
-              {selectedCampaign?.name ? `${selectedCampaign.name}` : 'Main Calculator'}
+              {selectedCampaign?.name ? `${selectedCampaign.name}` : 'Standard Campaign'}
             </span>
-            <span className="text-xs text-slate-300 font-medium">
-              {config.buses} {config.buses === 1 ? 'Bus' : 'Buses'} · {config.videoDurationSeconds}s Ad · {config.months} {config.months === 1 ? 'Month' : 'Months'}
-            </span>
+
+            <div className="flex items-center gap-2.5">
+              <span className="text-xs text-slate-300 font-medium">
+                {config.buses} {config.buses === 1 ? 'Bus' : 'Buses'} · {config.videoDurationSeconds}s Ad · {config.months} {config.months === 1 ? 'Month' : 'Months'}
+              </span>
+
+              {/* Small toggle button within standard campaign card at top right */}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isFestivalPricing}
+                onClick={() => setFestivalPricing(!isFestivalPricing)}
+                className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  isFestivalPricing ? 'bg-accent' : 'bg-slate-700'
+                }`}
+                title="Toggle festival promotional pricing (3m: ₹50K, 6m: ₹100K, 12m: ₹200K)"
+                aria-label="Toggle festival promotional pricing"
+              >
+                <span
+                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                    isFestivalPricing ? 'translate-x-4' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
           </div>
 
-          {/* Active Pricing State Badges */}
-          <div className="flex flex-wrap gap-1.5 text-[10px] font-bold">
-            {showFestival && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                <Tag size={10} />
-                Festival Offer Active {festivalOfferName ? `(${festivalOfferName})` : ''}
-              </span>
-            )}
-            {isManualPriceActive && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40">
-                <Sliders size={10} />
-                Manual Final Price: {formatINR(manualPriceOverride!)}
-              </span>
-            )}
-            {isManualDiscountActive && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                <Check size={10} />
-                Manual Discount: -{formatINR(manualDiscount)}
-              </span>
-            )}
-          </div>
+          {/* Active Pricing State Badges (Manual Overrides Only) */}
+          {(isManualPriceActive || isManualDiscountActive) && (
+            <div className="flex flex-wrap gap-1.5 text-[10px] font-bold">
+              {isManualPriceActive && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40">
+                  <Sliders size={10} />
+                  Manual Final Price: {formatINR(manualPriceOverride!)}
+                </span>
+              )}
+              {isManualDiscountActive && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  <Check size={10} />
+                  Manual Discount: -{formatINR(manualDiscount)}
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Main Hero Final Campaign Price */}
           <div>
@@ -91,7 +106,7 @@ export default function PricingSummary() {
             </div>
           </div>
 
-          {/* Three-Tier Price Breakdown Table */}
+          {/* Price Breakdown Table */}
           <div className="bg-slate-900/80 rounded-xl p-3 border border-slate-800 space-y-2 text-xs">
             {/* 1. Actual Price */}
             <div className="flex items-center justify-between text-slate-400">
@@ -101,26 +116,13 @@ export default function PricingSummary() {
               </span>
             </div>
 
-            {/* 2. Normal Selling Price */}
+            {/* 2. Selling Price */}
             <div className="flex items-center justify-between text-slate-300">
-              <span>Normal Selling Price:</span>
-              <span className={`tabular-nums font-bold ${showFestival || isManualPriceActive ? 'line-through text-slate-400' : 'text-white'}`}>
-                {formatINR(normalPrice)}
+              <span>Selling Price:</span>
+              <span className={`tabular-nums font-bold ${isManualPriceActive ? 'line-through text-slate-400' : 'text-white'}`}>
+                {formatINR(pricing.packagePrice)}
               </span>
             </div>
-
-            {/* 3. Festival Offer Price (When ON & eligible) */}
-            {showFestival && (
-              <div className="flex items-center justify-between text-amber-300 font-bold bg-amber-500/10 -mx-1.5 px-1.5 py-1 rounded-lg border border-amber-500/20">
-                <span className="flex items-center gap-1">
-                  <Sparkles size={11} className="text-amber-400" />
-                  Festival Offer Price:
-                </span>
-                <span className="tabular-nums font-black text-amber-200">
-                  {formatINR(festivalPrice)}
-                </span>
-              </div>
-            )}
 
             {/* Manual Discount Row (If active) */}
             {isManualDiscountActive && (

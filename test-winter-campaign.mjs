@@ -94,18 +94,48 @@ for (const [mStr, expVal] of Object.entries(expectedNormal)) {
 // 4. MAIN CALCULATOR – FESTIVAL SEASON PRICING
 // -------------------------------------------------------------
 console.log('\n--- 4. MAIN CALCULATOR: FESTIVAL SEASON PRICING ---');
-// 3 Months Primary Offer: ₹50,000
+// 1 Month: 1 Bus, 30s: ₹2,250 for both Normal and Festival (No festival discount)
+const m1_1b_norm = calculatePrice(1, 1, 30, { isFestivalPricing: false });
+const m1_1b_fest = calculatePrice(1, 1, 30, { isFestivalPricing: true });
+assert(m1_1b_norm.packagePrice === 2250, '1 Month, 1 Bus, 30s: Normal price is ₹2,250', m1_1b_norm.packagePrice);
+assert(m1_1b_fest.packagePrice === 2250, '1 Month, 1 Bus, 30s: Festival price is ₹2,250 (Identical, not ₹1,950)', m1_1b_fest.packagePrice);
+
+// 1 Month: 10 Buses, 30s: ₹20,000 for both Normal and Festival
+const m1_10b_fest = calculatePrice(10, 1, 30, { isFestivalPricing: true });
+assert(m1_10b_fest.packagePrice === 20000, '1 Month, 10 Buses, 30s: Price is ₹20,000 (both normal & festival)', m1_10b_fest.packagePrice);
+
+// 2 Months: 10 Buses, 30s: ₹37,500 for both Normal and Festival
+const m2_10b_norm = calculatePrice(10, 2, 30, { isFestivalPricing: false });
+const m2_10b_fest = calculatePrice(10, 2, 30, { isFestivalPricing: true });
+assert(m2_10b_norm.packagePrice === 37500, '2 Months, 10 Buses, 30s: Normal price is ₹37,500', m2_10b_norm.packagePrice);
+assert(m2_10b_fest.packagePrice === 37500, '2 Months, 10 Buses, 30s: Festival price is ₹37,500 (Identical)', m2_10b_fest.packagePrice);
+
+// 2 Months: 1 Bus, 30s: ₹4,250 for both Normal and Festival
+const m2_1b_fest = calculatePrice(1, 2, 30, { isFestivalPricing: true });
+assert(m2_1b_fest.packagePrice === 4250, '2 Months, 1 Bus, 30s: Price is ₹4,250 (both normal & festival)', m2_1b_fest.packagePrice);
+
+// 3 Months Primary Offer: ₹50,000 (Normal ₹55,500)
+const norm3m = calculatePrice(10, 3, 30, { isFestivalPricing: false });
 const fest3m = calculatePrice(10, 3, 30, { isFestivalPricing: true });
+assert(norm3m.normalPrice === 55500, '3 Months Normal Price is ₹55,500', norm3m.normalPrice);
 assert(fest3m.festivalPrice === 50000, '3 Months Festival Primary Offer is ₹50,000', fest3m.festivalPrice);
 assert(fest3m.finalPrice === 50000, '3 Months Final Price with Festival ON is ₹50,000', fest3m.finalPrice);
 
-// 6 Months Best Value Offer: ₹1,00,000
+// 6 Months Best Value Offer: ₹1,00,000 (Normal ₹1,10,000)
+const norm6m = calculatePrice(10, 6, 30, { isFestivalPricing: false });
 const fest6m = calculatePrice(10, 6, 30, { isFestivalPricing: true });
+assert(norm6m.normalPrice === 110000, '6 Months Normal Price is ₹1,10,000', norm6m.normalPrice);
 assert(fest6m.festivalPrice === 100000, '6 Months Festival Best Value Offer is ₹1,00,000', fest6m.festivalPrice);
 
-// 12 Months Maximum Savings Offer: ₹2,00,000
+// 12 Months Maximum Savings Offer: ₹2,00,000 (Normal ₹2,16,000)
+const norm12m = calculatePrice(10, 12, 30, { isFestivalPricing: false });
 const fest12m = calculatePrice(10, 12, 30, { isFestivalPricing: true });
+assert(norm12m.normalPrice === 216000, '12 Months Normal Price is ₹2,16,000', norm12m.normalPrice);
 assert(fest12m.festivalPrice === 200000, '12 Months Festival Maximum Savings Offer is ₹2,00,000', fest12m.festivalPrice);
+
+// 4 Months: Non-festival month retains normal price (₹73,800)
+const fest4m = calculatePrice(10, 4, 30, { isFestivalPricing: true });
+assert(fest4m.finalPrice === 73800, '4 Months with Festival ON retains normal price ₹73,800', fest4m.finalPrice);
 
 // Duration eligibility: < 20s must retain normal price
 const festShort = calculatePrice(10, 3, 15, { isFestivalPricing: true });

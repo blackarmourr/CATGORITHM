@@ -51,48 +51,53 @@ export const NORMAL_SELLING_PRICE_10_BUSES_30S: Record<number, number> = {
 // ------------------------------------------------------------
 // REFERENCE FESTIVAL SEASON PRICES (10 Buses, 30s Video Ad)
 // Active when Festival Toggle is ON and Duration >= 20s
+// Special promotional pricing exclusively for 3, 6, and 12 months.
+// 1 and 2 months retain exact same normal pricing.
 // ------------------------------------------------------------
 export const FESTIVAL_PRICE_10_BUSES_30S: Record<number, number> = {
-  1:  19500,  // Normal ₹20,000 -> Modest discount
-  2:  36500,  // Normal ₹37,500 -> Modest discount
+  1:  20000,  // Exact same as normal (no festival discount for 1 month)
+  2:  37500,  // Exact same as normal (no festival discount for 2 months)
   3:  50000,  // PRIMARY FESTIVAL OFFER (Normal ₹55,500 -> Save ₹5,500)
-  4:  72000,  // Normal ₹73,800 -> Modest discount
-  5:  89750,  // Normal ₹92,000 -> Modest discount
+  4:  73800,  // Normal selling price
+  5:  92000,  // Normal selling price
   6:  100000, // BEST VALUE FESTIVAL OFFER (Normal ₹1,10,000 -> Save ₹10,000)
-  7:  124800, // Normal ₹1,27,960 -> Modest discount
-  8:  142200, // Normal ₹1,45,760 -> Modest discount
-  9:  159400, // Normal ₹1,63,440 -> Modest discount
-  10: 176500, // Normal ₹1,81,000 -> Modest discount
-  11: 193600, // Normal ₹1,98,550 -> Modest discount
+  7:  127960, // Normal selling price
+  8:  145760, // Normal selling price
+  9:  163440, // Normal selling price
+  10: 181000, // Normal selling price
+  11: 198550, // Normal selling price
   12: 200000, // MAXIMUM SAVINGS FESTIVAL OFFER (Normal ₹2,16,000 -> Save ₹16,000)
 };
 
 // ------------------------------------------------------------
-// BACKWARD COMPATIBILITY TARIFF LOOKUPS
+// APPROVED 1-MONTH AND 2-MONTH TARIFF TABLES
+// Exact approved per-bus package tariffs for 1-month & 2-month campaigns.
+// 1 bus, 1 month, 30s = ₹2,250 (both normal and festival).
+// 10 buses, 2 months, 30s = ₹37,500 (both normal and festival).
 // ------------------------------------------------------------
 export const ONE_MONTH_PACKAGE_PRICES: Record<number, number> = {
-  1:  2000,
-  2:  4000,
-  3:  6000,
-  4:  8000,
-  5:  10000,
-  6:  12000,
-  7:  14000,
-  8:  16000,
-  9:  18000,
+  1:  2250,
+  2:  4350,
+  3:  6450,
+  4:  8500,
+  5:  10500,
+  6:  12500,
+  7:  14500,
+  8:  16500,
+  9:  18250,
   10: 20000,
 };
 
 export const TWO_MONTH_PACKAGE_PRICES: Record<number, number> = {
-  1:  3750,
-  2:  7500,
-  3:  11250,
-  4:  15000,
-  5:  18750,
-  6:  22500,
-  7:  26250,
-  8:  30000,
-  9:  33750,
+  1:  4250,
+  2:  8200,
+  3:  12000,
+  4:  15800,
+  5:  19500,
+  6:  23200,
+  7:  26800,
+  8:  30400,
+  9:  34000,
   10: 37500,
 };
 
@@ -248,22 +253,36 @@ export function calculatePrice(
   const actualPrice = roundToNearest5(rawActual);
 
   // 2. Normal Selling Price
-  const refNormal = NORMAL_SELLING_PRICE_10_BUSES_30S[m] ?? (216000 / 12 * m);
-  const rawNormal = refNormal * durationMultiplier * busMultiplier;
-  const normalPrice = roundToNearest5(rawNormal);
+  let normalPrice: number;
+  if (m === 1) {
+    // 1-month campaign uses approved exact tariff table (1 bus @ 30s = ₹2,250, 10 buses = ₹20,000)
+    const base30s = ONE_MONTH_PACKAGE_PRICES[b] ?? (20000 * busMultiplier);
+    normalPrice = roundToNearest5(base30s * durationMultiplier);
+  } else if (m === 2) {
+    // 2-month campaign uses approved exact tariff table (1 bus @ 30s = ₹4,250, 10 buses = ₹37,500)
+    const base30s = TWO_MONTH_PACKAGE_PRICES[b] ?? (37500 * busMultiplier);
+    normalPrice = roundToNearest5(base30s * durationMultiplier);
+  } else {
+    // 3–12 months: scaled from 10-bus 30s reference table
+    const refNormal = NORMAL_SELLING_PRICE_10_BUSES_30S[m] ?? ((216000 / 12) * m);
+    const rawNormal = refNormal * durationMultiplier * busMultiplier;
+    normalPrice = roundToNearest5(rawNormal);
+  }
 
   // 3. Festival Offer Price
-  const isEligibleForFestival = s >= 20; // Offer works for 20s and above; <20s retains normal price
+  // Festival discount applies strictly to 3, 6, and 12-month packages with ad duration >= 20s.
+  // 1-month and 2-month campaigns (and durations < 20s) maintain exact same normal pricing.
+  const isFestivalMonth = m === 3 || m === 6 || m === 12;
+  const isEligibleForFestival = s >= 20 && isFestivalMonth;
   let festivalPrice = normalPrice;
   let festivalOfferName: PricingResult['festivalOfferName'] = undefined;
 
   if (isEligibleForFestival) {
-    const refFestival = FESTIVAL_PRICE_10_BUSES_30S[m] ?? (200000 / 12 * m);
+    const refFestival = FESTIVAL_PRICE_10_BUSES_30S[m];
     festivalPrice = roundToNearest5(refFestival * durationMultiplier * busMultiplier);
     if (m === 3) festivalOfferName = 'Primary Offer';
     else if (m === 6) festivalOfferName = 'Best Value Offer';
     else if (m === 12) festivalOfferName = 'Maximum Savings Offer';
-    else festivalOfferName = 'Seasonal Offer';
   }
 
   // 4. Automatic base price selection
@@ -295,7 +314,7 @@ export function calculatePrice(
   const pricePerBusDay = finalPrice / (b * m * PRICING_DAYS_PER_MONTH);
   const pricePerSecondBusMonth = finalPrice / (b * m * s);
   const pricePerSecondBusCampaign = finalPrice / (b * s);
-  const oneMonthBasis30s = NORMAL_SELLING_PRICE_10_BUSES_30S[1] * busMultiplier;
+  const oneMonthBasis30s = ONE_MONTH_PACKAGE_PRICES[b] ?? 20000;
 
   return {
     buses: b,

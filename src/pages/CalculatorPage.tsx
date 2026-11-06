@@ -5,7 +5,7 @@ import BusSelector from '../components/calculator/BusSelector'
 import DurationSelector from '../components/calculator/DurationSelector'
 import MonthSelector from '../components/calculator/MonthSelector'
 import PricingSummary from '../components/calculator/PricingSummary'
-import FestivalAndManualPricingControls from '../components/calculator/FestivalAndManualPricingControls'
+import ManualPricingControls from '../components/calculator/ManualPricingControls'
 import QuotationForm from '../components/calculator/QuotationForm'
 import { PWAHeaderInstallButton } from '../components/PWAInstallPrompt'
 import { useCalculatorStore } from '../stores/calculatorStore'
@@ -170,17 +170,12 @@ Valid for 30 days. Contact: +91 97463 36175`
           <PricingSummary />
         </section>
 
-        {/* 2. Festival Season Pricing Toggle & Negotiation Overrides */}
-        <section aria-label="Festival Season & Manual Pricing">
-          <FestivalAndManualPricingControls />
-        </section>
-
-        {/* 3. Campaign Selection & Dates (Clean Dropdown Below Live Price) */}
+        {/* 2. Campaign Selection & Dates (Clean Dropdown Below Live Price) */}
         <section aria-label="Campaign Selection">
           <CampaignSelector />
         </section>
 
-        {/* 3. Interactive Selection Controls (Clean, Thumb-Friendly) */}
+        {/* 3. Interactive Fleet, Duration & Month Selection Controls */}
         <section className="bg-white rounded-2xl border border-gray-200 p-4 shadow-xs space-y-5">
           <BusSelector />
           <div className="border-t border-gray-100" />
@@ -189,7 +184,12 @@ Valid for 30 days. Contact: +91 97463 36175`
           <MonthSelector />
         </section>
 
-        {/* 4. Sales Action Suite (WhatsApp, PDF Quotation Generation, Pipeline Deal Logging) */}
+        {/* 4. Manual Price Override & Commercial Negotiation (Below Fleet & Duration) */}
+        <section aria-label="Manual Price Override">
+          <ManualPricingControls />
+        </section>
+
+        {/* 5. Sales Action Suite (WhatsApp, PDF Quotation Generation, Pipeline Deal Logging) */}
         <section aria-label="Sales Actions">
           <QuotationForm />
         </section>
