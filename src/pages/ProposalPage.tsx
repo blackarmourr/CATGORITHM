@@ -856,7 +856,7 @@ ${pkgDetails}
                       </li>
                       <li className="flex items-center gap-1.5 text-justify">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />
-                        <span><strong>Flexible Advertisement Duration :</strong> Video advertisements of up to 60 seconds.</span>
+                        <span><strong>Flexible Duration :</strong> Video advertisements of up to 60 seconds.</span>
                       </li>
                       <li className="flex items-center gap-1.5 text-justify">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#1f2937] flex-shrink-0" />

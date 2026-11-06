@@ -400,7 +400,7 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   const networkBullets: [string, string][] = [
     ['7 Advertising Routes', 'Coverage across key corridors in Kollam.'],
     ['32-inch Commercial Displays', 'HD digital screens with audio.'],
-    ['Flexible Advertisement Duration', 'Video advertisements of up to 60 seconds.'],
+    ['Flexible Duration', 'Video advertisements of up to 60 seconds.'],
     ['40–50 Daily Plays', 'Approximate daily advertisement plays per bus.'],
     ['24/7 Campaign Monitoring', 'Dedicated advertiser dashboard access.']
   ];
