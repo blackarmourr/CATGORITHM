@@ -57,22 +57,22 @@ export default function ManualPricingControls() {
         <div className="mt-3.5 pt-3.5 border-t border-gray-100 space-y-3.5 animate-fadeIn">
           {/* Control A: Manual Final Price */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
-                <span>Manual Final Price (₹)</span>
+            <div className="flex flex-wrap items-center justify-between gap-1 mb-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs font-bold text-gray-800">Manual Final Price (₹)</span>
                 {pricing.isManualPriceActive && (
-                  <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+                  <span className="text-[9.5px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded-full whitespace-nowrap">
                     Overrides Automatic Rate
                   </span>
                 )}
-              </label>
+              </div>
               {pricing.isManualPriceActive && (
                 <button
                   type="button"
                   onClick={() => setManualPriceOverride(null)}
-                  className="text-[11px] font-semibold text-red-600 hover:text-red-700 flex items-center gap-1 active:scale-95"
+                  className="text-[10.5px] font-bold text-red-600 hover:text-red-700 flex items-center gap-0.5 active:scale-95"
                 >
-                  <X size={12} /> Clear Manual Price
+                  <X size={11} /> Clear Manual Price
                 </button>
               )}
             </div>
@@ -103,29 +103,26 @@ export default function ManualPricingControls() {
                 }`}
               />
             </div>
-            <p className="text-[10px] text-gray-500 mt-1">
-              Enter any negotiated total campaign price. When entered, automatic calculations are overridden.
-            </p>
           </div>
 
           {/* Control B: Additional Manual Discount (₹) */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
-                <span>Additional Manual Discount (₹)</span>
+            <div className="flex flex-wrap items-center justify-between gap-1 mb-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs font-bold text-gray-800">Additional Manual Discount (₹)</span>
                 {pricing.isManualDiscountActive && (
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                  <span className="text-[9.5px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full whitespace-nowrap">
                     -{formatINR(pricing.manualDiscount)}
                   </span>
                 )}
-              </label>
+              </div>
               {pricing.isManualDiscountActive && (
                 <button
                   type="button"
                   onClick={() => setManualDiscount(0)}
-                  className="text-[11px] font-semibold text-red-600 hover:text-red-700 flex items-center gap-1 active:scale-95"
+                  className="text-[10.5px] font-bold text-red-600 hover:text-red-700 flex items-center gap-0.5 active:scale-95"
                 >
-                  <X size={12} /> Remove Discount
+                  <X size={11} /> Remove Discount
                 </button>
               )}
             </div>
@@ -157,9 +154,6 @@ export default function ManualPricingControls() {
                 }`}
               />
             </div>
-            <p className="text-[10px] text-gray-500 mt-1">
-              Subtracted from final payable amount. If a manual price is also entered, this discount is applied to the manual price.
-            </p>
           </div>
         </div>
       )}

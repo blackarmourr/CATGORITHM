@@ -270,10 +270,11 @@ export function calculatePrice(
   }
 
   // 3. Festival Offer Price
-  // Festival discount applies strictly to 3, 6, and 12-month packages with ad duration >= 20s.
-  // 1-month and 2-month campaigns (and durations < 20s) maintain exact same normal pricing.
+  // Festival discount applies strictly to 3, 6, and 12-month packages with ad duration >= 20s
+  // AND exclusively for campaigns with 8 or more buses (b >= 8).
+  // Below 8 buses, campaigns retain their exact normal pricing (e.g. 1 bus 3m @ 30s is ₹5,550; 5 buses is ₹27,750).
   const isFestivalMonth = m === 3 || m === 6 || m === 12;
-  const isEligibleForFestival = s >= 20 && isFestivalMonth;
+  const isEligibleForFestival = s >= 20 && isFestivalMonth && b >= 8;
   let festivalPrice = normalPrice;
   let festivalOfferName: PricingResult['festivalOfferName'] = undefined;
 

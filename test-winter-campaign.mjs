@@ -54,15 +54,19 @@ assert(c6.totalPrice === 1050, '6 Days @ 30s: ₹1,050', c6.totalPrice);
 
 const c7 = calculateCustomPrice(1, 7, 30);
 assert(c7.totalPrice === 1050, '7 Days @ 30s: ₹1,050 (6 days charge, 1 day free)', c7.totalPrice);
+assert(c7.standardPrice === 1225, '7 Days @ 30s: Standard tariff is ₹1,225', c7.standardPrice);
 
 const c14 = calculateCustomPrice(1, 14, 30);
 assert(c14.totalPrice === 1500, '14 Days @ 30s: ₹1,500', c14.totalPrice);
+assert(c14.standardPrice === 1850, '14 Days @ 30s: Standard tariff is ₹1,850', c14.standardPrice);
 
 const c21 = calculateCustomPrice(1, 21, 30);
 assert(c21.totalPrice === 1875, '21 Days @ 30s: ₹1,875', c21.totalPrice);
+assert(c21.standardPrice === 2250, '21 Days @ 30s: Standard tariff is ₹2,250 (< ₹2,500 ceiling)', c21.standardPrice);
 
 const c30 = calculateCustomPrice(1, 30, 30);
 assert(c30.totalPrice === 2250, '30 Days @ 30s: ₹2,250', c30.totalPrice);
+assert(c30.standardPrice === 2500, '30 Days @ 30s: Standard tariff strikes off ₹2,500 (not ₹5,250)', c30.standardPrice);
 
 // -------------------------------------------------------------
 // 3. MAIN CALCULATOR – NORMAL PRICING (10 Buses, 30s)
@@ -142,27 +146,37 @@ const festShort = calculatePrice(10, 3, 15, { isFestivalPricing: true });
 assert(festShort.isEligibleForFestival === false, 'Ad duration < 20s is NOT eligible for festival discount', festShort.isEligibleForFestival);
 assert(festShort.finalPrice === festShort.normalPrice, 'Ad duration < 20s retains normal price', festShort.finalPrice);
 
+// Bus count threshold (Festival discount ONLY applies for b >= 8)
+const fest1b_3m = calculatePrice(1, 3, 30, { isFestivalPricing: true });
+assert(fest1b_3m.finalPrice === 5550, '1 Bus, 3m @ 30s with Festival ON retains normal rate ₹5,550 (not ₹1,665/mo)', fest1b_3m.finalPrice);
+
+const fest5b_3m = calculatePrice(5, 3, 30, { isFestivalPricing: true });
+assert(fest5b_3m.finalPrice === 27750, '5 Buses, 3m @ 30s with Festival ON retains normal rate ₹27,750', fest5b_3m.finalPrice);
+
+const fest8b_3m = calculatePrice(8, 3, 30, { isFestivalPricing: true });
+assert(fest8b_3m.finalPrice === 40000, '8 Buses, 3m @ 30s with Festival ON gets festival rate ₹40,000 (₹1,666.67/mo)', fest8b_3m.finalPrice);
+
 // -------------------------------------------------------------
 // 5. SCALING EXAMPLES FROM USER SPECIFICATION
 // -------------------------------------------------------------
 console.log('\n--- 5. SCALING EXAMPLES FROM SPECIFICATION ---');
-// Ex 1: 20 seconds, 3 months, 10 buses
+// Ex 1: 20 seconds, 3 months, 10 buses (b >= 8)
 const ex1 = calculatePrice(10, 3, 20, { isFestivalPricing: true });
 assert(ex1.actualPrice === 50000, 'Ex 1: 20s, 3m, 10b Actual = ₹50,000', ex1.actualPrice);
 assert(ex1.normalPrice === 37000, 'Ex 1: 20s, 3m, 10b Normal = ₹37,000', ex1.normalPrice);
 assert(ex1.festivalPrice === 33335, 'Ex 1: 20s, 3m, 10b Festival = ₹33,335 (33,333.33 rounded to ₹5)', ex1.festivalPrice);
 
-// Ex 2: 40 seconds, 3 months, 10 buses
+// Ex 2: 40 seconds, 3 months, 10 buses (b >= 8)
 const ex2 = calculatePrice(10, 3, 40, { isFestivalPricing: true });
 assert(ex2.actualPrice === 100000, 'Ex 2: 40s, 3m, 10b Actual = ₹1,00,000', ex2.actualPrice);
 assert(ex2.normalPrice === 74000, 'Ex 2: 40s, 3m, 10b Normal = ₹74,000', ex2.normalPrice);
 assert(ex2.festivalPrice === 66665, 'Ex 2: 40s, 3m, 10b Festival = ₹66,665 (66,666.67 rounded to ₹5)', ex2.festivalPrice);
 
-// Ex 3: 30 seconds, 3 months, 5 buses
-const ex3 = calculatePrice(5, 3, 30, { isFestivalPricing: true });
-assert(ex3.actualPrice === 37500, 'Ex 3: 30s, 3m, 5b Actual = ₹37,500', ex3.actualPrice);
-assert(ex3.normalPrice === 27750, 'Ex 3: 30s, 3m, 5b Normal = ₹27,750', ex3.normalPrice);
-assert(ex3.festivalPrice === 25000, 'Ex 3: 30s, 3m, 5b Festival = ₹25,000', ex3.festivalPrice);
+// Ex 3: 30 seconds, 3 months, 8 buses (b >= 8)
+const ex3 = calculatePrice(8, 3, 30, { isFestivalPricing: true });
+assert(ex3.actualPrice === 60000, 'Ex 3: 30s, 3m, 8b Actual = ₹60,000', ex3.actualPrice);
+assert(ex3.normalPrice === 44400, 'Ex 3: 30s, 3m, 8b Normal = ₹44,400', ex3.normalPrice);
+assert(ex3.festivalPrice === 40000, 'Ex 3: 30s, 3m, 8b Festival = ₹40,000', ex3.festivalPrice);
 
 // -------------------------------------------------------------
 // 6. MANUAL PRICE OVERRIDE & MANUAL DISCOUNT

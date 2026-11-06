@@ -133,6 +133,53 @@ export function get30sCustomPerBusPrice(days: number): number {
   return blocks30 * 2250 + remPrice;
 }
 
+/**
+ * Standard (Undiscounted / Tariff) comparison price per bus for 30s ad.
+ * Benchmarks:
+ * - 1 to 6 days: full standard daily rate (d * ₹175)
+ * - 7 days: 7 * ₹175 = ₹1,225 (1 day free savings vs package ₹1,050)
+ * - 14 days: ₹1,850 (savings vs package ₹1,500)
+ * - 21 days: ₹2,250 (strictly below 1-month tariff ₹2,500; savings vs package ₹1,875)
+ * - 30 days (1 Month): ₹2,500 (full 1-month undiscounted tariff vs package ₹2,250)
+ */
+export function get30sCustomStandardPerBusPrice(days: number): number {
+  const d = Math.max(1, Math.round(days));
+
+  if (d <= 6) {
+    return d * 175;
+  }
+  if (d === 7) {
+    return 1225; // 7 days @ ₹175/day standard tariff
+  }
+  if (d < 14) {
+    const raw = 1225 + ((d - 7) / (14 - 7)) * (1850 - 1225);
+    return Math.round(raw / 5) * 5;
+  }
+  if (d === 14) {
+    return 1850;
+  }
+  if (d < 21) {
+    const raw = 1850 + ((d - 14) / (21 - 14)) * (2250 - 1850);
+    return Math.round(raw / 5) * 5;
+  }
+  if (d === 21) {
+    return 2250;
+  }
+  if (d < 30) {
+    const raw = 2250 + ((d - 21) / (30 - 21)) * (2500 - 2250);
+    return Math.round(raw / 5) * 5;
+  }
+  if (d === 30) {
+    return 2500; // Standard 1-month tariff
+  }
+
+  // Beyond 30 days: ₹2,500 per month block + remainder
+  const blocks30 = Math.floor(d / 30);
+  const remDays = d % 30;
+  const remPrice = remDays > 0 ? get30sCustomStandardPerBusPrice(remDays) : 0;
+  return blocks30 * 2500 + remPrice;
+}
+
 export interface CustomPricingResult {
   // Inputs
   buses: number;
@@ -183,8 +230,10 @@ export function calculateCustomPrice(
   const finalPerBusPrice = Math.round(rawPricePerBus / 5) * 5;
   const totalPrice = Math.round((finalPerBusPrice * b) / 5) * 5;
 
-  // 4. Undiscounted standard comparison price (daily rate without duration discounts)
-  const standardPrice = Math.round((dailyBasePricePerBus * d * b) / 5) * 5;
+  // 4. Undiscounted standard comparison price (benchmarked to ₹2,500/mo tariff ceiling)
+  const standardPrice30s = get30sCustomStandardPerBusPrice(d);
+  const rawStandardPerBus = standardPrice30s * durationMultiplier;
+  const standardPrice = Math.round((rawStandardPerBus * b) / 5) * 5;
   const savings = Math.max(0, standardPrice - totalPrice);
   const savingsPercentage = standardPrice > 0 ? (savings / standardPrice) * 100 : 0;
 
