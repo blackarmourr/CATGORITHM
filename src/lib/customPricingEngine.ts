@@ -26,7 +26,7 @@
 //    - All final prices rounded to nearest multiple of ₹5 (no decimals).
 // ============================================================
 
-import { calculatePrice, roundToNearest5 } from './pricingEngine.ts';
+import { calculatePrice, roundToNearest5, roundCommercialPrice } from './pricingEngine.ts';
 
 export const MIN_AD_DURATION_SECONDS = 10;
 export const DAILY_BASE_RATE_PER_SECOND = 175 / 30; // ₹5.833/sec (backward compatibility)
@@ -315,7 +315,7 @@ export function calculateCustomPrice(
     standardPrice = roundToNearest5(rawStandardPerBus * b);
   }
 
-  const finalPerBusPrice = roundToNearest5(totalPrice / b);
+  const finalPerBusPrice = d >= 30 ? roundCommercialPrice(totalPrice / b) : roundToNearest5(totalPrice / b);
   const savings = Math.max(0, standardPrice - totalPrice);
   const savingsPercentage = standardPrice > 0 ? (savings / standardPrice) * 100 : 0;
 

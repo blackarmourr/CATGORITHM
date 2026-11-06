@@ -102,16 +102,16 @@ export const TWO_MONTH_PACKAGE_PRICES: Record<number, number> = {
 };
 
 export const MONTHLY_DURATION_DISCOUNT_RATES: Record<number, number> = {
-  3:  0.075,
-  4:  0.0775,
-  5:  0.080,
-  6:  0.0833,
-  7:  0.086,
-  8:  0.089,
-  9:  0.092,
-  10: 0.095,
-  11: 0.0975,
-  12: 0.100,
+  3:  0.100,
+  4:  0.125,
+  5:  0.125,
+  6:  0.125,
+  7:  0.125,
+  8:  0.125,
+  9:  0.125,
+  10: 0.125,
+  11: 0.125,
+  12: 0.125,
 };
 
 export interface DurationDiscountRule {
@@ -121,16 +121,16 @@ export interface DurationDiscountRule {
 }
 
 export const DURATION_DISCOUNT_RULES: DurationDiscountRule[] = [
-  { minMonths: 3,  maxMonths: 3,  discountRate: 0.075 },
-  { minMonths: 4,  maxMonths: 4,  discountRate: 0.0775 },
-  { minMonths: 5,  maxMonths: 5,  discountRate: 0.080 },
-  { minMonths: 6,  maxMonths: 6,  discountRate: 0.0833 },
-  { minMonths: 7,  maxMonths: 7,  discountRate: 0.086 },
-  { minMonths: 8,  maxMonths: 8,  discountRate: 0.089 },
-  { minMonths: 9,  maxMonths: 9,  discountRate: 0.092 },
-  { minMonths: 10, maxMonths: 10, discountRate: 0.095 },
-  { minMonths: 11, maxMonths: 11, discountRate: 0.0975 },
-  { minMonths: 12, maxMonths: 12, discountRate: 0.100 },
+  { minMonths: 3,  maxMonths: 3,  discountRate: 0.100 },
+  { minMonths: 4,  maxMonths: 4,  discountRate: 0.125 },
+  { minMonths: 5,  maxMonths: 5,  discountRate: 0.125 },
+  { minMonths: 6,  maxMonths: 6,  discountRate: 0.125 },
+  { minMonths: 7,  maxMonths: 7,  discountRate: 0.125 },
+  { minMonths: 8,  maxMonths: 8,  discountRate: 0.125 },
+  { minMonths: 9,  maxMonths: 9,  discountRate: 0.125 },
+  { minMonths: 10, maxMonths: 10, discountRate: 0.125 },
+  { minMonths: 11, maxMonths: 11, discountRate: 0.125 },
+  { minMonths: 12, maxMonths: 12, discountRate: 0.125 },
 ];
 
 // ------------------------------------------------------------
@@ -157,7 +157,35 @@ export function roundToNearest5(val: number): number {
   return Math.round(val / 5) * 5;
 }
 
-export const roundCommercialPrice = roundToNearest5;
+/**
+ * Clean commercial sales rounding:
+ * Strictly eliminates odd tens and singles so prices always end in 00 or 50.
+ * Preserves clean milestone increments:
+ * - Exact ₹250 or ₹500 multiples stay intact
+ * - < 2,500: nearest ₹50 (e.g. ₹1,400, ₹2,050)
+ * - < 15,000: nearest ₹100 (e.g. ₹3,900, ₹4,100, ₹6,100, ₹7,900, ₹11,800)
+ * - < 50,000: nearest ₹500 (e.g. ₹23,500, ₹37,500)
+ * - >= 50,000: nearest ₹1,000 / ₹500 (e.g. ₹55,000, ₹1,10,000, ₹2,16,000)
+ */
+export function roundCommercialPrice(amount: number): number {
+  if (amount <= 0) return 0;
+  const rounded = Math.round(amount);
+
+  // Exact clean milestones stay intact
+  if (rounded % 250 === 0) return rounded;
+  if (rounded % 500 === 0) return rounded;
+
+  if (rounded < 2500) {
+    return Math.round(rounded / 50) * 50;
+  }
+  if (rounded < 15000) {
+    return Math.round(rounded / 100) * 100;
+  }
+  if (rounded < 50000) {
+    return Math.round(rounded / 500) * 500;
+  }
+  return Math.round(rounded / 1000) * 1000;
+}
 
 export function getDurationMultiplier(videoDurationSeconds: number): number {
   return videoDurationSeconds / BASE_VIDEO_DURATION_SECONDS;
@@ -257,22 +285,35 @@ export function calculatePrice(
   if (m === 1) {
     // 1-month campaign uses approved exact tariff table (1 bus @ 30s = ₹2,250, 10 buses = ₹20,000)
     const base30s = ONE_MONTH_PACKAGE_PRICES[b] ?? (20000 * busMultiplier);
-    normalPrice = roundToNearest5(base30s * durationMultiplier);
+    if (b >= 8) {
+      normalPrice = Math.round((base30s * durationMultiplier) / 100) * 100;
+    } else {
+      normalPrice = roundCommercialPrice(base30s * durationMultiplier);
+    }
   } else if (m === 2) {
     // 2-month campaign uses approved exact tariff table (1 bus @ 30s = ₹4,250, 10 buses = ₹37,500)
     const base30s = TWO_MONTH_PACKAGE_PRICES[b] ?? (37500 * busMultiplier);
-    normalPrice = roundToNearest5(base30s * durationMultiplier);
+    normalPrice = roundCommercialPrice(base30s * durationMultiplier);
   } else {
-    // 3–12 months: scaled from 10-bus 30s reference table
-    const refNormal = NORMAL_SELLING_PRICE_10_BUSES_30S[m] ?? ((216000 / 12) * m);
-    const rawNormal = refNormal * durationMultiplier * busMultiplier;
-    normalPrice = roundToNearest5(rawNormal);
+    // 3–12 months
+    if (b >= 8) {
+      // 8-10 buses: scaled from approved 10-bus benchmarks (₹55,500 for 3m, ₹1,10,000 for 6m, ₹2,16,000 for 12m)
+      const refNormal = NORMAL_SELLING_PRICE_10_BUSES_30S[m] ?? ((216000 / 12) * m);
+      const rawNormal = refNormal * durationMultiplier * busMultiplier;
+      normalPrice = Math.round(rawNormal / 100) * 100;
+    } else {
+      // Below 8 buses (1 to 7 buses): preserves dedicated package tariff with higher margins
+      const oneMonthBase30s = ONE_MONTH_PACKAGE_PRICES[b] ?? (STANDARD_PRICE_PER_BUS_PER_MONTH_30S * b);
+      const discountRate = getDurationDiscountRate(m);
+      const packagePrice30s = oneMonthBase30s * m * (1 - discountRate);
+      normalPrice = roundCommercialPrice(packagePrice30s * durationMultiplier);
+    }
   }
 
   // 3. Festival Offer Price
   // Festival discount applies strictly to 3, 6, and 12-month packages with ad duration >= 20s
   // AND exclusively for campaigns with 8 or more buses (b >= 8).
-  // Below 8 buses, campaigns retain their exact normal pricing (e.g. 1 bus 3m @ 30s is ₹5,550; 5 buses is ₹27,750).
+  // Below 8 buses, campaigns retain their exact normal pricing.
   const isFestivalMonth = m === 3 || m === 6 || m === 12;
   const isEligibleForFestival = s >= 20 && isFestivalMonth && b >= 8;
   let festivalPrice = normalPrice;
@@ -280,7 +321,7 @@ export function calculatePrice(
 
   if (isEligibleForFestival) {
     const refFestival = FESTIVAL_PRICE_10_BUSES_30S[m];
-    festivalPrice = roundToNearest5(refFestival * durationMultiplier * busMultiplier);
+    festivalPrice = Math.round((refFestival * durationMultiplier * busMultiplier) / 100) * 100;
     if (m === 3) festivalOfferName = 'Primary Offer';
     else if (m === 6) festivalOfferName = 'Best Value Offer';
     else if (m === 12) festivalOfferName = 'Maximum Savings Offer';
@@ -293,8 +334,8 @@ export function calculatePrice(
   const isManualPriceActive = manualOverride !== null && manualOverride > 0;
   const isManualDiscountActive = manualDiscount > 0;
 
-  const effectiveBase = isManualPriceActive ? roundToNearest5(manualOverride!) : autoPrice;
-  const finalPrice = roundToNearest5(Math.max(0, effectiveBase - manualDiscount));
+  const effectiveBase = isManualPriceActive ? roundCommercialPrice(manualOverride!) : autoPrice;
+  const finalPrice = Math.max(0, effectiveBase - manualDiscount);
 
   // Determine pricing method
   let pricingMethod: PricingResult['pricingMethod'] = 'normal';
@@ -310,8 +351,8 @@ export function calculatePrice(
     ? parseFloat(((savings / actualPrice) * 100).toFixed(2))
     : 0;
 
-  const pricePerBusCampaign = roundToNearest5(finalPrice / b);
-  const pricePerBusMonth = roundToNearest5(finalPrice / (b * m));
+  const pricePerBusCampaign = roundCommercialPrice(finalPrice / b);
+  const pricePerBusMonth = roundCommercialPrice(finalPrice / (b * m));
   const pricePerBusDay = finalPrice / (b * m * PRICING_DAYS_PER_MONTH);
   const pricePerSecondBusMonth = finalPrice / (b * m * s);
   const pricePerSecondBusCampaign = finalPrice / (b * s);
