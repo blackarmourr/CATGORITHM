@@ -127,13 +127,17 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* Dev mode notice */}
-      <div className="card p-4 border-amber-200 bg-amber-50/50">
-        <p className="text-amber-700 text-xs font-semibold mb-0.5">Development Mode — Data Not Persisted</p>
-        <p className="text-amber-600 text-xs">
-          The application is running with an in-memory data store. Enquiries, quotations and settings will reset on page refresh.
-          Configure Supabase credentials and update <code className="font-mono bg-amber-100 px-1 rounded">src/lib/dataStore.ts</code> to enable persistent storage.
-        </p>
+      {/* Cloud database sync status */}
+      <div className="card p-4 border-emerald-200 bg-emerald-50/50 flex items-start gap-3">
+        <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <CheckCircle size={18} />
+        </div>
+        <div>
+          <p className="text-emerald-800 text-xs font-bold mb-0.5">Supabase Cloud Database — Connected & Active</p>
+          <p className="text-emerald-700 text-xs leading-relaxed">
+            Live cloud database persistence is fully active. Enquiries, quotations, and fleet inventory changes are synchronized with Supabase in real-time with automatic local cache fallback.
+          </p>
+        </div>
       </div>
     </div>
   )

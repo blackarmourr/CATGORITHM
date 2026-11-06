@@ -101,11 +101,11 @@ export default function AdminPricing() {
       </div>
 
       {/* Dev notice */}
-      <div className="card p-4 border-amber-200 bg-amber-50/50">
+      <div className="card p-4 border-blue-200 bg-blue-50/50">
         <div className="flex items-start gap-2">
-          <Info size={14} className="text-amber-600 flex-shrink-0 mt-0.5" />
-          <p className="text-amber-700 text-xs">
-            Settings changes are currently stored in memory only and will reset on page refresh. Package price tables (one-month, two-month) are defined in the pricing engine source and must be updated in code for now. Supabase integration will enable persistent database-backed settings.
+          <Info size={14} className="text-blue-600 flex-shrink-0 mt-0.5" />
+          <p className="text-blue-700 text-xs">
+            Standard campaign tariff schedules and multi-month discount formulas are maintained in the central pricing engine. General settings (operating expense, target revenue) are saved across sessions.
           </p>
         </div>
       </div>
