@@ -68,6 +68,17 @@ const c30 = calculateCustomPrice(1, 30, 30);
 assert(c30.totalPrice === 2250, '30 Days @ 30s: ₹2,250', c30.totalPrice);
 assert(c30.standardPrice === 2500, '30 Days @ 30s: Standard tariff strikes off ₹2,500 (not ₹5,250)', c30.standardPrice);
 
+// Custom Calculator Fleet Scaling Tests
+const c14_2b = calculateCustomPrice(2, 14, 30);
+assert(c14_2b.totalPrice === 2900, '14 Days @ 2 buses: ₹2,900 (Fleet discount vs ₹3,000)', c14_2b.totalPrice);
+
+const c14_10b = calculateCustomPrice(10, 14, 30);
+assert(c14_10b.totalPrice === 13335, '14 Days @ 10 buses: ₹13,335 (Fleet discount vs ₹15,000)', c14_10b.totalPrice);
+
+const c30_10b = calculateCustomPrice(10, 30, 30);
+assert(c30_10b.totalPrice === 20000, '30 Days @ 10 buses: Exactly ₹20,000 (Matches standard calculator ₹20,000, not ₹22,500)', c30_10b.totalPrice);
+assert(c30_10b.standardPrice === 25000, '30 Days @ 10 buses: Standard tariff is ₹25,000', c30_10b.standardPrice);
+
 // -------------------------------------------------------------
 // 3. MAIN CALCULATOR – NORMAL PRICING (10 Buses, 30s)
 // -------------------------------------------------------------

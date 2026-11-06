@@ -180,6 +180,33 @@ export function get30sCustomStandardPerBusPrice(days: number): number {
   return blocks30 * 2500 + remPrice;
 }
 
+/**
+ * Approved Fleet Multiplier for Multi-Bus Custom Campaigns
+ * Derived from the standard 1-month tariff schedule:
+ * 1 bus:  ₹2,250 (1.0000x)
+ * 2 buses: ₹4,350 (1.9333x -> saves ₹150 vs 2 * 2250)
+ * 3 buses: ₹6,450 (2.8667x -> saves ₹300)
+ * 4 buses: ₹8,500 (3.7778x -> saves ₹500)
+ * 5 buses: ₹10,500 (4.6667x -> saves ₹750)
+ * 6 buses: ₹12,500 (5.5556x -> saves ₹1,000)
+ * 7 buses: ₹14,500 (6.4444x -> saves ₹1,250)
+ * 8 buses: ₹16,500 (7.3333x -> saves ₹1,500)
+ * 9 buses: ₹18,250 (8.1111x -> saves ₹2,000)
+ * 10 buses: ₹20,000 (8.8889x -> saves ₹2,500; yields exact ₹20,000 at 30 days!)
+ */
+export const CUSTOM_FLEET_MULTIPLIER: Record<number, number> = {
+  1:  1.0000,
+  2:  4350 / 2250,  // ~1.9333
+  3:  6450 / 2250,  // ~2.8667
+  4:  8500 / 2250,  // ~3.7778
+  5:  10500 / 2250, // ~4.6667
+  6:  12500 / 2250, // ~5.5556
+  7:  14500 / 2250, // ~6.4444
+  8:  16500 / 2250, // ~7.3333
+  9:  18250 / 2250, // ~8.1111
+  10: 20000 / 2250, // ~8.8889
+};
+
 export interface CustomPricingResult {
   // Inputs
   buses: number;
@@ -225,10 +252,11 @@ export function calculateCustomPrice(
   // 2. 30s base price per bus for given days
   const price30s = get30sCustomPerBusPrice(d);
 
-  // 3. Proportional price per bus and total price
-  const rawPricePerBus = price30s * durationMultiplier;
-  const finalPerBusPrice = Math.round(rawPricePerBus / 5) * 5;
-  const totalPrice = Math.round((finalPerBusPrice * b) / 5) * 5;
+  // 3. Total campaign price with fleet bulk discount
+  const fleetMultiplier = CUSTOM_FLEET_MULTIPLIER[b] ?? b;
+  const rawTotalPrice = price30s * fleetMultiplier * durationMultiplier;
+  const totalPrice = Math.round(rawTotalPrice / 5) * 5;
+  const finalPerBusPrice = Math.round((totalPrice / b) / 5) * 5;
 
   // 4. Undiscounted standard comparison price (benchmarked to ₹2,500/mo tariff ceiling)
   const standardPrice30s = get30sCustomStandardPerBusPrice(d);
