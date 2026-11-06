@@ -24,6 +24,7 @@ export default function QuotationForm() {
   const [savingLead, setSavingLead] = useState(false)
   const [generatingPDF, setGeneratingPDF] = useState(false)
   const [showSaveModal, setShowSaveModal] = useState(false)
+  const [isUndecided, setIsUndecided] = useState(false)
 
   // Construct crisp, professional WhatsApp quote text
   const quoteMessage = `*Catgorithm Bus Screen Advertising Quotation*
@@ -127,78 +128,102 @@ _Offer valid for 30 days. Contact us to reserve your screen inventory._
     }
     setSavingLead(true)
     try {
-      const validUntil = format(addDays(new Date(), 30), 'yyyy-MM-dd')
-      const quotation = await createQuotation({
-        customerDetails: {
-          businessName: clientName.trim() || 'Field Prospect',
-          contactName: clientName.trim() || 'Prospect',
-          phone: clientPhone.trim() || 'Not specified',
-          email: '',
-          businessCategory: 'Bus Screen Advertising',
+      let quotationId: string | undefined = undefined
+
+      if (!isUndecided) {
+        const validUntil = format(addDays(new Date(), 30), 'yyyy-MM-dd')
+        const quotation = await createQuotation({
+          customerDetails: {
+            businessName: clientName.trim() || 'Field Prospect',
+            contactName: clientName.trim() || 'Prospect',
+            phone: clientPhone.trim() || 'Not specified',
+            email: '',
+            businessCategory: 'Bus Screen Advertising',
+            campaignStartDate: config.startDate,
+            campaignEndDate: config.endDate,
+            notes: `Logged via Sales App. Campaign: ${selectedCampaign?.name}.`,
+          },
+          pricingSnapshot: {
+            buses: pricing.buses,
+            months: pricing.months,
+            videoDurationSeconds: pricing.videoDurationSeconds,
+            standardPrice: pricing.standardPrice,
+            packagePrice: pricing.packagePrice,
+            savings: pricing.savings,
+            savingsPercentage: pricing.savingsPercentage,
+            durationMultiplier: pricing.durationMultiplier,
+            durationDiscountRate: pricing.durationDiscountRate,
+            pricingMethod: pricing.pricingMethod,
+            pricePerBusCampaign: pricing.pricePerBusCampaign,
+            pricePerBusMonth: pricing.pricePerBusMonth,
+            pricePerBusDay: pricing.pricePerBusDay,
+            pricePerSecondBusMonth: pricing.pricePerSecondBusMonth,
+            pricePerSecondBusCampaign: pricing.pricePerSecondBusCampaign,
+          },
+          campaignId: selectedCampaign?.id,
+          campaignName: selectedCampaign?.name,
           campaignStartDate: config.startDate,
           campaignEndDate: config.endDate,
-          notes: `Logged via Sales App. Campaign: ${selectedCampaign?.name}.`,
-        },
-        pricingSnapshot: {
-          buses: pricing.buses,
-          months: pricing.months,
-          videoDurationSeconds: pricing.videoDurationSeconds,
-          standardPrice: pricing.standardPrice,
-          packagePrice: pricing.packagePrice,
-          savings: pricing.savings,
-          savingsPercentage: pricing.savingsPercentage,
-          durationMultiplier: pricing.durationMultiplier,
-          durationDiscountRate: pricing.durationDiscountRate,
-          pricingMethod: pricing.pricingMethod,
-          pricePerBusCampaign: pricing.pricePerBusCampaign,
-          pricePerBusMonth: pricing.pricePerBusMonth,
-          pricePerBusDay: pricing.pricePerBusDay,
-          pricePerSecondBusMonth: pricing.pricePerSecondBusMonth,
-          pricePerSecondBusCampaign: pricing.pricePerSecondBusCampaign,
-        },
-        campaignId: selectedCampaign?.id,
-        campaignName: selectedCampaign?.name,
-        campaignStartDate: config.startDate,
-        campaignEndDate: config.endDate,
-        billedMonths: config.months,
-        campaignThemeSnapshot: selectedCampaign?.theme,
-        campaignMessagingSnapshot: selectedCampaign?.messaging,
-        validUntil,
-      })
+          billedMonths: config.months,
+          campaignThemeSnapshot: selectedCampaign?.theme,
+          campaignMessagingSnapshot: selectedCampaign?.messaging,
+          validUntil,
+        })
+        quotationId = quotation.id
+      }
 
       await createEnquiry({
         status: dealStatus,
-        quotationId: quotation.id,
+        quotationId,
         customerDetails: {
           businessName: clientName.trim() || 'Field Prospect',
           contactName: clientName.trim() || 'Prospect',
           phone: clientPhone.trim() || 'Not specified',
-          campaignStartDate: config.startDate,
-          campaignEndDate: config.endDate,
-          notes: `Logged via Sales App. Campaign: ${selectedCampaign?.name}. Quotation Ref: ${quotation.id}.`,
+          campaignStartDate: isUndecided ? undefined : config.startDate,
+          campaignEndDate: isUndecided ? undefined : config.endDate,
+          notes: isUndecided
+            ? `Early stage discovery prospect. Fleet size & pricing not decided yet.`
+            : `Logged via Sales App. Campaign: ${selectedCampaign?.name}. Quotation Ref: ${quotationId}.`,
         },
-        pricingSnapshot: {
-          buses: pricing.buses,
-          months: pricing.months,
-          videoDurationSeconds: pricing.videoDurationSeconds,
-          standardPrice: pricing.standardPrice,
-          packagePrice: pricing.packagePrice,
-          savings: pricing.savings,
-          savingsPercentage: pricing.savingsPercentage,
-          durationMultiplier: pricing.durationMultiplier,
-          durationDiscountRate: pricing.durationDiscountRate,
-          pricingMethod: pricing.pricingMethod,
-          pricePerBusCampaign: pricing.pricePerBusCampaign,
-          pricePerBusMonth: pricing.pricePerBusMonth,
-          pricePerBusDay: pricing.pricePerBusDay,
-          pricePerSecondBusMonth: pricing.pricePerSecondBusMonth,
-          pricePerSecondBusCampaign: pricing.pricePerSecondBusCampaign,
-        },
+        pricingSnapshot: isUndecided
+          ? {
+              buses: 0,
+              months: 0,
+              videoDurationSeconds: 0,
+              standardPrice: 0,
+              packagePrice: 0,
+              savings: 0,
+              savingsPercentage: 0,
+              durationMultiplier: 0,
+              durationDiscountRate: 0,
+              pricingMethod: 'undecided',
+              pricePerBusCampaign: 0,
+              pricePerBusMonth: 0,
+              pricePerBusDay: 0,
+            }
+          : {
+              buses: pricing.buses,
+              months: pricing.months,
+              videoDurationSeconds: pricing.videoDurationSeconds,
+              standardPrice: pricing.standardPrice,
+              packagePrice: pricing.packagePrice,
+              savings: pricing.savings,
+              savingsPercentage: pricing.savingsPercentage,
+              durationMultiplier: pricing.durationMultiplier,
+              durationDiscountRate: pricing.durationDiscountRate,
+              pricingMethod: pricing.pricingMethod,
+              pricePerBusCampaign: pricing.pricePerBusCampaign,
+              pricePerBusMonth: pricing.pricePerBusMonth,
+              pricePerBusDay: pricing.pricePerBusDay,
+              pricePerSecondBusMonth: pricing.pricePerSecondBusMonth,
+              pricePerSecondBusCampaign: pricing.pricePerSecondBusCampaign,
+            },
         campaignId: selectedCampaign?.id,
         campaignName: selectedCampaign?.name,
       })
-      toast.success(`Deal logged as "${dealStatus}" to Pipeline!`)
+      toast.success(isUndecided ? 'Deal logged to Pipeline (Fleet & Price TBD)!' : `Deal logged as "${dealStatus}" to Pipeline!`)
       setShowSaveModal(false)
+      setIsUndecided(false)
     } catch {
       toast.error('Failed to save lead')
     } finally {
@@ -353,16 +378,50 @@ _Offer valid for 30 days. Contact us to reserve your screen inventory._
                   ))}
                 </div>
               </div>
-              <div className="bg-blue-50 p-2.5 rounded-xl text-xs space-y-1">
-                <div className="flex justify-between text-gray-600">
-                  <span>Configuration:</span>
-                  <span className="font-semibold text-gray-900">{config.buses} Buses · {config.months} Mo</span>
-                </div>
-                <div className="flex justify-between text-accent font-bold">
-                  <span>Quote Value:</span>
-                  <span className="tabular-nums">{formatINR(pricing.packagePrice)}</span>
-                </div>
+
+              {/* Optional: Fleet & Price Not Decided Yet */}
+              <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3 space-y-1.5">
+                <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={isUndecided}
+                    onChange={(e) => setIsUndecided(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-accent focus:ring-accent"
+                  />
+                  <div className="flex-1">
+                    <span className="font-bold text-xs text-amber-950 block">
+                      Buses & Price Not Decided Yet
+                    </span>
+                    <span className="text-[11px] text-amber-800/80 block mt-0.5 leading-normal">
+                      Client hasn't confirmed fleet size or budget yet. Log as an open deal with pricing TBD; finalize details later once approved.
+                    </span>
+                  </div>
+                </label>
               </div>
+
+              {isUndecided ? (
+                <div className="bg-gray-100 p-2.5 rounded-xl text-xs space-y-1 border border-gray-200">
+                  <div className="flex justify-between text-gray-600">
+                    <span>Fleet Specification:</span>
+                    <span className="font-bold text-amber-700 bg-amber-100/60 px-1.5 py-0.5 rounded text-[11px]">Undecided / TBD</span>
+                  </div>
+                  <div className="flex justify-between text-gray-600">
+                    <span>Deal Value:</span>
+                    <span className="font-bold text-amber-700 bg-amber-100/60 px-1.5 py-0.5 rounded text-[11px]">TBD (To Be Finalized)</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-blue-50 p-2.5 rounded-xl text-xs space-y-1 border border-blue-100">
+                  <div className="flex justify-between text-gray-600">
+                    <span>Configuration:</span>
+                    <span className="font-semibold text-gray-900">{config.buses} Buses · {config.months} Mo</span>
+                  </div>
+                  <div className="flex justify-between text-accent font-bold">
+                    <span>Quote Value:</span>
+                    <span className="tabular-nums">{formatINR(pricing.packagePrice)}</span>
+                  </div>
+                </div>
+              )}
               <div className="flex gap-2 pt-1">
                 <button
                   type="button"

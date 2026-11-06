@@ -28,6 +28,14 @@ const STATUS_VARIANT: Record<EnquiryStatus, 'default' | 'success' | 'warning' | 
   Completed: 'success',
 }
 
+function isDealUndecided(e: Enquiry | null | undefined): boolean {
+  if (!e) return false
+  if (e.pricingSnapshot?.pricingMethod === 'undecided') return true
+  const price = e.negotiatedPrice ?? e.pricingSnapshot?.packagePrice ?? 0
+  const buses = e.pricingSnapshot?.buses ?? 0
+  return price <= 0 || buses <= 0
+}
+
 export default function AdminEnquiries() {
   const [searchParams, setSearchParams] = useSearchParams()
   const initialTab = searchParams.get('tab') === 'quotations' ? 'quotations' : 'enquiries'
@@ -44,6 +52,15 @@ export default function AdminEnquiries() {
   const [statusNote, setStatusNote] = useState('')
   const [savingStatus, setSavingStatus] = useState(false)
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
+
+  // Pricing & Fleet edit state
+  const [editBuses, setEditBuses] = useState<number>(10)
+  const [editMonths, setEditMonths] = useState<number>(1)
+  const [editSeconds, setEditSeconds] = useState<number>(30)
+  const [editCustomDays, setEditCustomDays] = useState<number>(30)
+  const [editPricingType, setEditPricingType] = useState<'monthly' | 'custom-days'>('monthly')
+  const [editManualPrice, setEditManualPrice] = useState<string>('')
+  const [isEditingPricing, setIsEditingPricing] = useState(false)
 
   async function load() {
     setLoading(true)
@@ -122,17 +139,120 @@ export default function AdminEnquiries() {
   ).length
   const confirmedCount = enquiries.filter((e) => e.status === 'Confirmed' || e.status === 'Completed').length
 
-  async function handleStatusUpdate() {
+  // Live calculated pricing preview when editing deal configuration
+  const livePricingPreview = (() => {
+    if (editPricingType === 'custom-days') {
+      const res = calculateCustomPrice(editBuses, editCustomDays, editSeconds)
+      const manual = editManualPrice ? parseFloat(editManualPrice) : null
+      const effectivePrice = manual !== null && !isNaN(manual) && manual > 0 ? manual : res.totalPrice
+      return {
+        standardPrice: res.standardPrice,
+        systemPrice: res.totalPrice,
+        effectivePrice,
+        isManual: manual !== null && !isNaN(manual) && manual > 0,
+      }
+    } else {
+      const res = calculatePrice(editBuses, editMonths, editSeconds, {
+        isFestivalPricing: false,
+        manualPriceOverride: editManualPrice ? parseFloat(editManualPrice) : null,
+      })
+      const manual = editManualPrice ? parseFloat(editManualPrice) : null
+      const effectivePrice = manual !== null && !isNaN(manual) && manual > 0 ? manual : res.normalPrice
+      return {
+        standardPrice: res.actualPrice,
+        systemPrice: res.normalPrice,
+        effectivePrice,
+        isManual: manual !== null && !isNaN(manual) && manual > 0,
+      }
+    }
+  })()
+
+  async function handleSaveAllUpdates() {
     if (!selected) return
     setSavingStatus(true)
     try {
-      await updateEnquiryStatus(selected.id, newStatus, statusNote || undefined)
-      toast.success(`Status updated to "${newStatus}"`)
+      const updates: Partial<Enquiry> = {
+        status: newStatus,
+        adminNotes: statusNote
+          ? `${selected.adminNotes ?? ''}\n[${new Date().toLocaleDateString('en-IN')}] ${statusNote}`.trim()
+          : selected.adminNotes,
+      }
+
+      // If user configured/updated pricing
+      if (isEditingPricing) {
+        let fullSnapshot: PricingSnapshot
+        const manualPrice = editManualPrice ? parseFloat(editManualPrice) : undefined
+        const hasManual = manualPrice !== undefined && !isNaN(manualPrice) && manualPrice > 0
+
+        if (editPricingType === 'custom-days') {
+          const customCalc = calculateCustomPrice(editBuses, editCustomDays, editSeconds)
+          const finalPrice = hasManual ? manualPrice! : customCalc.totalPrice
+          const savings = Math.max(0, customCalc.standardPrice - finalPrice)
+          const savingsPercentage = customCalc.standardPrice > 0 ? (savings / customCalc.standardPrice) * 100 : 0
+
+          fullSnapshot = {
+            buses: editBuses,
+            months: Math.max(1, Math.round(editCustomDays / 30)),
+            campaignDays: editCustomDays,
+            dailyBasePrice: customCalc.dailyBasePricePerBus,
+            videoDurationSeconds: editSeconds,
+            standardPrice: customCalc.standardPrice,
+            packagePrice: finalPrice,
+            savings,
+            savingsPercentage,
+            durationMultiplier: customCalc.durationMultiplier,
+            durationDiscountRate: 0,
+            pricingMethod: 'custom-daily',
+            pricePerBusCampaign: finalPrice / editBuses,
+            pricePerBusMonth: Math.round((finalPrice / (editBuses * editCustomDays)) * 30),
+            pricePerBusDay: finalPrice / (editBuses * editCustomDays),
+            pricePerSecondBusMonth: ((finalPrice / (editBuses * editCustomDays)) * 30) / editSeconds,
+            pricePerSecondBusCampaign: (finalPrice / (editBuses * editCustomDays)) / editSeconds,
+          }
+          updates.campaignName = `Custom Campaign (${editCustomDays} Days)`
+        } else {
+          const calc = calculatePrice(editBuses, editMonths, editSeconds, {
+            manualPriceOverride: hasManual ? manualPrice : null,
+          })
+          const finalPrice = calc.finalPrice
+          fullSnapshot = {
+            buses: editBuses,
+            months: editMonths,
+            videoDurationSeconds: editSeconds,
+            standardPrice: calc.actualPrice,
+            packagePrice: finalPrice,
+            savings: calc.savings,
+            savingsPercentage: calc.savingsPercentage,
+            durationMultiplier: calc.durationMultiplier,
+            durationDiscountRate: calc.durationDiscountRate,
+            pricingMethod: calc.pricingMethod,
+            pricePerBusCampaign: calc.pricePerBusCampaign,
+            pricePerBusMonth: calc.pricePerBusMonth,
+            pricePerBusDay: calc.pricePerBusDay,
+            pricePerSecondBusMonth: calc.pricePerSecondBusMonth,
+            pricePerSecondBusCampaign: calc.pricePerSecondBusCampaign,
+          }
+          updates.campaignName = selected.campaignName && !selected.campaignName.includes('TBD')
+            ? selected.campaignName
+            : 'Standard Campaign'
+        }
+
+        updates.pricingSnapshot = fullSnapshot
+        if (hasManual) {
+          updates.negotiatedPrice = manualPrice
+        } else {
+          updates.negotiatedPrice = undefined
+        }
+      }
+
+      await updateEnquiry(selected.id, updates)
+      toast.success('Deal details and status updated!')
       setSelected(null)
       setStatusNote('')
+      setIsEditingPricing(false)
       load()
     } catch {
-      toast.error('Failed to update status')
+      toast.error('Failed to update deal')
     } finally {
       setSavingStatus(false)
     }
@@ -142,6 +262,14 @@ export default function AdminEnquiries() {
     setSelected(enquiry)
     setNewStatus(enquiry.status)
     setStatusNote('')
+    const isUndecided = isDealUndecided(enquiry)
+    setIsEditingPricing(isUndecided)
+    setEditBuses(enquiry.pricingSnapshot?.buses && enquiry.pricingSnapshot.buses > 0 ? enquiry.pricingSnapshot.buses : 10)
+    setEditMonths(enquiry.pricingSnapshot?.months && enquiry.pricingSnapshot.months > 0 ? enquiry.pricingSnapshot.months : 1)
+    setEditSeconds(enquiry.pricingSnapshot?.videoDurationSeconds && enquiry.pricingSnapshot.videoDurationSeconds > 0 ? enquiry.pricingSnapshot.videoDurationSeconds : 30)
+    setEditCustomDays(enquiry.pricingSnapshot?.campaignDays && enquiry.pricingSnapshot.campaignDays > 0 ? enquiry.pricingSnapshot.campaignDays : 30)
+    setEditPricingType(enquiry.pricingSnapshot?.campaignDays ? 'custom-days' : 'monthly')
+    setEditManualPrice(enquiry.negotiatedPrice ? String(enquiry.negotiatedPrice) : '')
   }
 
   async function handleDownloadSavedQuote(q: Quotation) {
@@ -159,6 +287,11 @@ export default function AdminEnquiries() {
 
   async function handleDownloadEnquiryQuote(enquiry: Enquiry, ev?: React.MouseEvent) {
     ev?.stopPropagation()
+    if (isDealUndecided(enquiry)) {
+      toast('Please set the fleet size and pricing before downloading a quotation.', { icon: 'ℹ️' })
+      openDetail(enquiry)
+      return
+    }
     setDownloadingId(enquiry.id)
     try {
       // 1. Check if quotation already exists for this enquiry (by quotationId or enquiryId)
@@ -545,6 +678,7 @@ export default function AdminEnquiries() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:hidden">
                 {filteredEnquiries.map((e) => {
                   const isWinter = e.campaignId === 'winter-spotlight-2026' || e.campaignName?.includes('Winter')
+                  const isUndecided = isDealUndecided(e)
                   const price = e.negotiatedPrice ?? e.pricingSnapshot?.packagePrice ?? 0
                   const isDownloading = downloadingId === e.id
 
@@ -567,7 +701,7 @@ export default function AdminEnquiries() {
                         <Badge variant={STATUS_VARIANT[e.status]}>{e.status}</Badge>
                       </div>
 
-                      {/* Campaign Badge (if seasonal) */}
+                      {/* Campaign Badge (if seasonal or custom) */}
                       {e.campaignName && (
                         <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#D4AF37]/15 text-[#B8860B] border border-[#D4AF37]/30">
                           <Sparkles size={10} />
@@ -577,12 +711,25 @@ export default function AdminEnquiries() {
 
                       {/* Specs & Pricing */}
                       <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs">
-                        <span className="text-secondary-text">
-                          {e.pricingSnapshot?.buses} Buses · {e.pricingSnapshot?.videoDurationSeconds}s · {e.pricingSnapshot?.months} Mo
-                        </span>
-                        <span className="font-extrabold text-sm text-accent tabular-nums">
-                          {formatINR(price)}
-                        </span>
+                        {isUndecided ? (
+                          <>
+                            <span className="inline-flex items-center gap-1 font-bold text-[11px] text-amber-700 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-md">
+                              <Bus size={11} /> Fleet TBD
+                            </span>
+                            <span className="font-bold text-xs text-amber-600 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-full">
+                              Price TBD
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-secondary-text">
+                              {e.pricingSnapshot?.buses} Buses · {e.pricingSnapshot?.videoDurationSeconds}s · {e.pricingSnapshot?.campaignDays ? `${e.pricingSnapshot.campaignDays} Days` : `${e.pricingSnapshot?.months} Mo`}
+                            </span>
+                            <span className="font-extrabold text-sm text-accent tabular-nums">
+                              {formatINR(price)}
+                            </span>
+                          </>
+                        )}
                       </div>
 
                       {/* Date & Contact Actions */}
@@ -621,18 +768,30 @@ export default function AdminEnquiries() {
                         </div>
                       </div>
 
-                      {/* Download PDF Quotation Button */}
+                      {/* Action Button: Download PDF or Set Fleet & Pricing */}
                       <div className="pt-2 border-t border-gray-100" onClick={(ev) => ev.stopPropagation()}>
-                        <button
-                          type="button"
-                          onClick={(ev) => handleDownloadEnquiryQuote(e, ev)}
-                          disabled={isDownloading}
-                          className="w-full py-2 px-3 rounded-xl bg-accent/10 hover:bg-accent/20 text-accent font-bold text-xs flex items-center justify-center gap-1.5 border border-accent/25 active:scale-98 transition-all"
-                          title="Download PDF Quotation"
-                        >
-                          <Download size={13} className={isDownloading ? 'animate-bounce' : ''} />
-                          <span>{isDownloading ? 'Downloading Quote…' : 'Download PDF Quote'}</span>
-                        </button>
+                        {isUndecided ? (
+                          <button
+                            type="button"
+                            onClick={() => openDetail(e)}
+                            className="w-full py-2 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs flex items-center justify-center gap-1.5 border border-amber-300/80 active:scale-98 transition-all"
+                            title="Set Fleet & Pricing"
+                          >
+                            <Tag size={13} className="text-amber-600" />
+                            <span>Set Fleet & Pricing</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(ev) => handleDownloadEnquiryQuote(e, ev)}
+                            disabled={isDownloading}
+                            className="w-full py-2 px-3 rounded-xl bg-accent/10 hover:bg-accent/20 text-accent font-bold text-xs flex items-center justify-center gap-1.5 border border-accent/25 active:scale-98 transition-all"
+                            title="Download PDF Quotation"
+                          >
+                            <Download size={13} className={isDownloading ? 'animate-bounce' : ''} />
+                            <span>{isDownloading ? 'Downloading Quote…' : 'Download PDF Quote'}</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   )
@@ -655,6 +814,7 @@ export default function AdminEnquiries() {
                     <tbody className="divide-y divide-border">
                       {filteredEnquiries.map((e) => {
                         const isDownloading = downloadingId === e.id
+                        const isUndecided = isDealUndecided(e)
                         return (
                           <tr
                             key={e.id}
@@ -670,10 +830,26 @@ export default function AdminEnquiries() {
                             <td className="px-4 py-3 text-xs">
                               <span className="font-medium text-gray-800">{e.campaignName || 'Standard'}</span>
                             </td>
-                            <td className="px-4 py-3 tabular-nums font-semibold">{e.pricingSnapshot?.buses ?? '—'}</td>
-                            <td className="px-4 py-3 tabular-nums text-xs">{e.pricingSnapshot?.videoDurationSeconds}s · {e.pricingSnapshot?.months} Mo</td>
+                            <td className="px-4 py-3 tabular-nums font-semibold">
+                              {isUndecided ? (
+                                <span className="text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded">TBD</span>
+                              ) : (
+                                e.pricingSnapshot?.buses ?? '—'
+                              )}
+                            </td>
+                            <td className="px-4 py-3 tabular-nums text-xs">
+                              {isUndecided ? (
+                                <span className="text-gray-400 italic">To be decided</span>
+                              ) : (
+                                `${e.pricingSnapshot?.videoDurationSeconds}s · ${e.pricingSnapshot?.campaignDays ? `${e.pricingSnapshot.campaignDays} Days` : `${e.pricingSnapshot?.months} Mo`}`
+                              )}
+                            </td>
                             <td className="px-4 py-3 font-bold tabular-nums text-accent">
-                              {formatINR(e.negotiatedPrice ?? e.pricingSnapshot?.packagePrice ?? 0)}
+                              {isUndecided ? (
+                                <span className="text-amber-700 font-bold text-xs bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded">TBD</span>
+                              ) : (
+                                formatINR(e.negotiatedPrice ?? e.pricingSnapshot?.packagePrice ?? 0)
+                              )}
                             </td>
                             <td className="px-4 py-3">
                               <Badge variant={STATUS_VARIANT[e.status]}>{e.status}</Badge>
@@ -683,16 +859,28 @@ export default function AdminEnquiries() {
                             </td>
                             <td className="px-4 py-3" onClick={(ev) => ev.stopPropagation()}>
                               <div className="flex items-center gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={(ev) => handleDownloadEnquiryQuote(e, ev)}
-                                  disabled={isDownloading}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-accent/40 text-accent hover:bg-blue-50 text-xs font-bold transition-colors"
-                                  title="Download PDF Quotation"
-                                >
-                                  <Download size={12} className={isDownloading ? 'animate-bounce' : ''} />
-                                  <span>{isDownloading ? 'PDF…' : 'PDF Quote'}</span>
-                                </button>
+                                {!isUndecided ? (
+                                  <button
+                                    type="button"
+                                    onClick={(ev) => handleDownloadEnquiryQuote(e, ev)}
+                                    disabled={isDownloading}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-accent/40 text-accent hover:bg-blue-50 text-xs font-bold transition-colors"
+                                    title="Download PDF Quotation"
+                                  >
+                                    <Download size={12} className={isDownloading ? 'animate-bounce' : ''} />
+                                    <span>{isDownloading ? 'PDF…' : 'PDF Quote'}</span>
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => openDetail(e)}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100 text-xs font-bold transition-colors"
+                                    title="Set Fleet & Price"
+                                  >
+                                    <Tag size={12} />
+                                    <span>Set Price</span>
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => openDetail(e)}
@@ -891,22 +1079,31 @@ export default function AdminEnquiries() {
             {/* Modal Header */}
             <div className="p-4 sm:p-5 border-b border-border flex items-center justify-between">
               <div>
-                <p className="font-mono text-xs font-bold text-accent">{selected.id}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-mono text-xs font-bold text-accent">{selected.id}</p>
+                  {isDealUndecided(selected) && (
+                    <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                      Fleet & Price TBD
+                    </span>
+                  )}
+                </div>
                 <h2 className="font-black text-primary-text text-base sm:text-lg">
                   {selected.customerDetails.businessName || 'Prospect Details'}
                 </h2>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleDownloadEnquiryQuote(selected)}
-                  disabled={downloadingId === selected.id}
-                  className="px-3 py-1.5 rounded-xl bg-accent/10 hover:bg-accent/20 text-accent font-bold text-xs flex items-center gap-1.5 border border-accent/25 active:scale-98 transition-all"
-                  title="Download PDF Quotation"
-                >
-                  <Download size={13} className={downloadingId === selected.id ? 'animate-bounce' : ''} />
-                  <span>{downloadingId === selected.id ? 'Downloading…' : 'PDF Quote'}</span>
-                </button>
+                {!isDealUndecided(selected) && (
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadEnquiryQuote(selected)}
+                    disabled={downloadingId === selected.id}
+                    className="px-3 py-1.5 rounded-xl bg-accent/10 hover:bg-accent/20 text-accent font-bold text-xs flex items-center gap-1.5 border border-accent/25 active:scale-98 transition-all"
+                    title="Download PDF Quotation"
+                  >
+                    <Download size={13} className={downloadingId === selected.id ? 'animate-bounce' : ''} />
+                    <span className="hidden sm:inline">{downloadingId === selected.id ? 'Downloading…' : 'PDF Quote'}</span>
+                  </button>
+                )}
                 <button
                   onClick={() => setSelected(null)}
                   className="p-2 text-gray-400 hover:text-gray-700 rounded-xl hover:bg-gray-100 transition-colors"
@@ -934,14 +1131,213 @@ export default function AdminEnquiries() {
                 </div>
                 <div>
                   <span className="text-secondary-text block text-[10px] uppercase font-bold">Quoted Price</span>
-                  <span className="font-bold text-accent tabular-nums">
-                    {formatINR(selected.negotiatedPrice ?? selected.pricingSnapshot?.packagePrice ?? 0)}
-                  </span>
+                  {isDealUndecided(selected) ? (
+                    <span className="font-bold text-amber-700 bg-amber-100/60 px-2 py-0.5 rounded text-[11px] inline-block mt-0.5">
+                      TBD (Pending Approval)
+                    </span>
+                  ) : (
+                    <span className="font-bold text-accent tabular-nums">
+                      {formatINR(selected.negotiatedPrice ?? selected.pricingSnapshot?.packagePrice ?? 0)}
+                    </span>
+                  )}
                 </div>
                 {selected.quotationId && (
                   <div className="col-span-2 pt-2 border-t border-gray-200/60 flex items-center justify-between text-[11px]">
                     <span className="text-secondary-text">Linked Quotation Ref:</span>
                     <span className="font-mono font-bold text-accent">{selected.quotationId}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* ── FLEET & PRICING CONFIGURATION (View & Edit) ── */}
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-2xs">
+                <div className="p-3 bg-gray-50/80 border-b border-gray-200 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Bus size={14} className="text-accent" />
+                    <span className="font-bold text-gray-900 text-xs">Fleet & Campaign Pricing</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingPricing(!isEditingPricing)}
+                    className="text-[11px] font-bold text-accent hover:text-blue-700 bg-accent/10 hover:bg-accent/20 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1"
+                  >
+                    <Tag size={12} />
+                    <span>{isEditingPricing ? 'Close Editor' : isDealUndecided(selected) ? 'Set Fleet & Pricing' : 'Edit Fleet / Price'}</span>
+                  </button>
+                </div>
+
+                {/* If currently not editing pricing */}
+                {!isEditingPricing && (
+                  <div className="p-3 space-y-2">
+                    {isDealUndecided(selected) ? (
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5">
+                        <Clock size={16} className="text-amber-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-xs">
+                          <p className="font-bold text-amber-900">Fleet & Pricing Not Decided Yet</p>
+                          <p className="text-amber-700 text-[11px] mt-0.5">
+                            Client hasn't confirmed fleet count or duration yet. Tap "Set Fleet & Pricing" above to configure numbers once approved.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+                        <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                          <span className="text-gray-500 block text-[10px]">Fleet Size</span>
+                          <span className="font-bold text-gray-900">{selected.pricingSnapshot?.buses} Buses</span>
+                        </div>
+                        <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                          <span className="text-gray-500 block text-[10px]">Ad Length</span>
+                          <span className="font-bold text-gray-900">{selected.pricingSnapshot?.videoDurationSeconds}s</span>
+                        </div>
+                        <div className="bg-gray-50 p-2 rounded-lg border border-gray-100">
+                          <span className="text-gray-500 block text-[10px]">Duration</span>
+                          <span className="font-bold text-gray-900">
+                            {selected.pricingSnapshot?.campaignDays ? `${selected.pricingSnapshot.campaignDays} Days` : `${selected.pricingSnapshot?.months} Months`}
+                          </span>
+                        </div>
+                        <div className="bg-blue-50/60 p-2 rounded-lg border border-blue-100">
+                          <span className="text-accent block text-[10px] font-bold">Total Deal Value</span>
+                          <span className="font-extrabold text-accent text-xs tabular-nums">
+                            {formatINR(selected.negotiatedPrice ?? selected.pricingSnapshot?.packagePrice ?? 0)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* If in editing pricing mode */}
+                {isEditingPricing && (
+                  <div className="p-3.5 space-y-3 bg-blue-50/20">
+                    <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                      <span className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">
+                        Configure Deal Package
+                      </span>
+                      {/* Pricing System Toggle */}
+                      <div className="flex rounded-lg bg-gray-200/80 p-0.5 text-[11px] font-bold">
+                        <button
+                          type="button"
+                          onClick={() => setEditPricingType('monthly')}
+                          className={`px-2.5 py-1 rounded-md transition-all ${
+                            editPricingType === 'monthly' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-600'
+                          }`}
+                        >
+                          Monthly
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditPricingType('custom-days')}
+                          className={`px-2.5 py-1 rounded-md transition-all ${
+                            editPricingType === 'custom-days' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-600'
+                          }`}
+                        >
+                          Custom Days
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                      {/* Fleet Size */}
+                      <div>
+                        <label className="text-[11px] font-bold text-gray-700 block mb-1">Bus Count</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={50}
+                          value={editBuses}
+                          onChange={(e) => setEditBuses(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="w-full px-2.5 py-1.5 text-xs font-bold rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-accent"
+                        />
+                      </div>
+
+                      {/* Ad Duration */}
+                      <div>
+                        <label className="text-[11px] font-bold text-gray-700 block mb-1">Ad Duration (sec)</label>
+                        <select
+                          value={editSeconds}
+                          onChange={(e) => setEditSeconds(parseInt(e.target.value) || 30)}
+                          className="w-full px-2.5 py-1.5 text-xs font-bold rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-accent"
+                        >
+                          <option value={10}>10 Seconds</option>
+                          <option value={20}>20 Seconds</option>
+                          <option value={30}>30 Seconds</option>
+                          <option value={40}>40 Seconds</option>
+                          <option value={50}>50 Seconds</option>
+                          <option value={60}>60 Seconds</option>
+                        </select>
+                      </div>
+
+                      {/* Campaign Duration */}
+                      {editPricingType === 'monthly' ? (
+                        <div>
+                          <label className="text-[11px] font-bold text-gray-700 block mb-1">Months</label>
+                          <select
+                            value={editMonths}
+                            onChange={(e) => setEditMonths(parseInt(e.target.value) || 1)}
+                            className="w-full px-2.5 py-1.5 text-xs font-bold rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-accent"
+                          >
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
+                              <option key={m} value={m}>{m} {m === 1 ? 'Month' : 'Months'}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="text-[11px] font-bold text-gray-700 block mb-1">Campaign Days</label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={365}
+                            value={editCustomDays}
+                            onChange={(e) => setEditCustomDays(Math.max(1, parseInt(e.target.value) || 1))}
+                            className="w-full px-2.5 py-1.5 text-xs font-bold rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-accent"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Negotiated / Custom Override Price */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[11px] font-bold text-gray-700">
+                          Negotiated / Agreed Price (₹) <span className="text-gray-400 font-normal">(Optional Override)</span>
+                        </label>
+                        {editManualPrice && (
+                          <button
+                            type="button"
+                            onClick={() => setEditManualPrice('')}
+                            className="text-[10px] text-accent font-semibold hover:underline"
+                          >
+                            Reset to Auto
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        type="number"
+                        placeholder={`System Price: ₹${livePricingPreview.systemPrice.toLocaleString('en-IN')}`}
+                        value={editManualPrice}
+                        onChange={(e) => setEditManualPrice(e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs font-bold rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-accent"
+                      />
+                    </div>
+
+                    {/* Live Calculated Price Summary */}
+                    <div className="p-2.5 rounded-xl bg-white border border-blue-200/80 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="text-[10px] text-gray-500 block uppercase font-bold">Standard Tariff</span>
+                        <span className="text-gray-400 line-through text-xs font-semibold tabular-nums">
+                          {formatINR(livePricingPreview.standardPrice)}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] text-accent font-bold block uppercase">
+                          {livePricingPreview.isManual ? 'Agreed Deal Price (Manual)' : 'Calculated Package Price'}
+                        </span>
+                        <span className="text-sm font-black text-accent tabular-nums">
+                          {formatINR(livePricingPreview.effectivePrice)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -992,43 +1388,104 @@ export default function AdminEnquiries() {
               )}
             </div>
 
-            {/* Modal Footer */}
-            <div className="p-3 sm:p-4 bg-gray-50 border-t border-border flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={(e) => handleDeleteEnquiry(selected.id, e)}
-                className="px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl flex items-center gap-1.5 border border-rose-200 transition-colors"
-                title="Delete this lead"
-              >
-                <Trash2 size={13} />
-                <span>Delete Deal</span>
-              </button>
-              <div className="flex items-center gap-2">
+            {/* Modal Footer (100% Mobile Responsive with Matching Heights & Touch Targets) */}
+            <div className="p-3 sm:p-4 bg-gray-50 border-t border-border">
+              {/* Mobile View Layout (Stacked, Full Width Primary, Balanced 3-Grid Secondary) */}
+              <div className="sm:hidden space-y-2">
                 <button
                   type="button"
-                  onClick={() => handleDownloadEnquiryQuote(selected)}
-                  disabled={downloadingId === selected.id}
-                  className="px-3.5 py-2 text-xs font-bold text-accent bg-accent/10 hover:bg-accent/20 border border-accent/30 rounded-xl transition-colors flex items-center gap-1.5"
-                  title="Download PDF Quotation"
-                >
-                  <Download size={13} className={downloadingId === selected.id ? 'animate-bounce' : ''} />
-                  <span>{downloadingId === selected.id ? 'Generating…' : 'Download Quote'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelected(null)}
-                  className="px-3.5 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-200 rounded-xl transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleStatusUpdate}
+                  onClick={handleSaveAllUpdates}
                   disabled={savingStatus}
-                  className="px-4 py-2 text-xs font-bold bg-accent hover:bg-blue-600 text-white rounded-xl shadow-xs active:scale-95 transition-all"
+                  className="w-full h-11 px-4 text-xs font-bold bg-accent hover:bg-blue-600 text-white rounded-xl shadow-xs active:scale-98 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
-                  {savingStatus ? 'Saving…' : 'Save Status Update'}
+                  {savingStatus ? 'Saving…' : 'Save Status & Deal Updates'}
                 </button>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {!isDealUndecided(selected) ? (
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadEnquiryQuote(selected)}
+                      disabled={downloadingId === selected.id}
+                      className="h-10 px-2 text-[11px] font-bold text-accent bg-accent/10 hover:bg-accent/20 border border-accent/25 rounded-xl flex items-center justify-center gap-1 truncate active:scale-98 transition-all"
+                      title="Download PDF Quotation"
+                    >
+                      <Download size={12} className={downloadingId === selected.id ? 'animate-bounce' : ''} />
+                      <span className="truncate">{downloadingId === selected.id ? 'PDF…' : 'PDF Quote'}</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingPricing(true)}
+                      className="h-10 px-2 text-[11px] font-bold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-xl flex items-center justify-center gap-1 truncate active:scale-98 transition-all"
+                      title="Set Price"
+                    >
+                      <Tag size={12} />
+                      <span className="truncate">Set Price</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setSelected(null)}
+                    className="h-10 px-2 text-[11px] font-semibold text-gray-700 bg-white hover:bg-gray-100 border border-gray-200 rounded-xl flex items-center justify-center truncate active:scale-98 transition-all"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={(e) => handleDeleteEnquiry(selected.id, e)}
+                    className="h-10 px-2 text-[11px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl flex items-center justify-center gap-1 truncate active:scale-98 transition-all"
+                    title="Delete Deal"
+                  >
+                    <Trash2 size={12} />
+                    <span className="truncate">Delete</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Desktop View Layout (Inline, Balanced Matching Heights) */}
+              <div className="hidden sm:flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={(e) => handleDeleteEnquiry(selected.id, e)}
+                  className="h-10 px-4 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl flex items-center gap-1.5 border border-rose-200 transition-colors active:scale-98"
+                  title="Delete this lead"
+                >
+                  <Trash2 size={13} />
+                  <span>Delete Deal</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  {!isDealUndecided(selected) && (
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadEnquiryQuote(selected)}
+                      disabled={downloadingId === selected.id}
+                      className="h-10 px-4 text-xs font-bold text-accent bg-accent/10 hover:bg-accent/20 border border-accent/30 rounded-xl transition-colors flex items-center gap-1.5 active:scale-98"
+                      title="Download PDF Quotation"
+                    >
+                      <Download size={13} className={downloadingId === selected.id ? 'animate-bounce' : ''} />
+                      <span>{downloadingId === selected.id ? 'Generating…' : 'PDF Quote'}</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setSelected(null)}
+                    className="h-10 px-4 text-xs font-semibold text-gray-700 bg-white hover:bg-gray-100 border border-gray-200 rounded-xl transition-colors active:scale-98"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveAllUpdates}
+                    disabled={savingStatus}
+                    className="h-10 px-5 text-xs font-bold bg-accent hover:bg-blue-600 text-white rounded-xl shadow-xs active:scale-95 transition-all flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    {savingStatus ? 'Saving…' : 'Save Status & Deal Updates'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

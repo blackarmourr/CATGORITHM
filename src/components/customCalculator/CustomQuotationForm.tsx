@@ -23,6 +23,7 @@ export default function CustomQuotationForm() {
   const [savingLead, setSavingLead] = useState(false)
   const [generatingPDF, setGeneratingPDF] = useState(false)
   const [showSaveModal, setShowSaveModal] = useState(false)
+  const [isUndecided, setIsUndecided] = useState(false)
 
   // Construct crisp, professional WhatsApp quote text for custom campaign
   const quoteMessage = `*Catgorithm Bus Screen Advertising Quotation*
@@ -131,82 +132,107 @@ _Offer valid for 30 days. Contact us to reserve your screen slots._
     }
     setSavingLead(true)
     try {
-      const validUntil = format(addDays(new Date(), 30), 'yyyy-MM-dd')
-      const quotation = await createQuotation({
-        customerDetails: {
-          businessName: clientName.trim() || 'Field Prospect',
-          contactName: clientName.trim() || 'Prospect',
-          phone: clientPhone.trim() || 'Not specified',
-          email: '',
-          businessCategory: 'Bus Screen Advertising',
+      let quotationId: string | undefined = undefined
+
+      if (!isUndecided) {
+        const validUntil = format(addDays(new Date(), 30), 'yyyy-MM-dd')
+        const quotation = await createQuotation({
+          customerDetails: {
+            businessName: clientName.trim() || 'Field Prospect',
+            contactName: clientName.trim() || 'Prospect',
+            phone: clientPhone.trim() || 'Not specified',
+            email: '',
+            businessCategory: 'Bus Screen Advertising',
+            campaignStartDate: config.startDate,
+            campaignEndDate: config.endDate,
+            notes: '',
+          },
+          pricingSnapshot: {
+            buses: pricing.buses,
+            months: Math.max(1, Math.round(config.days / 30)),
+            campaignDays: config.days,
+            dailyBasePrice: pricing.dailyBasePricePerBus,
+            videoDurationSeconds: pricing.videoDurationSeconds,
+            standardPrice: pricing.standardPrice,
+            packagePrice: pricing.totalPrice,
+            savings: pricing.savings,
+            savingsPercentage: pricing.savingsPercentage,
+            durationMultiplier: pricing.durationMultiplier,
+            durationDiscountRate: 0,
+            pricingMethod: 'custom-daily',
+            pricePerBusCampaign: pricing.finalPerBusPrice,
+            pricePerBusMonth: Math.round(pricing.pricePerBusDay * 30),
+            pricePerBusDay: pricing.pricePerBusDay,
+            pricePerSecondBusMonth: (pricing.pricePerBusDay * 30) / pricing.videoDurationSeconds,
+            pricePerSecondBusCampaign: pricing.pricePerSecondBusDay,
+          },
+          campaignId: 'custom-daily',
+          campaignName: `Custom Campaign (${config.days} Days)`,
           campaignStartDate: config.startDate,
           campaignEndDate: config.endDate,
-          notes: '',
-        },
-        pricingSnapshot: {
-          buses: pricing.buses,
-          months: Math.max(1, Math.round(config.days / 30)),
+          billedMonths: Math.max(1, Math.round(config.days / 30)),
           campaignDays: config.days,
-          dailyBasePrice: pricing.dailyBasePricePerBus,
-          videoDurationSeconds: pricing.videoDurationSeconds,
-          standardPrice: pricing.standardPrice,
-          packagePrice: pricing.totalPrice,
-          savings: pricing.savings,
-          savingsPercentage: pricing.savingsPercentage,
-          durationMultiplier: pricing.durationMultiplier,
-          durationDiscountRate: 0,
-          pricingMethod: 'custom-daily',
-          pricePerBusCampaign: pricing.finalPerBusPrice,
-          pricePerBusMonth: Math.round(pricing.pricePerBusDay * 30),
-          pricePerBusDay: pricing.pricePerBusDay,
-          pricePerSecondBusMonth: (pricing.pricePerBusDay * 30) / pricing.videoDurationSeconds,
-          pricePerSecondBusCampaign: pricing.pricePerSecondBusDay,
-        },
-        campaignId: 'custom-daily',
-        campaignName: `Custom Campaign (${config.days} Days)`,
-        campaignStartDate: config.startDate,
-        campaignEndDate: config.endDate,
-        billedMonths: Math.max(1, Math.round(config.days / 30)),
-        campaignDays: config.days,
-        validUntil,
-      })
+          validUntil,
+        })
+        quotationId = quotation.id
+      }
 
       await createEnquiry({
         status: dealStatus,
-        quotationId: quotation.id,
+        quotationId,
         customerDetails: {
           businessName: clientName.trim() || 'Field Prospect',
           contactName: clientName.trim() || 'Prospect',
           phone: clientPhone.trim() || 'Not specified',
-          campaignStartDate: config.startDate,
-          campaignEndDate: config.endDate,
-          notes: `Logged via Custom Campaign App. ${config.buses} buses, ${config.videoDurationSeconds}s ad, ${config.days} days. Quotation Ref: ${quotation.id}.`,
+          campaignStartDate: isUndecided ? undefined : config.startDate,
+          campaignEndDate: isUndecided ? undefined : config.endDate,
+          notes: isUndecided
+            ? `Early stage discovery prospect (Custom Campaign). Fleet size & pricing not decided yet.`
+            : `Logged via Custom Campaign App. ${config.buses} buses, ${config.videoDurationSeconds}s ad, ${config.days} days. Quotation Ref: ${quotationId}.`,
         },
-        pricingSnapshot: {
-          buses: pricing.buses,
-          months: Math.max(1, Math.round(config.days / 30)),
-          campaignDays: config.days,
-          dailyBasePrice: pricing.dailyBasePricePerBus,
-          videoDurationSeconds: pricing.videoDurationSeconds,
-          standardPrice: pricing.standardPrice,
-          packagePrice: pricing.totalPrice,
-          savings: pricing.savings,
-          savingsPercentage: pricing.savingsPercentage,
-          durationMultiplier: pricing.durationMultiplier,
-          durationDiscountRate: 0,
-          pricingMethod: 'custom-daily',
-          pricePerBusCampaign: pricing.finalPerBusPrice,
-          pricePerBusMonth: Math.round(pricing.pricePerBusDay * 30),
-          pricePerBusDay: pricing.pricePerBusDay,
-          pricePerSecondBusMonth: (pricing.pricePerBusDay * 30) / pricing.videoDurationSeconds,
-          pricePerSecondBusCampaign: pricing.pricePerSecondBusDay,
-        },
+        pricingSnapshot: isUndecided
+          ? {
+              buses: 0,
+              months: 0,
+              campaignDays: 0,
+              videoDurationSeconds: 0,
+              standardPrice: 0,
+              packagePrice: 0,
+              savings: 0,
+              savingsPercentage: 0,
+              durationMultiplier: 0,
+              durationDiscountRate: 0,
+              pricingMethod: 'undecided',
+              pricePerBusCampaign: 0,
+              pricePerBusMonth: 0,
+              pricePerBusDay: 0,
+            }
+          : {
+              buses: pricing.buses,
+              months: Math.max(1, Math.round(config.days / 30)),
+              campaignDays: config.days,
+              dailyBasePrice: pricing.dailyBasePricePerBus,
+              videoDurationSeconds: pricing.videoDurationSeconds,
+              standardPrice: pricing.standardPrice,
+              packagePrice: pricing.totalPrice,
+              savings: pricing.savings,
+              savingsPercentage: pricing.savingsPercentage,
+              durationMultiplier: pricing.durationMultiplier,
+              durationDiscountRate: 0,
+              pricingMethod: 'custom-daily',
+              pricePerBusCampaign: pricing.finalPerBusPrice,
+              pricePerBusMonth: Math.round(pricing.pricePerBusDay * 30),
+              pricePerBusDay: pricing.pricePerBusDay,
+              pricePerSecondBusMonth: (pricing.pricePerBusDay * 30) / pricing.videoDurationSeconds,
+              pricePerSecondBusCampaign: pricing.pricePerSecondBusDay,
+            },
         campaignId: 'custom-daily',
-        campaignName: `Custom Campaign (${config.days} Days)`,
+        campaignName: isUndecided ? 'Custom Campaign (TBD)' : `Custom Campaign (${config.days} Days)`,
       })
 
-      toast.success(`Deal logged as "${dealStatus}" to Pipeline!`)
+      toast.success(isUndecided ? 'Deal logged to Pipeline (Fleet & Price TBD)!' : `Deal logged as "${dealStatus}" to Pipeline!`)
       setShowSaveModal(false)
+      setIsUndecided(false)
     } catch {
       toast.error('Failed to save lead')
     } finally {
@@ -303,7 +329,9 @@ _Offer valid for 30 days. Contact us to reserve your screen slots._
             <div>
               <h3 className="font-black text-base text-gray-900">Log Deal to Pipeline</h3>
               <p className="text-xs text-gray-500 mt-0.5">
-                Save {formatINR(pricing.totalPrice)} custom campaign deal to track follow-ups.
+                {isUndecided
+                  ? 'Record an open prospect with fleet and pricing to be decided later.'
+                  : `Save ${formatINR(pricing.totalPrice)} custom campaign deal to track follow-ups.`}
               </p>
             </div>
 
@@ -345,6 +373,50 @@ _Offer valid for 30 days. Contact us to reserve your screen slots._
                   <option value="Confirmed">Confirmed Deal</option>
                 </select>
               </div>
+
+              {/* Optional: Fleet & Price Not Decided Yet */}
+              <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3 space-y-1.5">
+                <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={isUndecided}
+                    onChange={(e) => setIsUndecided(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-accent focus:ring-accent"
+                  />
+                  <div className="flex-1">
+                    <span className="font-bold text-xs text-amber-950 block">
+                      Buses & Price Not Decided Yet
+                    </span>
+                    <span className="text-[11px] text-amber-800/80 block mt-0.5 leading-normal">
+                      Client hasn't confirmed fleet size or budget yet. Log as an open deal with pricing TBD; finalize details later once approved.
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              {isUndecided ? (
+                <div className="bg-gray-100 p-2.5 rounded-xl text-xs space-y-1 border border-gray-200">
+                  <div className="flex justify-between text-gray-600">
+                    <span>Fleet Specification:</span>
+                    <span className="font-bold text-amber-700 bg-amber-100/60 px-1.5 py-0.5 rounded text-[11px]">Undecided / TBD</span>
+                  </div>
+                  <div className="flex justify-between text-gray-600">
+                    <span>Deal Value:</span>
+                    <span className="font-bold text-amber-700 bg-amber-100/60 px-1.5 py-0.5 rounded text-[11px]">TBD (To Be Finalized)</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-blue-50 p-2.5 rounded-xl text-xs space-y-1 border border-blue-100">
+                  <div className="flex justify-between text-gray-600">
+                    <span>Configuration:</span>
+                    <span className="font-semibold text-gray-900">{config.buses} Buses · {config.days} Days</span>
+                  </div>
+                  <div className="flex justify-between text-accent font-bold">
+                    <span>Quote Value:</span>
+                    <span className="tabular-nums">{formatINR(pricing.totalPrice)}</span>
+                  </div>
+                </div>
+              )}
 
               <div className="pt-2 flex items-center gap-2">
                 <button
