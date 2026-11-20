@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
-import { getEnquiries, getQuotations, updateEnquiryStatus, updateEnquiry, createQuotation, deleteQuotation, deleteEnquiry } from '../../lib/dataStore'
+import { getEnquiries, getQuotations, updateEnquiryStatus, updateEnquiry, createEnquiry, createQuotation, deleteQuotation, deleteEnquiry } from '../../lib/dataStore'
 import { generateQuotationPDF } from '../../lib/pdfGenerator'
 import type { Enquiry, EnquiryStatus, Quotation, PricingSnapshot } from '../../types'
 import { formatINR, calculatePrice } from '../../lib/pricingEngine'
@@ -9,7 +9,7 @@ import { Badge, EmptyState } from '../../components/ui'
 import {
   Users, Search, RefreshCw, ChevronDown, X, FileText, Download,
   Phone, MessageSquare, ArrowLeft, Filter, Sparkles, Calendar,
-  TrendingUp, CheckCircle, Clock, Tag, Trash2, Bus
+  TrendingUp, CheckCircle, Clock, Tag, Trash2, Bus, Plus, DollarSign
 } from 'lucide-react'
 import { format, addDays } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -45,7 +45,7 @@ export default function AdminEnquiries() {
   const [quotations, setQuotations] = useState<Quotation[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<EnquiryStatus | 'All'>('All')
+  const [statusFilter, setStatusFilter] = useState<EnquiryStatus | 'All' | 'Price-TBD'>('All')
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'name'>('date')
   const [selected, setSelected] = useState<Enquiry | null>(null)
   const [newStatus, setNewStatus] = useState<EnquiryStatus>('New')
@@ -54,6 +54,7 @@ export default function AdminEnquiries() {
   const [downloadingId, setDownloadingId] = useState<string | null>(null)
 
   // Pricing & Fleet edit state
+  const [editIsUndecided, setEditIsUndecided] = useState<boolean>(false)
   const [editBuses, setEditBuses] = useState<number>(10)
   const [editMonths, setEditMonths] = useState<number>(1)
   const [editSeconds, setEditSeconds] = useState<number>(30)
@@ -61,6 +62,19 @@ export default function AdminEnquiries() {
   const [editPricingType, setEditPricingType] = useState<'monthly' | 'custom-days'>('monthly')
   const [editManualPrice, setEditManualPrice] = useState<string>('')
   const [isEditingPricing, setIsEditingPricing] = useState(false)
+
+  // Quick Log Deal Modal State in Pipeline Section
+  const [showLogDealModal, setShowLogDealModal] = useState(false)
+  const [newDealBusinessName, setNewDealBusinessName] = useState('')
+  const [newDealContactName, setNewDealContactName] = useState('')
+  const [newDealPhone, setNewDealPhone] = useState('')
+  const [newDealStatus, setNewDealStatus] = useState<EnquiryStatus>('New')
+  const [newDealNotes, setNewDealNotes] = useState('')
+  const [newDealIsUndecided, setNewDealIsUndecided] = useState(true)
+  const [newDealBuses, setNewDealBuses] = useState(5)
+  const [newDealMonths, setNewDealMonths] = useState(1)
+  const [newDealSeconds, setNewDealSeconds] = useState(30)
+  const [creatingDeal, setCreatingDeal] = useState(false)
 
   async function load() {
     setLoading(true)
@@ -91,7 +105,12 @@ export default function AdminEnquiries() {
         e.customerDetails.phone?.includes(search) ||
         e.id?.toLowerCase().includes(q) ||
         e.campaignName?.toLowerCase().includes(q)
-      const matchStatus = statusFilter === 'All' || e.status === statusFilter
+      const matchStatus =
+        statusFilter === 'All'
+          ? true
+          : statusFilter === 'Price-TBD'
+          ? isDealUndecided(e)
+          : e.status === statusFilter
       return matchSearch && matchStatus
     })
     .sort((a, b) => {
@@ -129,15 +148,116 @@ export default function AdminEnquiries() {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     })
 
-  // Metrics
-  const totalPipelineValue = enquiries.reduce(
+  // Metrics: Dynamic Pipeline Value by selected status filter
+  const dealsInSelectedStatus = enquiries.filter((e) => {
+    if (statusFilter === 'All') return true
+    if (statusFilter === 'Price-TBD') return isDealUndecided(e)
+    return e.status === statusFilter
+  })
+
+  const selectedPipelineValue = dealsInSelectedStatus.reduce(
     (sum, e) => sum + (e.negotiatedPrice ?? e.pricingSnapshot?.packagePrice ?? 0),
     0
   )
+
   const activeDealsCount = enquiries.filter(
     (e) => e.status === 'New' || e.status === 'Contacted' || e.status === 'Negotiation' || e.status === 'Quotation Sent'
   ).length
   const confirmedCount = enquiries.filter((e) => e.status === 'Confirmed' || e.status === 'Completed').length
+  const undecidedCount = enquiries.filter(isDealUndecided).length
+
+  // Quick Create Deal directly from Pipeline Section
+  async function handleQuickCreateDeal(e: React.FormEvent) {
+    e.preventDefault()
+    if (!newDealBusinessName.trim()) {
+      toast.error('Please enter the Business / Prospect Name')
+      return
+    }
+
+    setCreatingDeal(true)
+    try {
+      let pricingSnapshot: PricingSnapshot
+      let campaignName = 'Standard Campaign'
+
+      if (newDealIsUndecided) {
+        pricingSnapshot = {
+          buses: 0,
+          months: 0,
+          videoDurationSeconds: 0,
+          packagePrice: 0,
+          standardPrice: 0,
+          savings: 0,
+          savingsPercentage: 0,
+          pricingMethod: 'undecided',
+          durationMultiplier: 1,
+          durationDiscountRate: 0,
+          pricePerBusCampaign: 0,
+          pricePerBusMonth: 0,
+          pricePerBusDay: 0,
+          pricePerSecondBusMonth: 0,
+          pricePerSecondBusCampaign: 0,
+        }
+        campaignName = 'Pending Finalization (TBD)'
+      } else {
+        const calc = calculatePrice(newDealBuses, newDealMonths, newDealSeconds)
+        pricingSnapshot = {
+          buses: newDealBuses,
+          months: newDealMonths,
+          videoDurationSeconds: newDealSeconds,
+          standardPrice: calc.actualPrice,
+          packagePrice: calc.finalPrice,
+          savings: calc.savings,
+          savingsPercentage: calc.savingsPercentage,
+          durationMultiplier: calc.durationMultiplier,
+          durationDiscountRate: calc.durationDiscountRate,
+          pricingMethod: calc.pricingMethod,
+          pricePerBusCampaign: calc.pricePerBusCampaign,
+          pricePerBusMonth: calc.pricePerBusMonth,
+          pricePerBusDay: calc.pricePerBusDay,
+          pricePerSecondBusMonth: calc.pricePerSecondBusMonth,
+          pricePerSecondBusCampaign: calc.pricePerSecondBusCampaign,
+        }
+        campaignName = `${newDealBuses} Buses, ${newDealMonths} Mo (${newDealSeconds}s)`
+      }
+
+      const created = await createEnquiry({
+        customerDetails: {
+          businessName: newDealBusinessName.trim(),
+          contactName: newDealContactName.trim() || 'Representative',
+          phone: newDealPhone.trim() || 'Not specified',
+          email: '',
+          businessCategory: 'Bus Screen Advertising',
+          notes: newDealNotes.trim(),
+        },
+        campaignName,
+        status: newDealStatus,
+        pricingSnapshot,
+        adminNotes: newDealNotes.trim()
+          ? `[${new Date().toLocaleDateString('en-IN')}] Initial lead logged: ${newDealNotes.trim()}`
+          : undefined,
+      })
+
+      toast.success(
+        newDealIsUndecided
+          ? `Deal logged to Pipeline (Price & Fleet TBD)!`
+          : `Deal created for ${created.customerDetails.businessName}!`
+      )
+
+      // Reset and close
+      setNewDealBusinessName('')
+      setNewDealContactName('')
+      setNewDealPhone('')
+      setNewDealNotes('')
+      setNewDealIsUndecided(true)
+      setShowLogDealModal(false)
+      load()
+    } catch (err) {
+      console.error(err)
+      toast.error('Failed to create deal')
+    } finally {
+      setCreatingDeal(false)
+    }
+  }
 
   // Live calculated pricing preview when editing deal configuration
   const livePricingPreview = (() => {
@@ -180,68 +300,91 @@ export default function AdminEnquiries() {
 
       // If user configured/updated pricing
       if (isEditingPricing) {
-        let fullSnapshot: PricingSnapshot
-        const manualPrice = editManualPrice ? parseFloat(editManualPrice) : undefined
-        const hasManual = manualPrice !== undefined && !isNaN(manualPrice) && manualPrice > 0
-
-        if (editPricingType === 'custom-days') {
-          const customCalc = calculateCustomPrice(editBuses, editCustomDays, editSeconds)
-          const finalPrice = hasManual ? manualPrice! : customCalc.totalPrice
-          const savings = Math.max(0, customCalc.standardPrice - finalPrice)
-          const savingsPercentage = customCalc.standardPrice > 0 ? (savings / customCalc.standardPrice) * 100 : 0
-
-          fullSnapshot = {
-            buses: editBuses,
-            months: Math.max(1, Math.round(editCustomDays / 30)),
-            campaignDays: editCustomDays,
-            dailyBasePrice: customCalc.dailyBasePricePerBus,
-            videoDurationSeconds: editSeconds,
-            standardPrice: customCalc.standardPrice,
-            packagePrice: finalPrice,
-            savings,
-            savingsPercentage,
-            durationMultiplier: customCalc.durationMultiplier,
+        if (editIsUndecided) {
+          const tbdSnapshot: PricingSnapshot = {
+            buses: 0,
+            months: 0,
+            videoDurationSeconds: 0,
+            packagePrice: 0,
+            standardPrice: 0,
+            savings: 0,
+            savingsPercentage: 0,
+            pricingMethod: 'undecided',
+            durationMultiplier: 1,
             durationDiscountRate: 0,
-            pricingMethod: 'custom-daily',
-            pricePerBusCampaign: finalPrice / editBuses,
-            pricePerBusMonth: Math.round((finalPrice / (editBuses * editCustomDays)) * 30),
-            pricePerBusDay: finalPrice / (editBuses * editCustomDays),
-            pricePerSecondBusMonth: ((finalPrice / (editBuses * editCustomDays)) * 30) / editSeconds,
-            pricePerSecondBusCampaign: (finalPrice / (editBuses * editCustomDays)) / editSeconds,
+            pricePerBusCampaign: 0,
+            pricePerBusMonth: 0,
+            pricePerBusDay: 0,
+            pricePerSecondBusMonth: 0,
+            pricePerSecondBusCampaign: 0,
           }
-          updates.campaignName = `Custom Campaign (${editCustomDays} Days)`
-        } else {
-          const calc = calculatePrice(editBuses, editMonths, editSeconds, {
-            manualPriceOverride: hasManual ? manualPrice : null,
-          })
-          const finalPrice = calc.finalPrice
-          fullSnapshot = {
-            buses: editBuses,
-            months: editMonths,
-            videoDurationSeconds: editSeconds,
-            standardPrice: calc.actualPrice,
-            packagePrice: finalPrice,
-            savings: calc.savings,
-            savingsPercentage: calc.savingsPercentage,
-            durationMultiplier: calc.durationMultiplier,
-            durationDiscountRate: calc.durationDiscountRate,
-            pricingMethod: calc.pricingMethod,
-            pricePerBusCampaign: calc.pricePerBusCampaign,
-            pricePerBusMonth: calc.pricePerBusMonth,
-            pricePerBusDay: calc.pricePerBusDay,
-            pricePerSecondBusMonth: calc.pricePerSecondBusMonth,
-            pricePerSecondBusCampaign: calc.pricePerSecondBusCampaign,
-          }
-          updates.campaignName = selected.campaignName && !selected.campaignName.includes('TBD')
-            ? selected.campaignName
-            : 'Standard Campaign'
-        }
-
-        updates.pricingSnapshot = fullSnapshot
-        if (hasManual) {
-          updates.negotiatedPrice = manualPrice
-        } else {
+          updates.pricingSnapshot = tbdSnapshot
           updates.negotiatedPrice = undefined
+          updates.campaignName = 'Pending Finalization (TBD)'
+        } else {
+          let fullSnapshot: PricingSnapshot
+          const manualPrice = editManualPrice ? parseFloat(editManualPrice) : undefined
+          const hasManual = manualPrice !== undefined && !isNaN(manualPrice) && manualPrice > 0
+
+          if (editPricingType === 'custom-days') {
+            const customCalc = calculateCustomPrice(editBuses, editCustomDays, editSeconds)
+            const finalPrice = hasManual ? manualPrice! : customCalc.totalPrice
+            const savings = Math.max(0, customCalc.standardPrice - finalPrice)
+            const savingsPercentage = customCalc.standardPrice > 0 ? (savings / customCalc.standardPrice) * 100 : 0
+
+            fullSnapshot = {
+              buses: editBuses,
+              months: Math.max(1, Math.round(editCustomDays / 30)),
+              campaignDays: editCustomDays,
+              dailyBasePrice: customCalc.dailyBasePricePerBus,
+              videoDurationSeconds: editSeconds,
+              standardPrice: customCalc.standardPrice,
+              packagePrice: finalPrice,
+              savings,
+              savingsPercentage,
+              durationMultiplier: customCalc.durationMultiplier,
+              durationDiscountRate: 0,
+              pricingMethod: 'custom-daily',
+              pricePerBusCampaign: finalPrice / editBuses,
+              pricePerBusMonth: Math.round((finalPrice / (editBuses * editCustomDays)) * 30),
+              pricePerBusDay: finalPrice / (editBuses * editCustomDays),
+              pricePerSecondBusMonth: ((finalPrice / (editBuses * editCustomDays)) * 30) / editSeconds,
+              pricePerSecondBusCampaign: (finalPrice / (editBuses * editCustomDays)) / editSeconds,
+            }
+            updates.campaignName = `Custom Campaign (${editCustomDays} Days)`
+          } else {
+            const calc = calculatePrice(editBuses, editMonths, editSeconds, {
+              manualPriceOverride: hasManual ? manualPrice : null,
+            })
+            const finalPrice = calc.finalPrice
+            fullSnapshot = {
+              buses: editBuses,
+              months: editMonths,
+              videoDurationSeconds: editSeconds,
+              standardPrice: calc.actualPrice,
+              packagePrice: finalPrice,
+              savings: calc.savings,
+              savingsPercentage: calc.savingsPercentage,
+              durationMultiplier: calc.durationMultiplier,
+              durationDiscountRate: calc.durationDiscountRate,
+              pricingMethod: calc.pricingMethod,
+              pricePerBusCampaign: calc.pricePerBusCampaign,
+              pricePerBusMonth: calc.pricePerBusMonth,
+              pricePerBusDay: calc.pricePerBusDay,
+              pricePerSecondBusMonth: calc.pricePerSecondBusMonth,
+              pricePerSecondBusCampaign: calc.pricePerSecondBusCampaign,
+            }
+            updates.campaignName = selected.campaignName && !selected.campaignName.includes('TBD')
+              ? selected.campaignName
+              : 'Standard Campaign'
+          }
+
+          updates.pricingSnapshot = fullSnapshot
+          if (hasManual) {
+            updates.negotiatedPrice = manualPrice
+          } else {
+            updates.negotiatedPrice = undefined
+          }
         }
       }
 
@@ -263,6 +406,7 @@ export default function AdminEnquiries() {
     setNewStatus(enquiry.status)
     setStatusNote('')
     const isUndecided = isDealUndecided(enquiry)
+    setEditIsUndecided(isUndecided)
     setIsEditingPricing(isUndecided)
     setEditBuses(enquiry.pricingSnapshot?.buses && enquiry.pricingSnapshot.buses > 0 ? enquiry.pricingSnapshot.buses : 10)
     setEditMonths(enquiry.pricingSnapshot?.months && enquiry.pricingSnapshot.months > 0 ? enquiry.pricingSnapshot.months : 1)
@@ -559,6 +703,17 @@ export default function AdminEnquiries() {
             </button>
           </div>
 
+          {activeTab === 'enquiries' && (
+            <button
+              onClick={() => setShowLogDealModal(true)}
+              className="h-10 px-3 bg-accent hover:bg-blue-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs active:scale-95 transition-all flex-shrink-0"
+              title="Log Deal to Pipeline (With or Without Price)"
+            >
+              <Plus size={15} />
+              <span className="hidden sm:inline">Log Deal</span>
+            </button>
+          )}
+
           <button
             onClick={load}
             className="h-10 w-10 flex items-center justify-center text-gray-600 hover:text-gray-900 bg-white border border-border rounded-xl active:scale-95 transition-all flex-shrink-0"
@@ -595,11 +750,21 @@ export default function AdminEnquiries() {
 
         <div className="card p-3 sm:p-4 bg-white border-border shadow-xs min-w-0 overflow-hidden">
           <p className="text-[11px] font-semibold text-secondary-text uppercase tracking-wider flex items-center gap-1 truncate">
-            <TrendingUp size={12} className="text-accent flex-shrink-0" /> Pipeline Value
+            <TrendingUp size={12} className="text-accent flex-shrink-0" />
+            {statusFilter === 'All'
+              ? 'Pipeline Value'
+              : statusFilter === 'Price-TBD'
+              ? 'Price TBD Deals'
+              : `${statusFilter} Value`}
           </p>
           <p className="text-xl sm:text-2xl font-black text-accent mt-1 tabular-nums truncate">
-            {formatINR(totalPipelineValue)}
+            {statusFilter === 'Price-TBD' ? `${undecidedCount} Deals` : formatINR(selectedPipelineValue)}
           </p>
+          {statusFilter !== 'All' && (
+            <p className="text-[10px] text-gray-500 mt-0.5 truncate">
+              {dealsInSelectedStatus.length} of {enquiries.length} deals in {statusFilter}
+            </p>
+          )}
         </div>
       </div>
 
@@ -626,16 +791,20 @@ export default function AdminEnquiries() {
 
         <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
           {activeTab === 'enquiries' && (
-            <div className="relative flex-1 min-w-0 sm:w-44">
+            <div className="relative flex-1 min-w-0 sm:w-52">
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as EnquiryStatus | 'All')}
-                className="appearance-none w-full pl-3 pr-8 py-2 text-xs sm:text-sm rounded-xl border border-border focus:outline-none focus:border-accent bg-white truncate"
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                className="appearance-none w-full pl-3 pr-8 py-2 text-xs sm:text-sm rounded-xl border border-border focus:outline-none focus:border-accent bg-white truncate font-semibold"
               >
-                <option value="All">All Statuses</option>
-                {STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
+                <option value="All">All Statuses ({enquiries.length})</option>
+                <option value="Price-TBD">Price Not Confirmed / TBD ({undecidedCount})</option>
+                {STATUS_OPTIONS.map((s) => {
+                  const count = enquiries.filter(e => e.status === s).length;
+                  return (
+                    <option key={s} value={s}>{s} ({count})</option>
+                  );
+                })}
               </select>
               <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-secondary-text pointer-events-none" />
             </div>
@@ -655,6 +824,53 @@ export default function AdminEnquiries() {
           </div>
         </div>
       </div>
+
+      {/* ── Status Quick Filter Pills (One-Touch Filter & Value View) ── */}
+      {activeTab === 'enquiries' && (
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 text-xs">
+          <button
+            type="button"
+            onClick={() => setStatusFilter('All')}
+            className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all ${
+              statusFilter === 'All'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'bg-white border border-border text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            All ({enquiries.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('Price-TBD')}
+            className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all flex items-center gap-1 ${
+              statusFilter === 'Price-TBD'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
+            }`}
+          >
+            <Clock size={12} />
+            <span>Price TBD ({undecidedCount})</span>
+          </button>
+          {STATUS_OPTIONS.map((s) => {
+            const count = enquiries.filter(e => e.status === s).length;
+            const isActive = statusFilter === s;
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setStatusFilter(s)}
+                className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all ${
+                  isActive
+                    ? 'bg-accent text-white shadow-xs'
+                    : 'bg-white border border-border text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                {s} ({count})
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* ── TAB 1: ENQUIRIES PIPELINE ── */}
       {activeTab === 'enquiries' && (
@@ -1209,135 +1425,169 @@ export default function AdminEnquiries() {
                 {/* If in editing pricing mode */}
                 {isEditingPricing && (
                   <div className="p-3.5 space-y-3 bg-blue-50/20">
-                    <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                      <span className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">
-                        Configure Deal Package
-                      </span>
-                      {/* Pricing System Toggle */}
-                      <div className="flex rounded-lg bg-gray-200/80 p-0.5 text-[11px] font-bold">
-                        <button
-                          type="button"
-                          onClick={() => setEditPricingType('monthly')}
-                          className={`px-2.5 py-1 rounded-md transition-all ${
-                            editPricingType === 'monthly' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-600'
-                          }`}
-                        >
-                          Monthly
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditPricingType('custom-days')}
-                          className={`px-2.5 py-1 rounded-md transition-all ${
-                            editPricingType === 'custom-days' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-600'
-                          }`}
-                        >
-                          Custom Days
-                        </button>
-                      </div>
+                    {/* Price & Fleet Not Confirmed (TBD) Toggle Checkbox */}
+                    <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3">
+                      <label className="flex items-start gap-2.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={editIsUndecided}
+                          onChange={(e) => {
+                            const val = e.target.checked
+                            setEditIsUndecided(val)
+                            if (val) {
+                              setEditManualPrice('')
+                            }
+                          }}
+                          className="mt-0.5 h-4 w-4 rounded border-gray-300 text-accent focus:ring-accent"
+                        />
+                        <div>
+                          <span className="font-bold text-amber-900 text-xs block">
+                            Price & Fleet Not Confirmed (TBD)
+                          </span>
+                          <span className="text-[11px] text-amber-700 block mt-0.5 leading-tight">
+                            Client has not decided or confirmed fleet size and price yet. Check this to keep deal as TBD without forcing pricing.
+                          </span>
+                        </div>
+                      </label>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                      {/* Fleet Size */}
-                      <div>
-                        <label className="text-[11px] font-bold text-gray-700 block mb-1">Bus Count</label>
-                        <input
-                          type="number"
-                          min={1}
-                          max={50}
-                          value={editBuses}
-                          onChange={(e) => setEditBuses(Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-full px-2.5 py-1.5 text-xs font-bold rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-accent"
-                        />
-                      </div>
-
-                      {/* Ad Duration */}
-                      <div>
-                        <label className="text-[11px] font-bold text-gray-700 block mb-1">Ad Duration (sec)</label>
-                        <select
-                          value={editSeconds}
-                          onChange={(e) => setEditSeconds(parseInt(e.target.value) || 30)}
-                          className="w-full px-2.5 py-1.5 text-xs font-bold rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-accent"
-                        >
-                          <option value={10}>10 Seconds</option>
-                          <option value={20}>20 Seconds</option>
-                          <option value={30}>30 Seconds</option>
-                          <option value={40}>40 Seconds</option>
-                          <option value={50}>50 Seconds</option>
-                          <option value={60}>60 Seconds</option>
-                        </select>
-                      </div>
-
-                      {/* Campaign Duration */}
-                      {editPricingType === 'monthly' ? (
-                        <div>
-                          <label className="text-[11px] font-bold text-gray-700 block mb-1">Months</label>
-                          <select
-                            value={editMonths}
-                            onChange={(e) => setEditMonths(parseInt(e.target.value) || 1)}
-                            className="w-full px-2.5 py-1.5 text-xs font-bold rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-accent"
-                          >
-                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
-                              <option key={m} value={m}>{m} {m === 1 ? 'Month' : 'Months'}</option>
-                            ))}
-                          </select>
+                    {!editIsUndecided ? (
+                      <>
+                        <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                          <span className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">
+                            Configure Deal Package
+                          </span>
+                          {/* Pricing System Toggle */}
+                          <div className="flex rounded-lg bg-gray-200/80 p-0.5 text-[11px] font-bold">
+                            <button
+                              type="button"
+                              onClick={() => setEditPricingType('monthly')}
+                              className={`px-2.5 py-1 rounded-md transition-all ${
+                                editPricingType === 'monthly' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-600'
+                              }`}
+                            >
+                              Monthly
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditPricingType('custom-days')}
+                              className={`px-2.5 py-1 rounded-md transition-all ${
+                                editPricingType === 'custom-days' ? 'bg-white text-gray-900 shadow-2xs' : 'text-gray-600'
+                              }`}
+                            >
+                              Custom Days
+                            </button>
+                          </div>
                         </div>
-                      ) : (
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                          {/* Fleet Size */}
+                          <div>
+                            <label className="text-[11px] font-bold text-gray-700 block mb-1">Bus Count</label>
+                            <input
+                              type="number"
+                              min={1}
+                              max={50}
+                              value={editBuses}
+                              onChange={(e) => setEditBuses(Math.max(1, parseInt(e.target.value) || 1))}
+                              className="w-full px-2.5 py-1.5 text-xs font-bold rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-accent"
+                            />
+                          </div>
+
+                          {/* Ad Duration */}
+                          <div>
+                            <label className="text-[11px] font-bold text-gray-700 block mb-1">Ad Duration (sec)</label>
+                            <select
+                              value={editSeconds}
+                              onChange={(e) => setEditSeconds(parseInt(e.target.value) || 30)}
+                              className="w-full px-2.5 py-1.5 text-xs font-bold rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-accent"
+                            >
+                              <option value={10}>10 Seconds</option>
+                              <option value={20}>20 Seconds</option>
+                              <option value={30}>30 Seconds</option>
+                              <option value={40}>40 Seconds</option>
+                              <option value={50}>50 Seconds</option>
+                              <option value={60}>60 Seconds</option>
+                            </select>
+                          </div>
+
+                          {/* Campaign Duration */}
+                          {editPricingType === 'monthly' ? (
+                            <div>
+                              <label className="text-[11px] font-bold text-gray-700 block mb-1">Months</label>
+                              <select
+                                value={editMonths}
+                                onChange={(e) => setEditMonths(parseInt(e.target.value) || 1)}
+                                className="w-full px-2.5 py-1.5 text-xs font-bold rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-accent"
+                              >
+                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
+                                  <option key={m} value={m}>{m} {m === 1 ? 'Month' : 'Months'}</option>
+                                ))}
+                              </select>
+                            </div>
+                          ) : (
+                            <div>
+                              <label className="text-[11px] font-bold text-gray-700 block mb-1">Campaign Days</label>
+                              <input
+                                type="number"
+                                min={1}
+                                max={365}
+                                value={editCustomDays}
+                                onChange={(e) => setEditCustomDays(Math.max(1, parseInt(e.target.value) || 1))}
+                                className="w-full px-2.5 py-1.5 text-xs font-bold rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-accent"
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Negotiated / Custom Override Price */}
                         <div>
-                          <label className="text-[11px] font-bold text-gray-700 block mb-1">Campaign Days</label>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-[11px] font-bold text-gray-700">
+                              Negotiated / Agreed Price (₹) <span className="text-gray-400 font-normal">(Optional Override)</span>
+                            </label>
+                            {editManualPrice && (
+                              <button
+                                type="button"
+                                onClick={() => setEditManualPrice('')}
+                                className="text-[10px] text-accent font-semibold hover:underline"
+                              >
+                                Reset to Auto
+                              </button>
+                            )}
+                          </div>
                           <input
                             type="number"
-                            min={1}
-                            max={365}
-                            value={editCustomDays}
-                            onChange={(e) => setEditCustomDays(Math.max(1, parseInt(e.target.value) || 1))}
+                            placeholder={`System Price: ₹${livePricingPreview.systemPrice.toLocaleString('en-IN')}`}
+                            value={editManualPrice}
+                            onChange={(e) => setEditManualPrice(e.target.value)}
                             className="w-full px-2.5 py-1.5 text-xs font-bold rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-accent"
                           />
                         </div>
-                      )}
-                    </div>
 
-                    {/* Negotiated / Custom Override Price */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-[11px] font-bold text-gray-700">
-                          Negotiated / Agreed Price (₹) <span className="text-gray-400 font-normal">(Optional Override)</span>
-                        </label>
-                        {editManualPrice && (
-                          <button
-                            type="button"
-                            onClick={() => setEditManualPrice('')}
-                            className="text-[10px] text-accent font-semibold hover:underline"
-                          >
-                            Reset to Auto
-                          </button>
-                        )}
+                        {/* Live Calculated Price Summary */}
+                        <div className="p-2.5 rounded-xl bg-white border border-blue-200/80 flex items-center justify-between text-xs">
+                          <div>
+                            <span className="text-[10px] text-gray-500 block uppercase font-bold">Standard Tariff</span>
+                            <span className="text-gray-400 line-through text-xs font-semibold tabular-nums">
+                              {formatINR(livePricingPreview.standardPrice)}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[10px] text-accent font-bold block uppercase">
+                              {livePricingPreview.isManual ? 'Agreed Deal Price (Manual)' : 'Calculated Package Price'}
+                            </span>
+                            <span className="text-sm font-black text-accent tabular-nums">
+                              {formatINR(livePricingPreview.effectivePrice)}
+                            </span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="p-3 bg-amber-50/50 border border-dashed border-amber-300 rounded-xl text-center text-xs text-amber-900 font-medium">
+                        This deal is set to <strong>Fleet & Price Not Confirmed (TBD)</strong>. Uncheck above anytime to configure bus count and price.
                       </div>
-                      <input
-                        type="number"
-                        placeholder={`System Price: ₹${livePricingPreview.systemPrice.toLocaleString('en-IN')}`}
-                        value={editManualPrice}
-                        onChange={(e) => setEditManualPrice(e.target.value)}
-                        className="w-full px-2.5 py-1.5 text-xs font-bold rounded-lg border border-gray-300 bg-white focus:outline-none focus:border-accent"
-                      />
-                    </div>
-
-                    {/* Live Calculated Price Summary */}
-                    <div className="p-2.5 rounded-xl bg-white border border-blue-200/80 flex items-center justify-between text-xs">
-                      <div>
-                        <span className="text-[10px] text-gray-500 block uppercase font-bold">Standard Tariff</span>
-                        <span className="text-gray-400 line-through text-xs font-semibold tabular-nums">
-                          {formatINR(livePricingPreview.standardPrice)}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-[10px] text-accent font-bold block uppercase">
-                          {livePricingPreview.isManual ? 'Agreed Deal Price (Manual)' : 'Calculated Package Price'}
-                        </span>
-                        <span className="text-sm font-black text-accent tabular-nums">
-                          {formatINR(livePricingPreview.effectivePrice)}
-                        </span>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1488,6 +1738,183 @@ export default function AdminEnquiries() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── QUICK LOG DEAL MODAL (Directly from Pipeline Section) ── */}
+      {showLogDealModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden animate-scaleUp">
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 border-b border-border flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-accent/10 flex items-center justify-center text-accent">
+                  <Plus size={18} />
+                </div>
+                <div>
+                  <h2 className="font-black text-primary-text text-base sm:text-lg">
+                    Log New Deal to Pipeline
+                  </h2>
+                  <p className="text-[11px] text-secondary-text">
+                    Add prospect directly with or without pricing
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowLogDealModal(false)}
+                className="p-2 text-gray-400 hover:text-gray-700 rounded-xl hover:bg-gray-100 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleQuickCreateDeal} className="p-4 sm:p-5 space-y-3.5 overflow-y-auto flex-1 text-xs">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  Business / Prospect Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. NS Hospital, Banaz Furniture..."
+                  value={newDealBusinessName}
+                  onChange={(e) => setNewDealBusinessName(e.target.value)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-gray-300 focus:outline-none focus:border-accent"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    Contact Person <span className="text-gray-400 font-normal">(Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Dr. Rajesh"
+                    value={newDealContactName}
+                    onChange={(e) => setNewDealContactName(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-gray-300 focus:outline-none focus:border-accent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                    Phone Number <span className="text-gray-400 font-normal">(Optional)</span>
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="e.g. 9876543210"
+                    value={newDealPhone}
+                    onChange={(e) => setNewDealPhone(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-gray-300 focus:outline-none focus:border-accent"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Initial Status</label>
+                <select
+                  value={newDealStatus}
+                  onChange={(e) => setNewDealStatus(e.target.value as EnquiryStatus)}
+                  className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-gray-300 bg-white focus:outline-none focus:border-accent"
+                >
+                  {STATUS_OPTIONS.map((st) => (
+                    <option key={st} value={st}>{st}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Price & Fleet Option Checkbox */}
+              <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3">
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newDealIsUndecided}
+                    onChange={(e) => setNewDealIsUndecided(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-accent focus:ring-accent"
+                  />
+                  <div>
+                    <span className="font-bold text-amber-900 text-xs block">
+                      Price & Fleet Not Confirmed (TBD)
+                    </span>
+                    <span className="text-[11px] text-amber-700 block mt-0.5 leading-tight">
+                      Check this if the client hasn't decided bus count or budget yet. No pricing or bus numbers will be required now.
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              {/* If price confirmed, ask fleet size */}
+              {!newDealIsUndecided && (
+                <div className="p-3 bg-blue-50/40 border border-blue-200/80 rounded-xl space-y-2.5">
+                  <span className="font-bold text-gray-800 text-xs block">Estimated Campaign Fleet</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-600 block mb-0.5">Buses</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={50}
+                        value={newDealBuses}
+                        onChange={(e) => setNewDealBuses(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-full px-2 py-1 text-xs font-bold rounded-lg border border-gray-300 bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-600 block mb-0.5">Duration</label>
+                      <select
+                        value={newDealMonths}
+                        onChange={(e) => setNewDealMonths(parseInt(e.target.value) || 1)}
+                        className="w-full px-2 py-1 text-xs font-bold rounded-lg border border-gray-300 bg-white"
+                      >
+                        {[1, 2, 3, 6, 12].map(m => (
+                          <option key={m} value={m}>{m} Mo</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-600 block mb-0.5">Ad Length</label>
+                      <select
+                        value={newDealSeconds}
+                        onChange={(e) => setNewDealSeconds(parseInt(e.target.value) || 30)}
+                        className="w-full px-2 py-1 text-xs font-bold rounded-lg border border-gray-300 bg-white"
+                      >
+                        <option value={10}>10s</option>
+                        <option value={20}>20s</option>
+                        <option value={30}>30s</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">
+                  Notes / Discussion Summary <span className="text-gray-400 font-normal">(Optional)</span>
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Met manager; requested proposal for private buses on Kollam-Kundara route."
+                  value={newDealNotes}
+                  onChange={(e) => setNewDealNotes(e.target.value)}
+                  className="w-full p-2 text-xs rounded-xl border border-gray-300 focus:outline-none focus:border-accent"
+                />
+              </div>
+
+              {/* Submit Button */}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={creatingDeal}
+                  className="w-full h-11 bg-accent hover:bg-blue-600 text-white rounded-xl text-xs font-bold shadow-xs active:scale-98 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
+                  <Plus size={15} />
+                  <span>{creatingDeal ? 'Logging Deal…' : 'Log Deal to Pipeline'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

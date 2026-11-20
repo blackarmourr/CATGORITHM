@@ -19,7 +19,9 @@ import {
   ProposalIndustry,
   PackageMode,
   ProposalPackageOption,
-  INDUSTRY_TEMPLATES
+  INDUSTRY_TEMPLATES,
+  INDUSTRY_GROUPS,
+  getIndustryObjectiveP1
 } from '../types/proposal';
 import { calculateCustomPrice } from '../lib/customPricingEngine';
 import { generateProposalPDF } from '../lib/proposalPdfGenerator';
@@ -33,6 +35,7 @@ export default function ProposalPage() {
   // ── Form State ──
   const [clientName, setClientName] = useState('Travancore Medicity Hospital');
   const [industry, setIndustry] = useState<ProposalIndustry>('hospitals');
+  const [selectedGroup, setSelectedGroup] = useState<string>('All');
   const [proposalDate, setProposalDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [preparedBy, setPreparedBy] = useState('Catgorithm');
   const [packageMode, setPackageMode] = useState<PackageMode>('none');
@@ -43,8 +46,9 @@ export default function ProposalPage() {
 
   // Editable Objectives (initialized from official template)
   const [objectiveTitle, setObjectiveTitle] = useState('THE OPPORTUNITY');
-  const [objectiveP1, setObjectiveP1] = useState(
-    'Catgorithm offers digital bus screen advertising across Kollam, helping businesses reach local audiences through strategically placed displays inside private buses. Our platform builds brand visibility, recall and awareness through repeated exposure during everyday commutes.'
+  const [isCustomObjectiveP1, setIsCustomObjectiveP1] = useState(false);
+  const [objectiveP1, setObjectiveP1] = useState(() =>
+    getIndustryObjectiveP1('hospitals', 'Travancore Medicity Hospital')
   );
   const [objectiveP2, setObjectiveP2] = useState('');
 
@@ -109,21 +113,31 @@ export default function ProposalPage() {
   }
 
   // ── Handlers ──
+  function handleClientNameChange(val: string) {
+    setClientName(val);
+    if (!isCustomObjectiveP1) {
+      setObjectiveP1(getIndustryObjectiveP1(industry, val));
+    }
+  }
+
   function handleIndustryChange(newInd: ProposalIndustry) {
     setIndustry(newInd);
     const tmpl = INDUSTRY_TEMPLATES[newInd];
     if (tmpl) {
-      setObjectiveP1(tmpl.defaultObjectiveP1);
+      if (!isCustomObjectiveP1) {
+        setObjectiveP1(getIndustryObjectiveP1(newInd, clientName));
+      }
       setObjectiveP2(tmpl.defaultObjectiveP2);
     }
   }
 
   function handleResetObjectives() {
+    setIsCustomObjectiveP1(false);
+    setObjectiveP1(getIndustryObjectiveP1(industry, clientName));
     const tmpl = INDUSTRY_TEMPLATES[industry];
     if (tmpl) {
-      setObjectiveP1(tmpl.defaultObjectiveP1);
       setObjectiveP2(tmpl.defaultObjectiveP2);
-      toast.success('Objective reset to industry template');
+      toast.success('Objective reset to industry template with client name');
     }
   }
 
@@ -406,36 +420,101 @@ ${pkgDetails}
                 <input
                   type="text"
                   value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  placeholder="e.g. Banaz Furniture, Kollam"
+                  onChange={(e) => handleClientNameChange(e.target.value)}
+                  placeholder="e.g. NS Hospital, Kollam"
                   className="w-full h-10 px-3 text-sm font-semibold rounded-xl border border-gray-200 focus:border-[#d6c26e] focus:ring-2 focus:ring-[#d6c26e]/20 outline-hidden transition-all bg-gray-50 focus:bg-white"
                 />
               </div>
 
-              {/* Industry Selection */}
+              {/* Industry & Granular Niche Selection */}
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                  Client Industry / Niche <span className="text-gray-400 font-normal">(Auto-adapts proposal pitch)</span>
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {(Object.keys(INDUSTRY_TEMPLATES) as ProposalIndustry[]).map((indKey) => {
-                    const tmpl = INDUSTRY_TEMPLATES[indKey];
-                    const active = industry === indKey;
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-semibold text-gray-700">
+                    Client Industry & Niche <span className="text-gray-400 font-normal">(Auto-adapts proposal pitch)</span>
+                  </label>
+                  <span className="text-[11px] font-bold text-accent">
+                    {INDUSTRY_TEMPLATES[industry]?.group || 'General'}
+                  </span>
+                </div>
+
+                {/* Sub-Category Quick Select Dropdown (All 30 Categories Categorized) */}
+                <div className="relative mb-2">
+                  <select
+                    value={industry}
+                    onChange={(e) => handleIndustryChange(e.target.value as ProposalIndustry)}
+                    className="w-full h-10 px-3 pr-8 text-xs font-bold rounded-xl border border-gray-200 bg-gray-50 focus:bg-white text-gray-900 outline-hidden focus:border-[#d6c26e] appearance-none"
+                  >
+                    {INDUSTRY_GROUPS.filter(g => g !== 'All').map(grp => {
+                      const optionsInGroup = (Object.keys(INDUSTRY_TEMPLATES) as ProposalIndustry[]).filter(
+                        k => INDUSTRY_TEMPLATES[k].group === grp
+                      );
+                      return (
+                        <optgroup key={grp} label={`── ${grp} ──`}>
+                          {optionsInGroup.map(k => (
+                            <option key={k} value={k}>
+                              {INDUSTRY_TEMPLATES[k].label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      );
+                    })}
+                  </select>
+                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
+
+                {/* Industry Group Filter Tabs */}
+                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-1 mb-2">
+                  {INDUSTRY_GROUPS.map((grp) => {
+                    const isActive = selectedGroup === grp;
                     return (
                       <button
-                        key={indKey}
+                        key={grp}
                         type="button"
-                        onClick={() => handleIndustryChange(indKey)}
-                        className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-all ${
-                          active
-                            ? 'bg-[#1f2937] text-white shadow-xs'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        onClick={() => setSelectedGroup(grp)}
+                        className={`text-[11px] px-2.5 py-1 rounded-lg font-semibold whitespace-nowrap transition-all ${
+                          isActive
+                            ? 'bg-slate-900 text-white shadow-2xs'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
                       >
-                        {tmpl.badge}
+                        {grp}
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Sub-Category Badges filtered by Group */}
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                  {(Object.keys(INDUSTRY_TEMPLATES) as ProposalIndustry[])
+                    .filter((k) => selectedGroup === 'All' || INDUSTRY_TEMPLATES[k].group === selectedGroup)
+                    .map((indKey) => {
+                      const tmpl = INDUSTRY_TEMPLATES[indKey];
+                      const active = industry === indKey;
+                      return (
+                        <button
+                          key={indKey}
+                          type="button"
+                          onClick={() => handleIndustryChange(indKey)}
+                          title={tmpl.label}
+                          className={`text-[11px] px-2.5 py-1 rounded-lg font-medium transition-all text-left flex items-center gap-1.5 ${
+                            active
+                              ? 'bg-accent text-white shadow-xs font-bold'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          <span>{tmpl.badge}</span>
+                          {active && <Check size={11} />}
+                        </button>
+                      );
+                    })}
+                </div>
+
+                {/* Active Selection Indicator */}
+                <div className="mt-2 px-2.5 py-1.5 rounded-lg bg-gray-50 border border-gray-200/80 text-[11px] flex items-center justify-between">
+                  <span className="text-gray-500 font-medium">Active Niche Pitch:</span>
+                  <span className="font-bold text-gray-900 truncate ml-2">
+                    {INDUSTRY_TEMPLATES[industry]?.label}
+                  </span>
                 </div>
               </div>
 
@@ -486,16 +565,26 @@ ${pkgDetails}
               {showObjectiveCustomizer && (
                 <div className="mt-2.5 space-y-2.5 text-xs">
                   <div>
-                    <label className="block font-medium text-gray-600 mb-1">Paragraph 1 (Opportunity / Problem):</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block font-medium text-gray-600">Paragraph 1 (The Opportunity Pitch):</label>
+                      {isCustomObjectiveP1 && (
+                        <span className="text-[10px] text-amber-600 font-semibold bg-amber-50 px-1.5 py-0.5 rounded">
+                          Customized
+                        </span>
+                      )}
+                    </div>
                     <textarea
-                      rows={3}
+                      rows={4}
                       value={objectiveP1}
-                      onChange={(e) => setObjectiveP1(e.target.value)}
+                      onChange={(e) => {
+                        setIsCustomObjectiveP1(true);
+                        setObjectiveP1(e.target.value);
+                      }}
                       className="w-full p-2.5 rounded-xl border border-gray-200 text-xs text-gray-800 leading-relaxed outline-hidden focus:border-[#d6c26e]"
                     />
                   </div>
                   <div>
-                    <label className="block font-medium text-gray-600 mb-1">Paragraph 2 (Catgorithm Solution):</label>
+                    <label className="block font-medium text-gray-600 mb-1">Paragraph 2 (Catgorithm Network Solution):</label>
                     <textarea
                       rows={3}
                       value={objectiveP2}
@@ -509,7 +598,7 @@ ${pkgDetails}
                       onClick={handleResetObjectives}
                       className="text-[11px] font-semibold text-gray-500 hover:text-gray-900 flex items-center gap-1"
                     >
-                      <RefreshCw size={11} /> Reset to {INDUSTRY_TEMPLATES[industry]?.badge} Default
+                      <RefreshCw size={11} /> Reset to {INDUSTRY_TEMPLATES[industry]?.badge} Template
                     </button>
                   </div>
                 </div>

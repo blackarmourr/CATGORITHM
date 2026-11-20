@@ -50,7 +50,7 @@ const BODY_FONT_SIZE = 14.5;        // 14.5 pt normal for ALL descriptions/intro
 const BULLET_FONT_SIZE = 14.5;      // Exactly 14.5 pt normal (strictly matching description font size across Pages 1 & 2)
 
 // Consistent inter-section spacing between end of description/bullets of one subheading and start of the next
-const SUBHEADING_SECTION_GAP = 14.0; // Consistently slightly reduced across all pages
+const SUBHEADING_SECTION_GAP = 13.0; // Consistently balanced across all pages
 
 function formatPDFINR(amount: number): string {
   const formatted = Math.abs(amount).toLocaleString('en-IN');
@@ -410,26 +410,26 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   drawHeaderLine(doc, 26.5);
 
   // 3. Document Title Block (Centered)
-  // Perfectly balanced top spacing: starts at y = 43.0mm (~14.3mm below header line)
-  let y = 43.0;
+  // Perfectly balanced top spacing: starts at y = 39.0mm (~12.5mm below header line)
+  let y = 39.0;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(TITLE_FONT_SIZE);
   doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
   doc.text('BUS SCREEN ADVERTISEMENT PROPOSAL FOR', PAGE_W / 2, y, { align: 'center' });
 
-  y += 8.5;
+  y += 7.5;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(TITLE_FONT_SIZE); // Exact 20 pt bold
   doc.text(clientNameTitle, PAGE_W / 2, y, { align: 'center' });
 
   // Prepared by section (matching description font size with ample gap above)
-  y += 10.5;
+  y += 9.0;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(BODY_FONT_SIZE); // Exactly 14.5 pt (same font size as descriptions!)
   doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
   doc.text(`Prepared by: ${preparedBy} | ${proposalDate}`, PAGE_W / 2, y, { align: 'center' });
 
-  y += 13.5;
+  y += 11.0;
 
   // 4. Section 1: THE OPPORTUNITY
   doc.setFont('helvetica', 'bold');
@@ -438,15 +438,15 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   doc.text(data.objectiveTitle || 'THE OPPORTUNITY', MARGIN_LEFT, y);
 
   // Generous spacing between subheading and description
-  y += 9.5;
+  y += 7.5;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(BODY_FONT_SIZE); // 14.5 pt
   doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
   const oppText = data.objectiveP1 || "Catgorithm offers digital bus screen advertising across Kollam, helping businesses reach local audiences through strategically placed displays inside private buses. Our platform builds brand visibility, recall and awareness through repeated exposure during everyday commutes.";
   doc.text(oppText, MARGIN_LEFT, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.42 });
   const oppLines = doc.splitTextToSize(oppText, PRINTABLE_W);
-  // Consistent slightly reduced spacing between end of description and starting of next subheading
-  y += (oppLines.length - 1) * 7.25 + SUBHEADING_SECTION_GAP;
+  // Consistent spacing between end of description and starting of next subheading
+  y += (oppLines.length - 1) * 7.15 + SUBHEADING_SECTION_GAP;
 
   // 5. Section 2: OUR ADVERTISING NETWORK
   doc.setFont('helvetica', 'bold');
@@ -454,16 +454,16 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
   doc.text('OUR ADVERTISING NETWORK', MARGIN_LEFT, y);
 
-  y += 9.5;
+  y += 7.5;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(BODY_FONT_SIZE); // 14.5 pt
   doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
-  const netText = "Our network consists of digital display screens installed inside selected private buses, operating along established routes throughout Kollam. Each screen provides a dedicated space for promotional content, with advertisements scheduled to run as part of a continuous digital display network. The higlight of our network are :";
+  const netText = "Our network consists of digital display screens installed inside selected private buses, operating along established routes throughout Kollam. Each screen provides a dedicated space for promotional content, with advertisements scheduled to run as part of a continuous digital display network. The highlight of our network are :";
   doc.text(netText, MARGIN_LEFT, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.42 });
   const netLines = doc.splitTextToSize(netText, PRINTABLE_W);
   
   // Advance to end of paragraph text + spacing before bullets
-  y += (netLines.length - 1) * 7.25 + 11.0;
+  y += (netLines.length - 1) * 7.15 + 8.5;
 
   const networkBullets: [string, string][] = [
     ['7 Advertising Routes', 'Coverage across key corridors in Kollam.'],
@@ -505,7 +505,7 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
     }
 
     if (idx < networkBullets.length - 1) {
-      y += 8.2;
+      y += 7.6;
     }
   });
 
@@ -517,7 +517,7 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
   doc.text('WHY CATGORITHM?', MARGIN_LEFT, y);
 
-  y += 9.5;
+  y += 7.5;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(BODY_FONT_SIZE); // 14.5 pt
   doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
@@ -640,8 +640,9 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
 
   // Trigger download in browser environment
   if (typeof window !== 'undefined') {
-    const cleanName = (data.clientName || 'Client').replace(/[^a-zA-Z0-9_-]/g, '_');
-    const filename = `Catgorithm_Proposal_${cleanName}.pdf`;
+    const rawClientName = (data.clientName || 'Client').trim();
+    const sanitizedClient = rawClientName.replace(/[\\/:*?"<>|]/g, '').trim() || 'Client';
+    const filename = `Bus Advertisement Proposal for ${sanitizedClient}.pdf`;
     doc.save(filename);
   }
   return doc;
