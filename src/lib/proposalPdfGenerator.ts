@@ -50,7 +50,7 @@ const BODY_FONT_SIZE = 14.5;        // 14.5 pt normal for ALL descriptions/intro
 const BULLET_FONT_SIZE = 14.5;      // Exactly 14.5 pt normal (strictly matching description font size across Pages 1 & 2)
 
 // Consistent inter-section spacing between end of description/bullets of one subheading and start of the next
-const SUBHEADING_SECTION_GAP = 13.0; // Consistently balanced across all pages
+const SUBHEADING_SECTION_GAP = 14.0; // Consistently slightly reduced across all pages
 
 function formatPDFINR(amount: number): string {
   const formatted = Math.abs(amount).toLocaleString('en-IN');
@@ -410,26 +410,26 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   drawHeaderLine(doc, 26.5);
 
   // 3. Document Title Block (Centered)
-  // Perfectly balanced top spacing: starts at y = 39.0mm (~12.5mm below header line)
-  let y = 39.0;
+  // Perfectly balanced top spacing: starts at y = 43.0mm (~14.3mm below header line)
+  let y = 43.0;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(TITLE_FONT_SIZE);
   doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
   doc.text('BUS SCREEN ADVERTISEMENT PROPOSAL FOR', PAGE_W / 2, y, { align: 'center' });
 
-  y += 7.5;
+  y += 8.5;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(TITLE_FONT_SIZE); // Exact 20 pt bold
   doc.text(clientNameTitle, PAGE_W / 2, y, { align: 'center' });
 
   // Prepared by section (matching description font size with ample gap above)
-  y += 9.0;
+  y += 10.5;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(BODY_FONT_SIZE); // Exactly 14.5 pt (same font size as descriptions!)
   doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
   doc.text(`Prepared by: ${preparedBy} | ${proposalDate}`, PAGE_W / 2, y, { align: 'center' });
 
-  y += 11.0;
+  y += 13.5;
 
   // 4. Section 1: THE OPPORTUNITY
   doc.setFont('helvetica', 'bold');
@@ -438,15 +438,15 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   doc.text(data.objectiveTitle || 'THE OPPORTUNITY', MARGIN_LEFT, y);
 
   // Generous spacing between subheading and description
-  y += 7.5;
+  y += 9.5;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(BODY_FONT_SIZE); // 14.5 pt
   doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
   const oppText = data.objectiveP1 || "Catgorithm offers digital bus screen advertising across Kollam, helping businesses reach local audiences through strategically placed displays inside private buses. Our platform builds brand visibility, recall and awareness through repeated exposure during everyday commutes.";
   doc.text(oppText, MARGIN_LEFT, y, { align: 'justify', maxWidth: PRINTABLE_W, lineHeightFactor: 1.42 });
   const oppLines = doc.splitTextToSize(oppText, PRINTABLE_W);
-  // Consistent spacing between end of description and starting of next subheading
-  y += (oppLines.length - 1) * 7.15 + SUBHEADING_SECTION_GAP;
+  // Consistent slightly reduced spacing between end of description and starting of next subheading
+  y += (oppLines.length - 1) * 7.25 + SUBHEADING_SECTION_GAP;
 
   // 5. Section 2: OUR ADVERTISING NETWORK
   doc.setFont('helvetica', 'bold');
@@ -454,7 +454,7 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
   doc.text('OUR ADVERTISING NETWORK', MARGIN_LEFT, y);
 
-  y += 7.5;
+  y += 9.5;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(BODY_FONT_SIZE); // 14.5 pt
   doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
@@ -463,7 +463,7 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   const netLines = doc.splitTextToSize(netText, PRINTABLE_W);
   
   // Advance to end of paragraph text + spacing before bullets
-  y += (netLines.length - 1) * 7.15 + 8.5;
+  y += (netLines.length - 1) * 7.25 + 11.0;
 
   const networkBullets: [string, string][] = [
     ['7 Advertising Routes', 'Coverage across key corridors in Kollam.'],
@@ -505,7 +505,7 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
     }
 
     if (idx < networkBullets.length - 1) {
-      y += 7.6;
+      y += 8.2;
     }
   });
 
@@ -517,7 +517,7 @@ export async function generateProposalPDF(data: ProposalData): Promise<any> {
   doc.setTextColor(SLATE_DARK[0], SLATE_DARK[1], SLATE_DARK[2]);
   doc.text('WHY CATGORITHM?', MARGIN_LEFT, y);
 
-  y += 7.5;
+  y += 9.5;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(BODY_FONT_SIZE); // 14.5 pt
   doc.setTextColor(CHARCOAL[0], CHARCOAL[1], CHARCOAL[2]);
